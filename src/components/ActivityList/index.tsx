@@ -1,4 +1,4 @@
-import React, { lazy, useState, Suspense } from 'react';
+import React, { lazy, useState, Suspense, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -14,9 +14,20 @@ import styles from './style.module.css';
 import { ACTIVITY_TOTAL } from '@/utils/const';
 import { totalStat } from '@assets/index';
 import { loadSvgComponent } from '@/utils/svgUtils';
-import { SHOW_ELEVATION_GAIN } from '@/utils/const';
+import { SHOW_ELEVATION_GAIN, HOME_PAGE_TITLE } from '@/utils/const';
 
-const MonthofLifeSvg = lazy(() => loadSvgComponent(totalStat, './mol.svg'));
+const MonthOfLifeSvg = (sportType: string) => {
+  const path = sportType === 'all' ? './mol.svg' : `./mol_${sportType}.svg`;
+  return lazy(() => loadSvgComponent(totalStat, path));
+};
+
+const RunningSvg = MonthOfLifeSvg('running');
+const WalkingSvg = MonthOfLifeSvg('walking');
+const HikingSvg = MonthOfLifeSvg('hiking');
+const CyclingSvg = MonthOfLifeSvg('cycling');
+const SwimmingSvg = MonthOfLifeSvg('swimming');
+const SkiingSvg = MonthOfLifeSvg('skiing');
+const AllSvg = MonthOfLifeSvg('all');
 
 // Define interfaces for our data structures
 interface Activity {
@@ -26,6 +37,7 @@ interface Activity {
   type: string;
   location_country?: string;
   elevation_gain?: number; // Optional if elevation gain is not used
+  average_heartrate?: number; // Add heart rate support
 }
 
 interface ActivitySummary {
@@ -37,6 +49,8 @@ interface ActivitySummary {
   maxDistance: number;
   maxSpeed: number;
   location: string;
+  totalHeartRate: number; // Add heart rate statistics
+  heartRateCount: number;
 }
 
 interface DisplaySummary {
@@ -48,6 +62,7 @@ interface DisplaySummary {
   maxSpeed: number;
   location: string;
   totalElevationGain?: number;
+  averageHeartRate?: number; // Add heart rate display
 }
 
 interface ChartData {
@@ -139,6 +154,12 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           <strong>{ACTIVITY_TOTAL.TOTAL_TIME_TITLE}:</strong>{' '}
           {formatTime(summary.totalTime)}
         </p>
+        {summary.averageHeartRate !== undefined && (
+          <p>
+            <strong>{ACTIVITY_TOTAL.AVERAGE_HEART_RATE_TITLE}:</strong>{' '}
+            {summary.averageHeartRate.toFixed(0)} bpm
+          </p>
+        )}
         {interval !== 'day' && (
           <>
             <p>
@@ -199,6 +220,28 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 
 const ActivityList: React.FC = () => {
   const [interval, setInterval] = useState<IntervalType>('month');
+  const [sportType, setSportType] = useState<string>('all');
+  const [sportTypeOptions, setSportTypeOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const sportTypeSet = new Set(activities.map((activity) => activity.type));
+    if (sportTypeSet.has('Run')) {
+      sportTypeSet.delete('Run');
+      sportTypeSet.add('running');
+    }
+    if (sportTypeSet.has('Walk')) {
+      sportTypeSet.delete('Walk');
+      sportTypeSet.add('walking');
+    }
+    if (sportTypeSet.has('Ride')) {
+      sportTypeSet.delete('Ride');
+      sportTypeSet.add('cycling');
+    }
+    const uniqueSportTypes = [...sportTypeSet];
+    uniqueSportTypes.unshift('all');
+    setSportTypeOptions(uniqueSportTypes);
+  }, []);
+
   const navigate = useNavigate();
 
   const toggleInterval = (newInterval: IntervalType): void => {
@@ -210,9 +253,27 @@ const ActivityList: React.FC = () => {
     return hours * 3600 + minutes * 60 + seconds;
   };
 
-  const groupActivities = (interval: IntervalType): ActivityGroups => {
-    return (activities as Activity[]).reduce(
-      (acc: ActivityGroups, activity) => {
+  const groupActivities = (
+    interval: IntervalType,
+    sportType: string
+  ): ActivityGroups => {
+    return (activities as Activity[])
+      .filter((activity) => {
+        if (sportType === 'all') {
+          return true;
+        }
+        if (sportType === 'running') {
+          return activity.type === 'running' || activity.type === 'Run';
+        }
+        if (sportType === 'walking') {
+          return activity.type === 'walking' || activity.type === 'Walk';
+        }
+        if (sportType === 'cycling') {
+          return activity.type === 'cycling' || activity.type === 'Ride';
+        }
+        return activity.type === sportType;
+      })
+      .reduce((acc: ActivityGroups, activity) => {
         const date = new Date(activity.start_date_local);
         let key: string;
         let index: number;
@@ -257,6 +318,8 @@ const ActivityList: React.FC = () => {
             maxDistance: 0,
             maxSpeed: 0,
             location: '',
+            totalHeartRate: 0,
+            heartRateCount: 0,
           };
 
         const distanceKm = activity.distance / 1000; // Convert to kilometers
@@ -269,6 +332,12 @@ const ActivityList: React.FC = () => {
 
         if (SHOW_ELEVATION_GAIN && activity.elevation_gain) {
           acc[key].totalElevationGain += activity.elevation_gain;
+        }
+
+        // Heart rate statistics
+        if (activity.average_heartrate) {
+          acc[key].totalHeartRate += activity.average_heartrate;
+          acc[key].heartRateCount += 1;
         }
 
         acc[key].count += 1;
@@ -285,12 +354,10 @@ const ActivityList: React.FC = () => {
           acc[key].location = activity.location_country || '';
 
         return acc;
-      },
-      {}
-    );
+      }, {});
   };
 
-  const activitiesByInterval = groupActivities(interval);
+  const activitiesByInterval = groupActivities(interval, sportType);
 
   return (
     <div className={styles.activityList}>
@@ -299,8 +366,18 @@ const ActivityList: React.FC = () => {
           className={styles.smallHomeButton}
           onClick={() => navigate('/')}
         >
-          Home
+          {HOME_PAGE_TITLE}
         </button>
+        <select
+          onChange={(e) => setSportType(e.target.value)}
+          value={sportType}
+        >
+          {sportTypeOptions.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
         <select
           onChange={(e) => toggleInterval(e.target.value as IntervalType)}
           value={interval}
@@ -316,7 +393,13 @@ const ActivityList: React.FC = () => {
       {interval === 'life' && (
         <div className={styles.lifeContainer}>
           <Suspense fallback={<div>Loading SVG...</div>}>
-            <MonthofLifeSvg />
+            {(sportType === 'running' || sportType === 'Run') && <RunningSvg />}
+            {sportType === 'walking' && <WalkingSvg />}
+            {sportType === 'hiking' && <HikingSvg />}
+            {sportType === 'cycling' && <CyclingSvg />}
+            {sportType === 'swimming' && <SwimmingSvg />}
+            {sportType === 'skiing' && <SkiingSvg />}
+            {sportType === 'all' && <AllSvg />}
           </Suspense>
         </div>
       )}
@@ -354,6 +437,10 @@ const ActivityList: React.FC = () => {
                   totalElevationGain: SHOW_ELEVATION_GAIN
                     ? summary.totalElevationGain
                     : undefined,
+                  averageHeartRate:
+                    summary.heartRateCount > 0
+                      ? summary.totalHeartRate / summary.heartRateCount
+                      : undefined,
                 }}
                 dailyDistances={summary.dailyDistances}
                 interval={interval}

@@ -79,6 +79,8 @@ const HIKING_TITLE = IS_CHINESE ? '徒步' : 'Hiking';
 const CYCLING_TITLE = IS_CHINESE ? '骑行' : 'Cycling';
 const SKIING_TITLE = IS_CHINESE ? '滑雪' : 'Skiing';
 const WALKING_TITLE = IS_CHINESE ? '步行' : 'Walking';
+const SWIMMING_TITLE = IS_CHINESE ? '游泳' : 'Swimming';
+const ALL_TITLE = IS_CHINESE ? '所有' : 'All';
 const ACTIVITY_COUNT_TITLE = IS_CHINESE ? '活动次数' : 'Activity Count';
 const MAX_DISTANCE_TITLE = IS_CHINESE ? '最远距离' : 'Max Distance';
 const MAX_SPEED_TITLE = IS_CHINESE ? '最快速度' : 'Max Speed';
@@ -88,11 +90,13 @@ const TOTAL_DISTANCE_TITLE = IS_CHINESE ? '总距离' : 'Total Distance';
 const TOTAL_ELEVATION_GAIN_TITLE = IS_CHINESE
   ? '总海拔爬升'
   : 'Total Elevation Gain';
+const AVERAGE_HEART_RATE_TITLE = IS_CHINESE ? '平均心率' : 'Average Heart Rate';
 const YEARLY_TITLE = IS_CHINESE ? 'Year' : 'Yearly';
 const MONTHLY_TITLE = IS_CHINESE ? 'Month' : 'Monthly';
 const WEEKLY_TITLE = IS_CHINESE ? 'Week' : 'Weekly';
 const DAILY_TITLE = IS_CHINESE ? 'Day' : 'Daily';
 const LOCATION_TITLE = IS_CHINESE ? 'Location' : 'Location';
+const HOME_PAGE_TITLE = IS_CHINESE ? '返回首页' : 'Home';
 
 const ACTIVITY_TYPES = {
   RUN_GENERIC_TITLE,
@@ -102,6 +106,8 @@ const ACTIVITY_TYPES = {
   CYCLING_TITLE,
   SKIING_TITLE,
   WALKING_TITLE,
+  SWIMMING_TITLE,
+  ALL_TITLE,
 };
 
 const RUN_TITLES = {
@@ -121,6 +127,7 @@ const ACTIVITY_TOTAL = {
   AVERAGE_SPEED_TITLE,
   TOTAL_DISTANCE_TITLE,
   TOTAL_ELEVATION_GAIN_TITLE,
+  AVERAGE_HEART_RATE_TITLE,
   YEARLY_TITLE,
   MONTHLY_TITLE,
   WEEKLY_TITLE,
@@ -150,6 +157,7 @@ export {
   RICH_TITLE,
   ACTIVITY_TYPES,
   ACTIVITY_TOTAL,
+  HOME_PAGE_TITLE,
 };
 
 const nike = 'rgb(224,237,94)'; // if you want change the main color change here src/styles/variables.scss
@@ -207,6 +215,7 @@ export const MAP_TILE_STYLES = {
     'dark-v10': 'mapbox://styles/mapbox/dark-v10',
     'dark-v11': 'mapbox://styles/mapbox/dark-v11',
     'navigation-night': 'mapbox://styles/mapbox/navigation-night-v1',
+    'satellite-streets-v12': 'mapbox://styles/mapbox/satellite-streets-v12',
   },
   default: 'mapbox://styles/mapbox/dark-v10',
 };
