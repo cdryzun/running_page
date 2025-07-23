@@ -1,6 +1,6 @@
 import * as mapboxPolyline from '@mapbox/polyline';
 import gcoord from 'gcoord';
-import { WebMercatorViewport } from 'viewport-mercator-project';
+import { WebMercatorViewport } from '@math.gl/web-mercator';
 import { chinaGeojson, RPGeometry } from '@/static/run_countries';
 import worldGeoJson from '@surbowl/world-geo-json-zh/world.zh.json';
 import { chinaCities } from '@/static/city';
@@ -226,7 +226,7 @@ const pathForRun = (run: Activity): Coordinate[] => {
       }
     }
     return c;
-  } catch (err) {
+  } catch (_err) {
     return [];
   }
 };
