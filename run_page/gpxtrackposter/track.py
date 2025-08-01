@@ -53,7 +53,7 @@ class Track:
         self.moving_dict = {}
         self.run_id = 0
         self.start_latlng = []
-        self.type = "Run"
+        self.type = "Ride"  # Default type, will be updated based on actual sport type
         self.subtype = None  # for fit file
         self.device = ""
 
@@ -248,7 +248,7 @@ class Track:
             if self.track_name is None:
                 self.track_name = t.name
             if hasattr(t, "type") and t.type:
-                self.type = "Run" if t.type == "running" else t.type
+                self.type = t.type
             for s in t.segments:
                 try:
                     extensions = [
@@ -371,10 +371,7 @@ class Track:
         self.average_heartrate = (
             message["avg_heart_rate"] if "avg_heart_rate" in message else None
         )
-        if message["sport"].lower() == "running":
-            self.type = "Run"
-        else:
-            self.type = message["sport"].lower()
+        self.type = get_normalized_sport_type(message["sport"])
         self.subtype = message["sub_sport"] if "sub_sport" in message else None
 
         self.elevation_gain = (

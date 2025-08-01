@@ -1,6 +1,10 @@
-/* .mapboxgl-control-container { */
-/*   display: none; */
-/* } */
+/* Hide all unwanted mapbox controls and markers */
+.mapboxgl-ctrl-geolocate,
+.mapboxgl-user-location-dot,
+.mapboxgl-user-location-accuracy-circle,
+.mapboxgl-marker {
+  display: none !important;
+}
 .mapboxgl-map {
   font:
     12px/20px Helvetica Neue,

@@ -15,7 +15,7 @@ def run_strava_sync(
 ):
     generator = Generator(SQL_FILE)
     generator.set_strava_config(client_id, client_secret, refresh_token)
-    # judge sync types is only running or not
+    # judge sync types is only cycling or not
     if not only_run and len(sync_types) == 1 and sync_types[0] == "running":
         only_run = True
     # if you want to refresh data change False to True

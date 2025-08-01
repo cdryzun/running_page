@@ -17,6 +17,8 @@ interface IRunTableProperties {
   setActivity: (_runs: Activity[]) => void;
   runIndex: number;
   setRunIndex: (_index: number) => void;
+  selectedRunId: number | null;
+  setSelectedRunId: (_runId: number | null) => void;
 }
 
 type SortFunc = (_a: Activity, _b: Activity) => number;
@@ -27,6 +29,8 @@ const RunTable = ({
   setActivity,
   runIndex,
   setRunIndex,
+  selectedRunId,
+  setSelectedRunId,
 }: IRunTableProperties) => {
   const [sortFuncInfo, setSortFuncInfo] = useState('');
   // TODO refactor?
@@ -70,9 +74,13 @@ const RunTable = ({
     const funcName = (e.target as HTMLElement).innerHTML;
     const f = sortFuncMap.get(funcName);
 
+    // 重置选中状态
     setRunIndex(-1);
+    setSelectedRunId(null);
     setSortFuncInfo(sortFuncInfo === funcName ? '' : funcName);
     setActivity(runs.sort(f));
+    // 清除地图选择
+    locateActivity([]);
   };
 
   return (
@@ -97,6 +105,8 @@ const RunTable = ({
               run={run}
               runIndex={runIndex}
               setRunIndex={setRunIndex}
+              selectedRunId={selectedRunId}
+              setSelectedRunId={setSelectedRunId}
             />
           ))}
         </tbody>

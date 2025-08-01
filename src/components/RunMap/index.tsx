@@ -221,7 +221,8 @@ const RunMap = ({
           }}
         />
       </Source>
-      {isSingleRun && (
+      {/* Markers disabled for cleaner appearance */}
+      {false && isSingleRun && (
         <RunMarker
           startLat={startLat}
           startLon={startLon}
