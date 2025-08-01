@@ -1,3 +1,90 @@
+/* Futuristic Activity Type Badge Animations */
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes data-flow {
+  0% { transform: translateX(0); opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { transform: translateX(10px); opacity: 0.3; }
+}
+
+/* Activity Type Badge Hover Effects */
+.activity-type-badge:hover {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+  transform: scale(1.05);
+  transition: transform 0.3s ease;
+}
+
+/* Data Display Enhancements */
+.data-display-container,
+.pace-display-container,
+.heartrate-display-container,
+.time-display-container,
+.date-display-container {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  position: relative;
+}
+
+.data-value,
+.pace-value,
+.heartrate-value,
+.time-value {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.data-value:hover,
+.pace-value:hover,
+.heartrate-value:hover,
+.time-value:hover {
+  transform: scale(1.05);
+  filter: brightness(1.2);
+}
+
+/* Futuristic Data Flow Animation */
+.data-display-container::before,
+.pace-display-container::before,
+.heartrate-display-container::before,
+.time-display-container::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  width: 2px;
+  height: 60%;
+  background: linear-gradient(180deg, transparent 0%, var(--color-glow, #00ff88) 50%, transparent 100%);
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.runRow:hover .data-display-container::before,
+.runRow:hover .pace-display-container::before,
+.runRow:hover .heartrate-display-container::before,
+.runRow:hover .time-display-container::before {
+  opacity: 0.6;
+  animation: data-flow 2s ease-in-out infinite;
+}
+
+/* Special styling for heartrate */
+.heartrate-display-container::before {
+  background: linear-gradient(180deg, transparent 0%, var(--color-electric-blue, #00d4ff) 50%, transparent 100%);
+}
+
+/* Enhanced Responsive Design */
 @media only screen and (max-width: 800px) {
   /* 当屏幕宽度小于 800px 时 */
   .runTable th:nth-child(3),
@@ -20,60 +107,210 @@
   width: 100%;
   margin: 2rem 0 5rem 0;
   color: var(--color-run-table-thead);
-  background-color: var(--color-background);
+  background: linear-gradient(135deg, var(--color-activity-card, #151515) 0%, var(--color-bg, #0a0a0a) 100%);
   font-family: var(--font-mono);
-  :is(thead) {
-    color: var(--color-run-table-thead);
-    text-align: right;
+  border-collapse: collapse;
+  border: 1px solid var(--color-glow, #00ff88);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 0 20px rgba(0, 255, 136, 0.1),
+    inset 0 1px 0 rgba(0, 255, 136, 0.1);
+  position: relative;
+}
 
-    :is(th) {
-      padding: 0.5rem;
-    }
-  }
-  :is(th, td):nth-child(1) {
-    width: 137px;
-    text-align: left;
-  }
+.runTable::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 2px 2px, rgba(0, 255, 136, 0.05) 1px, transparent 0);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 1;
+}
 
-  :is(th, td):nth-child(2) {
-    width: 91px;
-  }
+.runTable thead {
+  color: var(--color-run-table-thead);
+  text-align: right;
+  background: linear-gradient(135deg, var(--color-charcoal, #2a2a2a) 0%, var(--color-run-row-hover-background, #1a1a1a) 100%);
+  position: relative;
+  z-index: 2;
+}
 
-  :is(th, td):nth-child(3) {
-    width: 112px;
-  }
+.runTable thead th {
+  padding: 1.25rem 1rem;
+  border-bottom: 2px solid var(--color-glow, #00ff88);
+  font-weight: 700;
+  font-family: var(--font-display, 'Orbitron', sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  text-shadow: 0 0 10px var(--color-glow, #00ff88);
+  position: relative;
+  line-height: 1.2;
+}
 
-  :is(th, td):nth-child(4) {
-    width: 60px;
-  }
+.runTable thead th::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-glow, #00ff88) 50%, transparent 100%);
+  box-shadow: 0 0 10px var(--color-glow, #00ff88);
+}
 
-  :is(th, td):nth-child(5) {
-    width: 100px;
-  }
+.runTable th:nth-child(1),
+.runTable td:nth-child(1) {
+  width: 137px;
+  text-align: left;
+}
+
+.runTable th:nth-child(2),
+.runTable td:nth-child(2) {
+  width: 91px;
+}
+
+.runTable th:nth-child(3),
+.runTable td:nth-child(3) {
+  width: 112px;
+}
+
+.runTable th:nth-child(4),
+.runTable td:nth-child(4) {
+  width: 60px;
+}
+
+.runTable th:nth-child(5),
+.runTable td:nth-child(5) {
+  width: 100px;
 }
 
 .runRow {
   cursor: pointer;
-  :is(td) {
-    padding: 0.5rem;
-    border: 0;
-    text-align: right;
-  }
+  border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 2;
+  background: transparent;
+}
 
-  &:hover {
-    background-color: var(--color-run-row-hover-background);
-  }
+.runRow td {
+  padding: 1.25rem 1rem;
+  border: 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  position: relative;
+}
+
+.runRow td:first-child {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--color-tx);
+  font-size: 1rem;
+  text-align: left;
+}
+
+.runRow:hover {
+  background: linear-gradient(135deg,
+    rgba(0, 255, 136, 0.05) 0%,
+    rgba(0, 255, 136, 0.02) 50%,
+    rgba(0, 255, 136, 0.05) 100%);
+  border-bottom-color: rgba(0, 255, 136, 0.3);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 20px rgba(0, 255, 136, 0.1),
+    inset 0 1px 0 rgba(0, 255, 136, 0.1);
+}
+
+.runRow:hover td {
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+.runRow:hover::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    var(--color-glow, #00ff88) 50%,
+    transparent 100%);
+  box-shadow: 0 0 10px var(--color-glow, #00ff88);
+}
+
+.runRow:last-child {
+  border-bottom: none;
 }
 
 .selected {
-  color: var(--color-primary);
+  background: linear-gradient(135deg,
+    rgba(0, 255, 136, 0.15) 0%,
+    rgba(0, 255, 136, 0.08) 50%,
+    rgba(0, 255, 136, 0.15) 100%) !important;
+  border-bottom-color: var(--color-glow, #00ff88) !important;
+  color: var(--color-glow, #00ff88);
+  box-shadow:
+    0 0 20px rgba(0, 255, 136, 0.2),
+    inset 0 0 20px rgba(0, 255, 136, 0.1);
+}
+
+.selected td {
+  color: var(--color-glow, #00ff88);
+  text-shadow: 0 0 10px var(--color-glow, #00ff88);
+  font-weight: 600;
+}
+
+.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--color-glow, #00ff88);
+  box-shadow:
+    0 0 15px var(--color-glow, #00ff88),
+    0 0 30px var(--color-glow, #00ff88);
+}
+
+.selected::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 2px 2px, rgba(0, 255, 136, 0.1) 1px, transparent 0);
+  background-size: 16px 16px;
+  pointer-events: none;
 }
 
 .tableContainer {
   width: 100%;
   overflow-x: auto;
+  border-radius: 12px;
+  background: var(--color-bg, #0a0a0a);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(0, 255, 136, 0.1);
 }
 
 .runDate {
   color: var(--color-run-date);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  opacity: 0.85;
+  font-weight: 400;
 }

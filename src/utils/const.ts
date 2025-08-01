@@ -54,27 +54,27 @@ const IS_CHINESE = true;
 const USE_ANIMATION_FOR_GRID = false;
 const CHINESE_INFO_MESSAGE = (yearLength: number, year: string): string => {
   const yearStr = year === 'Total' ? '所有' : ` ${year} `;
-  return `我用 App 记录自己跑步 ${yearLength} 年了，下面列表展示的是${yearStr}的数据`;
+  return `我用 App 记录自己运动 ${yearLength} 年了，下面列表展示的是${yearStr}的数据`;
 };
 const ENGLISH_INFO_MESSAGE = (yearLength: number, year: string): string =>
-  `Running Journey with ${yearLength} Years, the table shows year ${year} data`;
+  `Activity Journey with ${yearLength} Years, the table shows year ${year} data`;
 
 // not support English for now
 const CHINESE_LOCATION_INFO_MESSAGE_FIRST =
-  '我跑过了一些地方，希望随着时间推移，地图点亮的地方越来越多';
-const CHINESE_LOCATION_INFO_MESSAGE_SECOND = '不要停下来，不要停下奔跑的脚步';
+  '我运动过了一些地方，希望随着时间推移，地图点亮的地方越来越多';
+const CHINESE_LOCATION_INFO_MESSAGE_SECOND = '不要停下来，不要停下运动的脚步';
 
 const INFO_MESSAGE = IS_CHINESE ? CHINESE_INFO_MESSAGE : ENGLISH_INFO_MESSAGE;
-const FULL_MARATHON_RUN_TITLE = IS_CHINESE ? '全程马拉松' : 'Full Marathon';
-const HALF_MARATHON_RUN_TITLE = IS_CHINESE ? '半程马拉松' : 'Half Marathon';
+const FULL_MARATHON_RUN_TITLE = IS_CHINESE ? '全程跑步' : 'Full Marathon';
+const HALF_MARATHON_RUN_TITLE = IS_CHINESE ? '半程跑步' : 'Half Marathon';
 const MORNING_RUN_TITLE = IS_CHINESE ? '清晨跑步' : 'Morning Run';
 const MIDDAY_RUN_TITLE = IS_CHINESE ? '午间跑步' : 'Midday Run';
 const AFTERNOON_RUN_TITLE = IS_CHINESE ? '午后跑步' : 'Afternoon Run';
 const EVENING_RUN_TITLE = IS_CHINESE ? '傍晚跑步' : 'Evening Run';
 const NIGHT_RUN_TITLE = IS_CHINESE ? '夜晚跑步' : 'Night Run';
 const RUN_GENERIC_TITLE = IS_CHINESE ? '跑步' : 'Run';
-const RUN_TRAIL_TITLE = IS_CHINESE ? '越野跑' : 'Trail Run';
-const RUN_TREADMILL_TITLE = IS_CHINESE ? '跑步机' : 'Treadmill Run';
+const RUN_TRAIL_TITLE = IS_CHINESE ? '山地跑步' : 'Trail Run';
+const RUN_TREADMILL_TITLE = IS_CHINESE ? '室内跑步' : 'Treadmill Run';
 const HIKING_TITLE = IS_CHINESE ? '徒步' : 'Hiking';
 const CYCLING_TITLE = IS_CHINESE ? '骑行' : 'Cycling';
 const SKIING_TITLE = IS_CHINESE ? '滑雪' : 'Skiing';
@@ -160,29 +160,34 @@ export {
   HOME_PAGE_TITLE,
 };
 
-const nike = 'rgb(224,237,94)'; // if you want change the main color change here src/styles/variables.scss
-const dark_vanilla = 'rgb(228,212,220)';
+// GitHub-inspired color palette - elegant and minimal
+const github_blue = '#0969da';      // GitHub's primary blue
+const github_green = '#1a7f37';     // GitHub's success green
+const github_orange = '#d1242f';    // GitHub's danger red-orange
+const github_purple = '#8250df';    // GitHub's purple
+const github_gray = '#656d76';      // GitHub's muted gray
+const github_light_gray = '#f6f8fa'; // GitHub's light background
 
 // If your map has an offset please change this line
 // issues #92 and #198
 export const NEED_FIX_MAP = false;
-export const MAIN_COLOR = nike;
-export const PROVINCE_FILL_COLOR = '#47b8e0';
-export const COUNTRY_FILL_COLOR = dark_vanilla;
+export const MAIN_COLOR = github_blue;
+export const PROVINCE_FILL_COLOR = '#e1e4e8';
+export const COUNTRY_FILL_COLOR = github_light_gray;
 
-export const RUN_COLOR = MAIN_COLOR;
-export const RUN_TRAIL_COLOR = 'rgb(255,153,51)';
-export const CYCLING_COLOR = 'rgb(51,255,87)';
-export const HIKING_COLOR = 'rgb(151,51,255)';
-export const WALKING_COLOR = HIKING_COLOR;
-export const SWIMMING_COLOR = 'rgb(255,51,51)';
+export const RUN_COLOR = github_blue;
+export const RUN_TRAIL_COLOR = github_orange;
+export const CYCLING_COLOR = github_green;
+export const HIKING_COLOR = github_purple;
+export const WALKING_COLOR = github_gray;
+export const SWIMMING_COLOR = '#0969da';
 
 // map tiles vendor, maptiler or mapbox or stadiamaps
 // if you want to use maptiler, set the access token in MAP_TILE_ACCESS_TOKEN
 export const MAP_TILE_VENDOR = 'mapbox';
 
 // map tiles style name, see MAP_TILE_STYLES for more details
-export const MAP_TILE_STYLE = 'dark-v10';
+export const MAP_TILE_STYLE = 'light-v10';
 
 // access token. you can apply a new one, it's free.
 // maptiler: Gt5R0jT8tuIYxW6sNrAg | sign up at https://cloud.maptiler.com/auth/widget
@@ -212,10 +217,14 @@ export const MAP_TILE_STYLES = {
       'https://tiles.stadiamaps.com/styles/alidade_satellite.json?api_key=',
   },
   mapbox: {
+    'light-v10': 'mapbox://styles/mapbox/light-v10',
+    'light-v11': 'mapbox://styles/mapbox/light-v11',
+    'streets-v11': 'mapbox://styles/mapbox/streets-v11',
+    'outdoors-v11': 'mapbox://styles/mapbox/outdoors-v11',
     'dark-v10': 'mapbox://styles/mapbox/dark-v10',
     'dark-v11': 'mapbox://styles/mapbox/dark-v11',
     'navigation-night': 'mapbox://styles/mapbox/navigation-night-v1',
     'satellite-streets-v12': 'mapbox://styles/mapbox/satellite-streets-v12',
   },
-  default: 'mapbox://styles/mapbox/dark-v10',
+  default: 'mapbox://styles/mapbox/light-v10',
 };

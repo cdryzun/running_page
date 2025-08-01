@@ -29,10 +29,11 @@ const Index = () => {
   const { activities, thisYear } = useActivities();
   const [year, setYear] = useState(thisYear);
   const [runIndex, setRunIndex] = useState(-1);
+  const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [runs, setActivity] = useState(
     filterAndSortRuns(activities, year, filterYearRuns, sortDateFunc)
   );
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(`${thisYear} Year Activity Heatmap`);
   const [geoData, setGeoData] = useState(geoJsonForRuns(runs));
   // for auto zoom
   const bounds = getBoundsForGeoData(geoData);
@@ -52,8 +53,10 @@ const Index = () => {
       setYear(thisYear);
     }
     setActivity(filterAndSortRuns(activities, item, func, sortDateFunc));
+    // 重置选中状态
     setRunIndex(-1);
-    setTitle(`${item} ${name} Running Heatmap`);
+    setSelectedRunId(null);
+    setTitle(`${item} ${name} Activity Heatmap`);
   };
 
   const changeYear = (y: string) => {
@@ -89,8 +92,17 @@ const Index = () => {
       return;
     }
 
-    const lastRun = selectedRuns.sort(sortDateFunc)[0];
+    // If showing all runs (no specific selection), show year overview
+    if (!runIds.length) {
+      setGeoData(geoJsonForRuns(selectedRuns));
+      setTitle(`${year} Year Activity Heatmap`);
+      clearInterval(intervalId);
+      scrollToMap();
+      return;
+    }
 
+    // For specific run selection, show individual run details
+    const lastRun = selectedRuns.sort(sortDateFunc)[0];
     if (!lastRun) {
       return;
     }
@@ -99,6 +111,16 @@ const Index = () => {
     clearInterval(intervalId);
     scrollToMap();
   };
+
+  // Initialize with year overview on first load
+  useEffect(() => {
+    if (activities.length > 0 && year && year !== 'Total') {
+      const yearRuns = filterAndSortRuns(activities, year, filterYearRuns, sortDateFunc);
+      setActivity(yearRuns);
+      setGeoData(geoJsonForRuns(yearRuns));
+      setTitle(`${year} Year Activity Heatmap`);
+    }
+  }, [activities, year]);
 
   useEffect(() => {
     setViewState({
@@ -139,7 +161,7 @@ const Index = () => {
         // Use querySelector to get the <desc> element and the <title> element.
         const descEl = target.querySelector('desc');
         if (descEl) {
-          // If the runId exists in the <desc> element, it means that a running route has been clicked.
+          // If the runId exists in the <desc> element, it means that a cycling route has been clicked.
           const runId = Number(descEl.innerHTML);
           if (!runId) {
             return;
@@ -210,6 +232,8 @@ const Index = () => {
             setActivity={setActivity}
             runIndex={runIndex}
             setRunIndex={setRunIndex}
+            selectedRunId={selectedRunId}
+            setSelectedRunId={setSelectedRunId}
           />
         )}
       </div>

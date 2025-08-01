@@ -65,7 +65,7 @@ class Generator:
                 filters = {"before": datetime.datetime.now(datetime.timezone.utc)}
 
         for activity in self.client.get_activities(**filters):
-            if self.only_run and activity.type != "Run":
+            if self.only_run and activity.type not in ["Ride", "cycling", "VirtualRide", "Bike", "Run", "running", "Hiking", "hiking", "walking", "Walk"]:
                 continue
             if IGNORE_BEFORE_SAVING:
                 if activity.map and activity.map.summary_polyline:
@@ -74,7 +74,7 @@ class Generator:
                     )
             #  strava use total_elevation_gain as elevation_gain
             activity.elevation_gain = activity.total_elevation_gain
-            activity.subtype = activity.type
+            activity.subtype = None
             created = update_or_create_activity(self.session, activity)
             if created:
                 sys.stdout.write("+")
@@ -132,29 +132,38 @@ class Generator:
         # if sub_type is not in the db, just add an empty string to it
         query = self.session.query(Activity).filter(Activity.distance > 0.1)
         if self.only_run:
-            query = query.filter(Activity.type == "Run")
+            query = query.filter(Activity.type.in_(["Ride", "cycling", "VirtualRide", "Bike", "Run", "running", "Hiking", "hiking", "walking", "Walk"]))
 
         activities = query.order_by(Activity.start_date_local)
         activity_list = []
 
-        streak = 0
-        last_date = None
+        # First, collect all unique activity dates
+        activity_dates = set()
         for activity in activities:
-            # Determine running streak.
             date = datetime.datetime.strptime(
                 activity.start_date_local, "%Y-%m-%d %H:%M:%S"  # type: ignore
             ).date()
-            if last_date is None:
-                streak = 1
-            elif date == last_date:
-                pass
-            elif date == last_date + datetime.timedelta(days=1):
-                streak += 1
+            activity_dates.add(date)
+
+        # Sort dates to find the longest streak
+        sorted_dates = sorted(activity_dates)
+
+        # Calculate the longest streak
+        max_streak = 0
+        current_streak = 0
+        last_date = None
+
+        for date in sorted_dates:
+            if last_date is None or date == last_date + datetime.timedelta(days=1):
+                current_streak += 1
+                max_streak = max(max_streak, current_streak)
             else:
-                assert date > last_date
-                streak = 1
-            activity.streak = streak  # type: ignore
+                current_streak = 1
             last_date = date
+
+        # Assign the max streak to all activities
+        for activity in activities:
+            activity.streak = max_streak  # type: ignore
             if not IGNORE_BEFORE_SAVING:
                 activity.summary_polyline = filter_out(activity.summary_polyline)  # type: ignore
             activity_list.append(activity.to_dict())

@@ -1,93 +1,400 @@
 .activityList {
-  padding: 20px;
-  background-color: var(--color-background);
+  padding: 0;
+  background-color: transparent;
   color: var(--color-primary);
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .filterContainer {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: 20px;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 4rem;
   overflow: visible;
+  padding: 2rem 3rem;
+  background: linear-gradient(135deg,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(42, 42, 42, 0.8) 50%,
+    rgba(0, 0, 0, 0.9) 100%);
+  border: 1px solid var(--color-glow, #00ff88);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 30px rgba(0, 255, 136, 0.15),
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(0, 255, 136, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.filterContainer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 2px 2px, rgba(0, 255, 136, 0.06) 1px, transparent 0),
+    linear-gradient(45deg, transparent 48%, rgba(0, 255, 136, 0.02) 49%, rgba(0, 255, 136, 0.04) 50%, rgba(0, 255, 136, 0.02) 51%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, rgba(0, 212, 255, 0.02) 49%, rgba(0, 212, 255, 0.03) 50%, rgba(0, 212, 255, 0.02) 51%, transparent 52%);
+  background-size: 25px 25px, 50px 50px, 75px 75px;
+  animation: filterGrid 20s linear infinite, gridShimmer 4s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.filterContainer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(0, 255, 136, 0.1),
+    transparent);
+  animation: scan 3s infinite;
+  z-index: 1;
+}
+
+@keyframes scan {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
 }
 
 .filterContainer select {
   appearance: none;
-  width: 90px;
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid var(--color-run-table-thead);
-  background-color: var(--color-run-row-hover-background);
-  color: var(--color-run-table-thead);
+  min-width: 140px;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-glow, #00ff88);
+  background: linear-gradient(135deg,
+    var(--color-charcoal, #2a2a2a) 0%,
+    var(--color-bg, #0a0a0a) 100%);
+  color: var(--color-glow, #00ff88);
   cursor: pointer;
   text-align: center;
-  text-transform: capitalize;
+  text-transform: uppercase;
   box-sizing: border-box;
+  font-size: 0.9rem;
+  font-family: var(--font-display, 'Orbitron', sans-serif);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1.2;
+  position: relative;
+  z-index: 2;
+  backdrop-filter: blur(10px);
+}
+
+.filterContainer select:hover {
+  border-color: var(--color-glow, #00ff88);
+  box-shadow:
+    0 0 15px rgba(0, 255, 136, 0.3),
+    inset 0 0 15px rgba(0, 255, 136, 0.1);
+  transform: translateY(-2px);
+}
+
+.filterContainer select:focus {
+  outline: none;
+  border-color: var(--color-glow, #00ff88);
+  box-shadow:
+    0 0 20px rgba(0, 255, 136, 0.4),
+    inset 0 0 20px rgba(0, 255, 136, 0.1);
+  text-shadow: 0 0 10px var(--color-glow, #00ff88);
 }
 
 .summaryContainer {
   display: grid;
   justify-content: center;
-  grid-template-columns: repeat(auto-fit, minmax(280px, auto));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 2rem;
+  padding: 2rem 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .summaryContainer {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1rem 0.5rem;
+  }
 }
 
 .activityCard {
-  background-color: var(--color-run-row-hover-background);
-  border: 1px solid var(--color-activity-card);
-  border-radius: 8px;
-  padding: 16px;
-  width: 280px;
-  box-shadow: 0 4px 8px var(--color-run-row-hover-background);
-  transition: transform 0.2s;
+  background: linear-gradient(135deg,
+    var(--color-activity-card, #151515) 0%,
+    var(--color-charcoal, #2a2a2a) 50%,
+    var(--color-activity-card, #151515) 100%);
+  border: 1px solid var(--color-glow, #00ff88);
+  border-radius: 16px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  min-height: 320px;
+  box-shadow:
+    0 0 25px rgba(0, 255, 136, 0.12),
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(0, 255, 136, 0.15);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(15px);
+  margin: 0 auto;
+}
+
+.activityCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 2px 2px, rgba(0, 255, 136, 0.08) 1px, transparent 0),
+    linear-gradient(90deg, transparent 98%, rgba(0, 255, 136, 0.05) 100%),
+    linear-gradient(0deg, transparent 98%, rgba(0, 255, 136, 0.05) 100%);
+  background-size: 20px 20px, 40px 40px, 40px 40px;
+  animation: cardGrid 15s linear infinite, gridPulse 3s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.activityCard::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg,
+    transparent 30%,
+    rgba(0, 255, 136, 0.05) 50%,
+    transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.6s;
+  z-index: 1;
 }
 
 .activityCard:hover {
-  transform: translateY(-5px);
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 30px rgba(0, 255, 136, 0.2),
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(0, 255, 136, 0.2);
+  border-color: var(--color-glow, #00ff88);
+}
+
+.activityCard:hover::after {
+  transform: translateX(100%);
 }
 
 .activityName {
-  font-size: 1.5em;
-  margin-bottom: 10px;
-  color: var(--color-primary);
+  font-size: 1.4rem;
+  margin-bottom: 18px;
+  color: var(--color-glow, #00ff88);
+  font-family: var(--font-display, 'Orbitron', sans-serif);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 0 12px var(--color-glow, #00ff88);
+  position: relative;
+  z-index: 2;
+  line-height: 1.3;
+}
+
+.activityDetails {
+  position: relative;
+  z-index: 2;
 }
 
 .activityDetails p {
-  margin: 8px 0;
-  color: var(--color-run-table-thead);
+  margin: 14px 0;
+  color: var(--color-tx, #e8e8e8);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 1rem;
+  line-height: 1.7;
+  font-weight: 400;
 }
 
 .activityDetails strong {
-  color: var(--color-primary);
+  color: var(--color-glow, #00ff88);
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+  font-size: 1.05rem;
 }
 
 .chart {
-  height: 250px;
+  height: 280px;
   width: 100%;
-  background-color: var(--color-activity-card);
+  background: linear-gradient(135deg,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(42, 42, 42, 0.3) 100%);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 10px;
+  margin-top: 16px;
+  position: relative;
+  z-index: 2;
+  backdrop-filter: blur(5px);
+
+}
+
+.chart::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(0, 255, 136, 0.05) 1px, transparent 0),
+    linear-gradient(90deg, transparent 95%, rgba(0, 255, 136, 0.03) 96%, transparent 97%),
+    linear-gradient(0deg, transparent 95%, rgba(0, 212, 255, 0.02) 96%, transparent 97%);
+  background-size: 16px 16px, 32px 32px, 32px 32px;
+  border-radius: 8px;
+  animation: chartGrid 12s linear infinite, chartPulse 2s ease-in-out infinite alternate;
+  pointer-events: none;
 }
 
 .smallHomeButton {
-  width: 90px;
-  padding: 4px 12px;
-  background-color: var(--color-primary);
-  color: var(--color-background);
-  border: none;
-  border-radius: 5px;
+  width: auto;
+  min-width: 120px;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg,
+    var(--color-charcoal, #2a2a2a) 0%,
+    var(--color-bg, #0a0a0a) 50%,
+    var(--color-charcoal, #2a2a2a) 100%);
+  color: var(--color-glow, #00ff88);
+  border: 1px solid var(--color-glow, #00ff88);
+  border-radius: 12px;
   cursor: pointer;
-  margin-right: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: var(--font-display, 'Orbitron', sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  z-index: 2;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+}
+
+.smallHomeButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.2), transparent);
+  transition: left 0.5s;
 }
 
 .smallHomeButton:hover {
-  background-color: var(--color-secondary);
+  box-shadow:
+    0 0 20px rgba(0, 255, 136, 0.3),
+    inset 0 0 20px rgba(0, 255, 136, 0.1);
+  transform: translateY(-2px);
+}
+
+.smallHomeButton:hover::before {
+  left: 100%;
+}
+
+.smallHomeButton:active {
+  transform: translateY(0);
 }
 
 .lifeContainer {
   display: flex;
   justify-content: center;
+  align-items: center;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(42, 42, 42, 0.6) 50%,
+    rgba(0, 0, 0, 0.8) 100%);
+  border: 1px solid var(--color-glow, #00ff88);
+  border-radius: 20px;
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 30px rgba(0, 255, 136, 0.15),
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(0, 255, 136, 0.2);
+  margin: 2rem auto;
+  max-width: 1200px;
+  position: relative;
+  overflow: hidden;
+}
+
+.lifeContainer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 3px 3px, rgba(0, 255, 136, 0.05) 2px, transparent 0);
+  background-size: 30px 30px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.lifeContainer > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Dynamic Grid Animations */
+@keyframes cardGrid {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(20px, 20px); }
+}
+
+@keyframes gridPulse {
+  0% { opacity: 0.3; }
+  100% { opacity: 0.7; }
+}
+
+/* Enhanced Scan Animation for Filter Container */
+@keyframes scan {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+@keyframes filterGrid {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(10px, 5px) rotate(0.5deg); }
+  50% { transform: translate(5px, 10px) rotate(0deg); }
+  75% { transform: translate(-5px, 5px) rotate(-0.5deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes gridShimmer {
+  0% { opacity: 0.4; }
+  100% { opacity: 0.8; }
+}
+
+@keyframes chartGrid {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(16px, 16px); }
+}
+
+@keyframes chartPulse {
+  0% { opacity: 0.5; }
+  100% { opacity: 0.9; }
 }

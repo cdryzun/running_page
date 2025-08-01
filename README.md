@@ -29,7 +29,7 @@
 </p>
 
 <h3 align="center">
-  <a href="https://yihong.run"> Create a personal running home page </a>
+  <a href="https://yihong.run"> Create a personal cycling home page </a>
 </h3>
 
 <p align="center">
@@ -43,7 +43,7 @@
 
 English | [简体中文](https://github.com/yihong0618/running_page/blob/master/README-CN.md) | [Wiki](https://mfydev.github.io/Running-Page-Wiki/)
 
-## [Runner's Page Show](https://github.com/yihong0618/running_page/issues/12)
+## [Cyclist's Page Show](https://github.com/yihong0618/running_page/issues/12)
 
 <details>
 <summary>Running page runners</summary>
@@ -134,11 +134,11 @@ English | [简体中文](https://github.com/yihong0618/running_page/blob/master/
 
 ## Features
 
-1. GitHub Actions automatically synchronizes running data and generates page displays
+1. GitHub Actions automatically synchronizes cycling data and generates page displays
 2. Support for Vercel (recommended) and GitHub Pages automated deployment
 3. React Hooks
 4. Mapbox for map display
-5. Supports most sports apps such as nike strava...
+5. Supports most sports apps such as strava, garmin, keep...
 
 > automatically backup gpx data for easy backup and uploading to other software.
 >

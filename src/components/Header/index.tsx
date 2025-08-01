@@ -10,7 +10,14 @@ const Header = () => {
         <div className="w-1/4">
           <Link to={siteUrl}>
             <picture>
-              <img className="h-16 w-16 rounded-full" alt="logo" src={logo} />
+              <img
+                className="h-16 w-16 rounded-full glow-border pulse-glow"
+                alt="logo"
+                src={logo}
+                style={{
+                  filter: 'drop-shadow(0 0 10px var(--color-glow, #00ff88))'
+                }}
+              />
             </picture>
           </Link>
         </div>
@@ -19,7 +26,12 @@ const Header = () => {
             <a
               key={i}
               href={n.url}
-              className="mr-3 text-lg lg:mr-4 lg:text-base"
+              className="cyber-button mr-3 text-lg lg:mr-4 lg:text-base inline-block"
+              style={{
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem',
+                textDecoration: 'none'
+              }}
             >
               {n.name}
             </a>
