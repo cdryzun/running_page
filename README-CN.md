@@ -159,7 +159,6 @@ R.I.P. 希望大家都能健康顺利的跑过终点，逝者安息。
 - **[Garmin-cn](#garmin-cn-大陆用户使用)**
 - **[Keep](#keep)**
 - **[悦跑圈](#joyrun悦跑圈)** ：限制单个设备，无法自动化
-- **[咕咚](#codoon咕咚)** ：限制单个设备，无法自动化
 - **[郁金香运动](#tulipsport)**
 - **[GPX](#gpx)**
 - **[TCX](#tcx)**
@@ -241,20 +240,20 @@ const MAPBOX_TOKEN =
 ```typescript
 const MAP_TILE_VENDOR = 'maptiler';
 const MAP_TILE_STYLE = 'winter-dark';
-const MAP_TILE_ACCESS_TOKEN = '你的access token';
+const MAP_TILE_ACCESS_TOKEN = '你的 access token';
 ```
 
-目前，支持的MAP_TILE_VENDOR选项包括：
+目前，支持的 MAP_TILE_VENDOR 选项包括：
 
 - **"mapbox"** - Mapbox 地图服务
 
-- **"maptiler"** - MapTiler地图服务
+- **"maptiler"** - MapTiler 地图服务
 
-- **"stadiamaps"** - Stadia Maps地图服务
+- **"stadiamaps"** - Stadia Maps 地图服务
 
 每个`MAP_TILE_VERNDOR`都提供了多种`MAP_TILE_STYLE`选择，配置时需保证匹配。具体的`MAP_TILE_STYLE`名称，可参考`src/utils/const.ts`文件中的定义。
 
-当使用 **"maptiler"** 或是 **"stadiamaps"** 时，需配置`MAP_TILE_ACCESS_TOKEN`。默认的token在不更改的情况下，使用时会发生配额超限的问题。
+当使用 **"maptiler"** 或是 **"stadiamaps"** 时，需配置`MAP_TILE_ACCESS_TOKEN`。默认的 token 在不更改的情况下，使用时会发生配额超限的问题。
 
 - **MapTiler**: 在 https://cloud.maptiler.com/auth/widget 注册获取（免费）
 
@@ -486,73 +485,6 @@ python run_page/joyrun_sync.py 1393xx30xxxx 97e5fe4997d20f9b1007xxxxx --from-uid
 
 ```bash
 python run_page/joyrun_sync.py 13333xxxx xxxx --athlete yihong0618 --min_grid_distance 5
-```
-
-</details>
-
-### Codoon（咕咚）
-
-> 因悦跑圈限制单个设备，无法自动化。
-
-<details>
-<summary>获取您的咕咚数据</summary>
-
-<br>
-
-```bash
-python run_page/codoon_sync.py ${your mobile or email} ${your password}
-```
-
-示例：
-
-```bash
-python run_page/codoon_sync.py 13333xxxx xxxx
-```
-
-Codoon 导出 gpx
-
-> 导出的 gpx 在 GPX_OUT 目录，方便上传到其它软件
-
-```bash
-python run_page/codoon_sync.py ${your mobile or email} ${your password} --with-gpx
-```
-
-示例：
-
-```bash
-python run_page/codoon_sync.py 13333xxxx xxxx --with-gpx
-```
-
-> 因为登录 token 有过期时间限制，我增加了 refresh_token&user_id 登陆的方式，refresh_token 及 user_id 在您登陆过程中会在控制台打印出来
-
-![image](https://user-images.githubusercontent.com/6956444/105690972-9efaab00-5f37-11eb-905c-65a198ad2300.png)
-
-示例：
-
-```bash
-python run_page/codoon_sync.py 54bxxxxxxx fefxxxxx-xxxx-xxxx --from-auth-token
-```
-
-</details>
-
-<details>
-<summary>路线偏移修正</summary>
-
-<br>
-
-如果您得到的运动路线与实际路线对比有整体偏移，可以修改代码中的参数进行修正
-
-> 咕咚最初采用 GCJ-02 坐标系，在 2014 年 3 月份左右升级为 WGS-84 坐标系，导致升级之前的运动数据在使用 WGS-84 坐标系的平台（Mapbox、佳明等）中显示轨迹整体偏移
-
-- 修改 `run_page/codoon_sync.py` 文件中的参数：
-
-> TRANS_END_DATE 需要根据您的实际情况设定，程序会修正这一天之前的运动记录
-
-```python
-# If your points need trans from gcj02 to wgs84 coordinate which use by Mapbox
-TRANS_GCJ02_TO_WGS84 = True
-# trans the coordinate data until the TRANS_END_DATE, work with TRANS_GCJ02_TO_WGS84 = True
-TRANS_END_DATE = "2014-03-24"
 ```
 
 </details>
@@ -976,7 +908,7 @@ python run_page/nike_to_strava_sync.py eyJhbGciThiMTItNGIw******  xxx xxx xxx
 
 <br>
 
-1. 完成 garmin 和 strava 的步骤，同时，还需要在 GitHub Actions secret 那新增 Strava 配置：`secrets.STRAVA_EMAIL`、`secrets.STRAVA_PASSWORD`, `secrets.STRAVA_JWT`, 注意: `STRAVA_JWT` 优先级比 `STRAVA_EMAIL` 和 `STRAVA_PASSWORD` 高， `STRAVA_JWT` 为Strava 网页端登录后 Cookie 的`strava_remember_token`字段
+1. 完成 garmin 和 strava 的步骤，同时，还需要在 GitHub Actions secret 那新增 Strava 配置：`secrets.STRAVA_EMAIL`、`secrets.STRAVA_PASSWORD`, `secrets.STRAVA_JWT`, 注意：`STRAVA_JWT` 优先级比 `STRAVA_EMAIL` 和 `STRAVA_PASSWORD` 高， `STRAVA_JWT` 为 Strava 网页端登录后 Cookie 的`strava_remember_token`字段
 
 2. 在项目根目录下执行：
 
@@ -1070,10 +1002,70 @@ python run_page/keep_to_strava_sync.py ${your mobile} ${your password} ${client_
 - 生成数据展示 SVG
 - 展示效果：[点击查看](https://raw.githubusercontent.com/yihong0618/running_page/master/assets/github.svg)、[点击查看](https://raw.githubusercontent.com/yihong0618/running_page/28fa801e4e30f30af5ae3dc906bf085daa137936/assets/grid.svg)
 
+```bash
+
+python run_page/gen_svg.py -h
+
+usage: gen_svg.py [-h] [--gpx-dir DIR] [--output FILE] [--language LANGUAGE] [--year YEAR] [--title TITLE] [--athlete NAME] [--special FILE] [--type TYPE]
+                  [--background-color COLOR] [--track-color COLOR] [--track-color2 COLOR] [--text-color COLOR] [--special-color COLOR] [--special-color2 COLOR] [--units UNITS]
+                  [--verbose] [--logfile FILE] [--special-distance DISTANCE] [--special-distance2 DISTANCE] [--min-distance DISTANCE] [--use-localtime] [--from-db]
+                  [--github-style GITHUB_STYLE] [--circular-rings] [--circular-ring-color COLOR] [--empty-data-color COLOR] [--birth YYYY-MM]
+
+options:
+  -h, --help            show this help message and exit
+  --gpx-dir DIR         Directory containing GPX files (default: current directory).
+  --output FILE         Name of generated SVG image file (default: "poster.svg").
+  --language LANGUAGE   Language (default: english).
+  --year YEAR           Filter tracks by year; "NUM", "NUM-NUM", "all" (default: all years)
+  --title TITLE         Title to display.
+  --athlete NAME        Athlete name to display (default: "John Doe").
+  --special FILE        Mark track file from the GPX directory as special; use multiple times to mark multiple tracks.
+  --type TYPE           Type of poster to create (default: "grid", available: "grid", "circular", "github", "monthoflife").
+  --background-color COLOR
+                        Background color of poster (default: "#222222").
+  --track-color COLOR   Color of tracks (default: "#4DD2FF").
+  --track-color2 COLOR  Secondary color of tracks (default: none).
+  --text-color COLOR    Color of text (default: "#FFFFFF").
+  --special-color COLOR
+                        Special track color (default: "#FFFF00").
+  --special-color2 COLOR
+                        Secondary color of special tracks (default: none).
+  --units UNITS         Distance units; "metric", "imperial" (default: "metric").
+  --verbose             Verbose logging.
+  --logfile FILE
+  --special-distance DISTANCE
+                        Special Distance1 by km and color with the special_color
+  --special-distance2 DISTANCE
+                        Special Distance2 by km and corlor with the special_color2
+  --min-distance DISTANCE
+                        min distance by km for track filter
+  --use-localtime       Use utc time or local time
+  --from-db             activities db file
+  --github-style GITHUB_STYLE
+                        github svg style; "align-firstday", "align-monday" (default: "align-firstday").
+  --birth YYYY-MM       Birth date in format YYYY-MM
+
+Circular Type Options:
+  --circular-rings      Draw distance rings.
+  --circular-ring-color COLOR
+                        Color of distance rings.
+
+Github Type Options:
+  --empty-data-color COLOR
+                        Color for empty dates in github style poster (default: #444444)
+
+```
+
 > 感兴趣的同学可以改下方参数 (--special-distance 10 --special-distance2 20, 10km~20km 展示为 special-color1 20km 以上展示为 special-color2, --min-distance 10.0 用来筛选 10km 以上的)
 
 ```bash
 python run_page/gen_svg.py --from-db --title "${{ env.TITLE }}" --type github --athlete "${{ env.ATHLETE }}" --special-distance 10 --special-distance2 20 --special-color yellow --special-color2 red --output assets/github.svg --use-localtime --min-distance 0.5
+```
+
+如果你想要更改 github svg 中空数据的背景颜色，请使用 `--empty-data-color`:
+
+```bash
+python run_page/gen_svg.py --from-db --title "${{ env.TITLE }}" --type github --athlete "${{ env.ATHLETE }}" --special-distance 10 --special-distance2 20 --special-color yellow --special-color2 red --output assets/github.svg --use-localtime --min-distance 0.5 ----empty-data-color grey
 ```
 
 ```bash
@@ -1174,7 +1166,6 @@ python3 run_page/auto_share_sync.py --api_key xxxxxxxxx --base_url xxxxxxxx --da
 4. 为 GitHub Actions 添加代码提交权限，访问仓库的 `Settings > Actions > General`页面，找到 `Workflow permissions` 的设置项，将选项配置为 `Read and write permissions`，支持 CI 将运动数据更新后提交到仓库中。
 
 5. 如果想把你的 running_page 部署在 xxx.github.io 而不是 xxx.github.io/run_page 亦或是想要添加自定义域名于 GitHub Pages，需要做三点
-
    - 修改你的 fork 的 running_page 仓库改名为 xxx.github.io, xxx 是你 github 的 username
    - 修改 gh-pages.yml 中的 Build 模块，删除 `${{ github.event.repository.name }}` 改为`run: PATH_PREFIX=/ pnpm build` 即可
    - 修改 src/static/site-metadata.ts 中 `siteUrl: ''` 或是添加你的自定义域名，`siteUrl: '[your_own_domain]'`，即可
