@@ -15,10 +15,10 @@ const getBasePath = () => {
 };
 
 const data: ISiteMetadataResult = {
-  siteTitle: 'Running Page',
+    siteTitle: 'Cycling Page',
   siteUrl: 'https://zaynrun.vercel.app',
   logo: 'https://avatars.githubusercontent.com/u/45552084?s=48&v=4',
-  description: 'Personal site and blog',
+  description: 'Personal cycling data and blog',
   navLinks: [
     {
       name: 'Summary',

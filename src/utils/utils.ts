@@ -47,6 +47,62 @@ export interface Activity {
   streak: number;
 }
 
+// 智能识别运动类型，根据活动名称纠正可能错误的类型标记
+const getCorrectActivityType = (activity: Activity): string => {
+  const name = activity.name.toLowerCase();
+
+  // 如果名称包含明确的运动类型关键词，优先使用名称判断
+  if (name.includes('骑行') || name.includes('cycling') || name.includes('bike')) {
+    return 'Ride';
+  }
+  if (name.includes('跑步') || name.includes('running') || name.includes('run')) {
+    return 'Run';
+  }
+  if (name.includes('徒步') || name.includes('hiking') || name.includes('hike')) {
+    return 'hiking';
+  }
+  if (name.includes('步行') || name.includes('walking') || name.includes('walk')) {
+    return 'Walk';
+  }
+  if (name.includes('游泳') || name.includes('swimming') || name.includes('swim')) {
+    return 'swimming';
+  }
+
+  // 如果名称没有明确指示，使用原始类型
+  return activity.type;
+};
+
+// 将运动类型转换为英文显示
+const getEnglishActivityType = (activity: Activity): string => {
+  const correctedType = getCorrectActivityType(activity);
+
+  // 标准化运动类型映射
+  const typeMapping: { [key: string]: string } = {
+    'Run': 'RUNNING',
+    'running': 'RUNNING',
+    'Ride': 'CYCLING',
+    'cycling': 'CYCLING',
+    'Walk': 'WALKING',
+    'walking': 'WALKING',
+    'hiking': 'HIKING',
+    'Hiking': 'HIKING',
+    'swimming': 'SWIMMING',
+    'Swimming': 'SWIMMING',
+    'skiing': 'SKIING',
+    'Skiing': 'SKIING',
+    'VirtualRun': 'TREADMILL',
+    'treadmill': 'TREADMILL'
+  };
+
+  // 检查子类型
+  if (correctedType === 'Run' && activity.subtype) {
+    if (activity.subtype === 'trail') return 'TRAIL RUN';
+    if (activity.subtype === 'treadmill') return 'TREADMILL';
+  }
+
+  return typeMapping[correctedType] || correctedType.toUpperCase();
+};
+
 const titleForShow = (run: Activity): string => {
   const date = run.start_date_local.slice(0, 11);
   const distance = (run.distance / 1000.0).toFixed(2);
@@ -62,8 +118,16 @@ const titleForShow = (run: Activity): string => {
   }`;
 };
 
-const formatPace = (d: number): string => {
-  if (Number.isNaN(d)) return '0';
+const formatPace = (d: number, sportType: string = 'Run'): string => {
+  if (Number.isNaN(d) || d === 0) return '0';
+  
+  // For cycling, show speed in km/h instead of pace
+  if (['Ride', 'cycling', 'VirtualRide', 'Bike'].includes(sportType)) {
+    const speed = d * 3.6; // convert m/s to km/h
+    return `${speed.toFixed(1)} km/h`;
+  }
+  
+  // For running, hiking, walking - show pace in min/km
   const pace = (1000.0 / 60.0) * (1.0 / d);
   const minutes = Math.floor(pace);
   const seconds = Math.floor((pace - minutes) * 60.0);
@@ -232,7 +296,8 @@ const pathForRun = (run: Activity): Coordinate[] => {
 };
 
 const colorForRun = (run: Activity): string => {
-  switch (run.type) {
+  const correctedType = getCorrectActivityType(run);
+  switch (correctedType) {
     case 'Run': {
       if (run.subtype === 'trail') {
         return RUN_TRAIL_COLOR;
@@ -241,16 +306,18 @@ const colorForRun = (run: Activity): string => {
       }
       return RUN_COLOR;
     }
+    case 'Ride':
     case 'cycling':
       return CYCLING_COLOR;
     case 'hiking':
       return HIKING_COLOR;
     case 'walking':
+    case 'Walk':
       return WALKING_COLOR;
     case 'swimming':
       return SWIMMING_COLOR;
     default:
-      return MAIN_COLOR;
+      return RUN_COLOR; // 默认使用跑步颜色而不是骑行颜色
   }
 };
 
@@ -281,7 +348,8 @@ const geoJsonForMap = (): FeatureCollection<RPGeometry> => ({
 });
 
 const getActivitySport = (act: Activity): string => {
-  if (act.type === 'Run') {
+  const correctedType = getCorrectActivityType(act);
+  if (correctedType === 'Run') {
     if (act.subtype === 'generic') {
       const runDistance = act.distance / 1000;
       if (runDistance > 20 && runDistance < 40) {
@@ -294,55 +362,23 @@ const getActivitySport = (act: Activity): string => {
     else if (act.subtype === 'treadmill')
       return ACTIVITY_TYPES.RUN_TREADMILL_TITLE;
     else return ACTIVITY_TYPES.RUN_GENERIC_TITLE;
-  } else if (act.type === 'hiking') {
-    return ACTIVITY_TYPES.HIKING_TITLE;
-  } else if (act.type === 'cycling') {
+  } else if (correctedType === 'Ride' || correctedType === 'cycling') {
     return ACTIVITY_TYPES.CYCLING_TITLE;
-  } else if (act.type === 'walking') {
+  } else if (correctedType === 'hiking') {
+    return ACTIVITY_TYPES.HIKING_TITLE;
+  } else if (correctedType === 'walking' || correctedType === 'Walk') {
     return ACTIVITY_TYPES.WALKING_TITLE;
   }
-  // if act.type contains 'skiing'
-  else if (act.type.includes('skiing')) {
+  // if correctedType contains 'skiing'
+  else if (correctedType.includes('skiing')) {
     return ACTIVITY_TYPES.SKIING_TITLE;
   }
   return '';
 };
 
 const titleForRun = (run: Activity): string => {
-  if (RICH_TITLE) {
-    // 1. try to use user defined name
-    if (run.name != '') {
-      return run.name;
-    }
-    // 2. try to use location+type if the location is available, eg. 'Shanghai Run'
-    const { city } = locationForRun(run);
-    const activity_sport = getActivitySport(run);
-    if (city && city.length > 0 && activity_sport.length > 0) {
-      return `${city} ${activity_sport}`;
-    }
-  }
-  // 3. use time+length if location or type is not available
-  const runDistance = run.distance / 1000;
-  const runHour = +run.start_date_local.slice(11, 13);
-  if (runDistance > 20 && runDistance < 40) {
-    return RUN_TITLES.HALF_MARATHON_RUN_TITLE;
-  }
-  if (runDistance >= 40) {
-    return RUN_TITLES.FULL_MARATHON_RUN_TITLE;
-  }
-  if (runHour >= 0 && runHour <= 10) {
-    return RUN_TITLES.MORNING_RUN_TITLE;
-  }
-  if (runHour > 10 && runHour <= 14) {
-    return RUN_TITLES.MIDDAY_RUN_TITLE;
-  }
-  if (runHour > 14 && runHour <= 18) {
-    return RUN_TITLES.AFTERNOON_RUN_TITLE;
-  }
-  if (runHour > 18 && runHour <= 21) {
-    return RUN_TITLES.EVENING_RUN_TITLE;
-  }
-  return RUN_TITLES.NIGHT_RUN_TITLE;
+  // 直接使用英文运动类型显示
+  return getEnglishActivityType(run);
 };
 
 export interface IViewState {

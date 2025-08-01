@@ -35,10 +35,36 @@ interface Activity {
   distance: number;
   moving_time: string;
   type: string;
+  name: string;
   location_country?: string;
   elevation_gain?: number; // Optional if elevation gain is not used
   average_heartrate?: number; // Add heart rate support
 }
+
+// 智能识别运动类型，根据活动名称纠正可能错误的类型标记
+const getCorrectActivityType = (activity: Activity): string => {
+  const name = activity.name.toLowerCase();
+
+  // 如果名称包含明确的运动类型关键词，优先使用名称判断
+  if (name.includes('骑行') || name.includes('cycling') || name.includes('bike')) {
+    return 'Ride';
+  }
+  if (name.includes('跑步') || name.includes('running') || name.includes('run')) {
+    return 'Run';
+  }
+  if (name.includes('徒步') || name.includes('hiking') || name.includes('hike')) {
+    return 'hiking';
+  }
+  if (name.includes('步行') || name.includes('walking') || name.includes('walk')) {
+    return 'Walk';
+  }
+  if (name.includes('游泳') || name.includes('swimming') || name.includes('swim')) {
+    return 'swimming';
+  }
+
+  // 如果名称没有明确指示，使用原始类型
+  return activity.type;
+};
 
 interface ActivitySummary {
   totalDistance: number;
@@ -75,6 +101,7 @@ interface ActivityCardProps {
   summary: DisplaySummary;
   dailyDistances: number[];
   interval: string;
+  sportType: string;
 }
 
 interface ActivityGroups {
@@ -88,6 +115,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   summary,
   dailyDistances,
   interval,
+  sportType,
 }) => {
   const generateLabels = (): number[] => {
     if (interval === 'month') {
@@ -114,13 +142,20 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     return `${h}h ${m}m ${s}s`;
   };
 
-  const formatPace = (speed: number): string => {
-    if (speed === 0) return '0:00 min/km';
-    const pace = 60 / speed; // min/km
-    const totalSeconds = Math.round(pace * 60); // Total seconds per km
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds} min/km`;
+  const formatPace = (speed: number, sportType: string = 'running'): string => {
+    if (speed === 0) return sportType === 'cycling' ? '0.0 km/h' : '0:00 min/km';
+    
+    if (sportType === 'cycling') {
+      // For cycling, speed is already in km/h
+      return `${speed.toFixed(1)} km/h`;
+    } else {
+      // For running, hiking, walking - convert to min/km pace
+      const pace = 60 / speed; // min/km
+      const totalSeconds = Math.round(pace * 60); // Total seconds per km
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}:${seconds < 10 ? '0' : ''}${seconds} min/km`;
+    }
   };
 
   // Calculate Y-axis maximum value and ticks
@@ -148,7 +183,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         )}
         <p>
           <strong>{ACTIVITY_TOTAL.AVERAGE_SPEED_TITLE}:</strong>{' '}
-          {formatPace(summary.averageSpeed)}
+          {formatPace(summary.averageSpeed, sportType)}
         </p>
         <p>
           <strong>{ACTIVITY_TOTAL.TOTAL_TIME_TITLE}:</strong>{' '}
@@ -172,7 +207,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             </p>
             <p>
               <strong>{ACTIVITY_TOTAL.MAX_SPEED_TITLE}:</strong>{' '}
-              {formatPace(summary.maxSpeed)}
+              {formatPace(summary.maxSpeed, sportType)}
             </p>
           </>
         )}
@@ -227,19 +262,17 @@ const ActivityList: React.FC = () => {
   const [sportTypeOptions, setSportTypeOptions] = useState<string[]>([]);
 
   useEffect(() => {
-    const sportTypeSet = new Set(activities.map((activity) => activity.type));
-    if (sportTypeSet.has('Run')) {
-      sportTypeSet.delete('Run');
-      sportTypeSet.add('running');
-    }
-    if (sportTypeSet.has('Walk')) {
-      sportTypeSet.delete('Walk');
-      sportTypeSet.add('walking');
-    }
-    if (sportTypeSet.has('Ride')) {
-      sportTypeSet.delete('Ride');
-      sportTypeSet.add('cycling');
-    }
+    const sportTypeSet = new Set(activities.map((activity) => {
+      const correctedType = getCorrectActivityType(activity as Activity);
+      // 将纠正后的类型映射为标准化的类型名称
+      if (correctedType === 'Run') return 'running';
+      if (correctedType === 'Ride') return 'cycling';
+      if (correctedType === 'Walk') return 'walking';
+      if (correctedType === 'hiking') return 'hiking';
+      if (correctedType === 'swimming') return 'swimming';
+      return correctedType.toLowerCase();
+    }));
+
     const uniqueSportTypes = [...sportTypeSet];
     uniqueSportTypes.unshift('all');
     setSportTypeOptions(uniqueSportTypes);
@@ -265,16 +298,23 @@ const ActivityList: React.FC = () => {
         if (sportType === 'all') {
           return true;
         }
+        const correctedType = getCorrectActivityType(activity);
         if (sportType === 'running') {
-          return activity.type === 'running' || activity.type === 'Run';
+          return correctedType === 'Run';
         }
         if (sportType === 'walking') {
-          return activity.type === 'walking' || activity.type === 'Walk';
+          return correctedType === 'Walk';
         }
         if (sportType === 'cycling') {
-          return activity.type === 'cycling' || activity.type === 'Ride';
+          return correctedType === 'Ride';
         }
-        return activity.type === sportType;
+        if (sportType === 'hiking') {
+          return correctedType === 'hiking';
+        }
+        if (sportType === 'swimming') {
+          return correctedType === 'swimming';
+        }
+        return correctedType.toLowerCase() === sportType;
       })
       .reduce((acc: ActivityGroups, activity) => {
         const date = new Date(activity.start_date_local);
@@ -375,11 +415,37 @@ const ActivityList: React.FC = () => {
           onChange={(e) => setSportType(e.target.value)}
           value={sportType}
         >
-          {sportTypeOptions.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
+          {sportTypeOptions.map((type) => {
+            let displayName = type;
+            switch (type) {
+              case 'all':
+                displayName = '所有';
+                break;
+              case 'running':
+                displayName = '跑步';
+                break;
+              case 'cycling':
+                displayName = '骑行';
+                break;
+              case 'walking':
+                displayName = '步行';
+                break;
+              case 'hiking':
+                displayName = '徒步';
+                break;
+              case 'swimming':
+                displayName = '游泳';
+                break;
+              case 'skiing':
+                displayName = '滑雪';
+                break;
+            }
+            return (
+              <option key={type} value={type}>
+                {displayName}
+              </option>
+            );
+          })}
         </select>
         <select
           onChange={(e) => toggleInterval(e.target.value as IntervalType)}
@@ -447,6 +513,7 @@ const ActivityList: React.FC = () => {
                 }}
                 dailyDistances={summary.dailyDistances}
                 interval={interval}
+                sportType={sportType}
               />
             ))}
         </div>
