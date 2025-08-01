@@ -43,7 +43,18 @@ const useActivities = () => {
   });
 
   let yearsArray = [...years].sort().reverse();
-  if (years) [thisYear] = yearsArray; // set current year as first one of years array
+
+  // Find the most recent year with activities (not necessarily current calendar year)
+  if (yearsArray.length > 0) {
+    // Get the most recent activity date
+    const mostRecentActivity = activities.reduce((latest, current) => {
+      const currentDate = new Date(current.start_date_local.replace(' ', 'T'));
+      const latestDate = new Date(latest.start_date_local.replace(' ', 'T'));
+      return currentDate > latestDate ? current : latest;
+    });
+
+    thisYear = mostRecentActivity.start_date_local.slice(0, 4);
+  }
 
   return {
     activities,

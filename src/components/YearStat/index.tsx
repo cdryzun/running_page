@@ -53,7 +53,7 @@ const YearStat = ({
   });
   sumDistance = parseFloat((sumDistance / 1000.0).toFixed(1));
   const sumElevationGainStr = sumElevationGain.toFixed(0);
-  const avgPace = formatPace(totalMetersAvail / totalSecondsAvail);
+  const avgPace = formatPace(totalMetersAvail / totalSecondsAvail, runs.length > 0 ? runs[0].type : 'Run');
   const hasHeartRate = !(heartRate === 0);
   const avgHeartRate = (heartRate / (runs.length - heartRateNullCount)).toFixed(
     0
