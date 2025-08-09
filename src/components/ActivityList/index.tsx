@@ -252,9 +252,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           </div>
         )}
           </div>
-        )}
       </div>
-    </div>
   );
 };
 
