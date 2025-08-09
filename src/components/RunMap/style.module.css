@@ -18,6 +18,13 @@
   flex-wrap: wrap;
 }
 
+@media only screen and (max-width: 768px) {
+  .buttons {
+    padding-right: 10px;
+    flex-wrap: wrap;
+  }
+}
+
 .button {
   display: inline-block;
   position: relative;
@@ -48,6 +55,13 @@
     0 0 15px rgba(0, 255, 136, 0.3),
     inset 0 0 15px rgba(0, 255, 136, 0.1);
   transform: translateY(-2px);
+}
+
+@media only screen and (max-width: 768px) {
+  .button {
+    padding: 0.8rem 0.3rem;
+    font-size: 0.9rem;
+  }
 }
 
 .selected {
@@ -111,6 +125,15 @@
   box-shadow:
     0 0 30px rgba(0, 255, 136, 0.5),
     inset 0 0 30px rgba(0, 255, 136, 0.15);
+}
+
+@media only screen and (max-width: 768px) {
+  .runTitle {
+    width: calc(100% - 40px);
+    left: 20px;
+    font-size: 0.8rem;
+    bottom: 5px;
+  }
 }
 
 .lights {
