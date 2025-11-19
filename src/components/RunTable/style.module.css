@@ -1,22 +1,40 @@
 /* Futuristic Activity Type Badge Animations */
 @keyframes shimmer {
-  0% { left: -100%; }
-  100% { left: 100%; }
+  0% {
+    left: -100%;
+  }
+
+  100% {
+    left: 100%;
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 10px rgba(0, 255, 136, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
+
   50% {
     box-shadow: 0 0 20px rgba(0, 255, 136, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
 }
 
 @keyframes data-flow {
-  0% { transform: translateX(0); opacity: 0.3; }
-  50% { opacity: 1; }
-  100% { transform: translateX(10px); opacity: 0.3; }
+  0% {
+    transform: translateX(0);
+    opacity: 0.3;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(10px);
+    opacity: 0.3;
+  }
 }
 
 /* Activity Type Badge Hover Effects */
@@ -50,7 +68,6 @@
 .pace-value:hover,
 .heartrate-value:hover,
 .time-value:hover {
-  transform: scale(1.05);
   filter: brightness(1.2);
 }
 
@@ -86,6 +103,7 @@
 
 /* Enhanced Responsive Design */
 @media only screen and (max-width: 800px) {
+
   /* 当屏幕宽度小于 800px 时 */
   .runTable th:nth-child(3),
   .runTable td:nth-child(3) {
@@ -239,11 +257,10 @@
 
 .runRow:hover {
   background: linear-gradient(135deg,
-    rgba(0, 255, 136, 0.05) 0%,
-    rgba(0, 255, 136, 0.02) 50%,
-    rgba(0, 255, 136, 0.05) 100%);
+      rgba(0, 255, 136, 0.05) 0%,
+      rgba(0, 255, 136, 0.02) 50%,
+      rgba(0, 255, 136, 0.05) 100%);
   border-bottom-color: rgba(0, 255, 136, 0.3);
-  transform: translateY(-1px);
   box-shadow:
     0 4px 20px rgba(0, 255, 136, 0.1),
     inset 0 1px 0 rgba(0, 255, 136, 0.1);
@@ -253,6 +270,7 @@
   text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
 }
 
+/* Commented out to prevent layout shift on hover
 .runRow:hover::before {
   content: '';
   position: absolute;
@@ -266,6 +284,7 @@
     transparent 100%);
   box-shadow: 0 0 10px var(--color-glow, #00ff88);
 }
+*/
 
 .runRow:last-child {
   border-bottom: none;
@@ -273,9 +292,9 @@
 
 .selected {
   background: linear-gradient(135deg,
-    rgba(0, 255, 136, 0.15) 0%,
-    rgba(0, 255, 136, 0.08) 50%,
-    rgba(0, 255, 136, 0.15) 100%) !important;
+      rgba(0, 255, 136, 0.15) 0%,
+      rgba(0, 255, 136, 0.08) 50%,
+      rgba(0, 255, 136, 0.15) 100%) !important;
   border-bottom-color: var(--color-glow, #00ff88) !important;
   color: var(--color-glow, #00ff88);
   box-shadow:
@@ -289,6 +308,7 @@
   font-weight: 600;
 }
 
+/* Commented out to prevent layout shift on click/selection
 .selected::before {
   content: '';
   position: absolute;
@@ -301,6 +321,7 @@
     0 0 15px var(--color-glow, #00ff88),
     0 0 30px var(--color-glow, #00ff88);
 }
+*/
 
 .selected::after {
   content: '';

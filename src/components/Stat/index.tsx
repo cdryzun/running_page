@@ -16,7 +16,7 @@ const Stat = ({
   onClick,
 }: IStatProperties) => (
   <div
-    className={`${className} cursor-pointer transition-all duration-300 hover:scale-105`}
+    className={`${className} cursor-pointer transition-all duration-300`}
     onClick={onClick}
     style={{
       background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.08) 0%, rgba(0, 212, 255, 0.05) 50%, rgba(0, 255, 136, 0.08) 100%)',

@@ -112,20 +112,19 @@ const titleForShow = (run: Activity): string => {
   if (run.name) {
     name = run.name;
   }
-  return `${name} ${date} ${distance} KM ${
-    !run.summary_polyline ? '(No map data for this run)' : ''
-  }`;
+  return `${name} ${date} ${distance} KM ${!run.summary_polyline ? '(No map data for this run)' : ''
+    }`;
 };
 
 const formatPace = (d: number, sportType: string = 'Run'): string => {
   if (Number.isNaN(d) || d === 0) return '0';
-  
+
   // For cycling, show speed in km/h instead of pace
   if (['Ride', 'cycling', 'VirtualRide', 'Bike'].includes(sportType)) {
     const speed = d * 3.6; // convert m/s to km/h
     return `${speed.toFixed(1)} km/h`;
   }
-  
+
   // For running, hiking, walking - show pace in min/km
   const pace = (1000.0 / 60.0) * (1.0 / d);
   const minutes = Math.floor(pace);
