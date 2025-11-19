@@ -51,19 +51,39 @@ export const getCorrectActivityType = (activity: Activity): string => {
   const name = activity.name.toLowerCase();
 
   // 如果名称包含明确的运动类型关键词，优先使用名称判断
-  if (name.includes('骑行') || name.includes('cycling') || name.includes('bike')) {
+  if (
+    name.includes('骑行') ||
+    name.includes('cycling') ||
+    name.includes('bike')
+  ) {
     return 'Ride';
   }
-  if (name.includes('跑步') || name.includes('running') || name.includes('run')) {
+  if (
+    name.includes('跑步') ||
+    name.includes('running') ||
+    name.includes('run')
+  ) {
     return 'Run';
   }
-  if (name.includes('徒步') || name.includes('hiking') || name.includes('hike')) {
+  if (
+    name.includes('徒步') ||
+    name.includes('hiking') ||
+    name.includes('hike')
+  ) {
     return 'hiking';
   }
-  if (name.includes('步行') || name.includes('walking') || name.includes('walk')) {
+  if (
+    name.includes('步行') ||
+    name.includes('walking') ||
+    name.includes('walk')
+  ) {
     return 'Walk';
   }
-  if (name.includes('游泳') || name.includes('swimming') || name.includes('swim')) {
+  if (
+    name.includes('游泳') ||
+    name.includes('swimming') ||
+    name.includes('swim')
+  ) {
     return 'swimming';
   }
 
@@ -77,20 +97,20 @@ const getEnglishActivityType = (activity: Activity): string => {
 
   // 标准化运动类型映射
   const typeMapping: { [key: string]: string } = {
-    'Run': 'RUNNING',
-    'running': 'RUNNING',
-    'Ride': 'CYCLING',
-    'cycling': 'CYCLING',
-    'Walk': 'WALKING',
-    'walking': 'WALKING',
-    'hiking': 'HIKING',
-    'Hiking': 'HIKING',
-    'swimming': 'SWIMMING',
-    'Swimming': 'SWIMMING',
-    'skiing': 'SKIING',
-    'Skiing': 'SKIING',
-    'VirtualRun': 'TREADMILL',
-    'treadmill': 'TREADMILL'
+    Run: 'RUNNING',
+    running: 'RUNNING',
+    Ride: 'CYCLING',
+    cycling: 'CYCLING',
+    Walk: 'WALKING',
+    walking: 'WALKING',
+    hiking: 'HIKING',
+    Hiking: 'HIKING',
+    swimming: 'SWIMMING',
+    Swimming: 'SWIMMING',
+    skiing: 'SKIING',
+    Skiing: 'SKIING',
+    VirtualRun: 'TREADMILL',
+    treadmill: 'TREADMILL',
   };
 
   // 检查子类型
@@ -112,8 +132,9 @@ const titleForShow = (run: Activity): string => {
   if (run.name) {
     name = run.name;
   }
-  return `${name} ${date} ${distance} KM ${!run.summary_polyline ? '(No map data for this run)' : ''
-    }`;
+  return `${name} ${date} ${distance} KM ${
+    !run.summary_polyline ? '(No map data for this run)' : ''
+  }`;
 };
 
 const formatPace = (d: number, sportType: string = 'Run'): string => {

@@ -35,9 +35,11 @@
   font-weight: 600;
   text-align: center;
   color: var(--color-run-date);
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(0, 0, 0, 0.8) 0%,
-    rgba(42, 42, 42, 0.8) 100%);
+    rgba(42, 42, 42, 0.8) 100%
+  );
   border: 1px solid rgba(0, 255, 136, 0.3);
   border-radius: 8px;
   backdrop-filter: blur(10px);
@@ -66,15 +68,16 @@
 
 .selected {
   color: var(--color-glow, #00ff88);
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(0, 255, 136, 0.15) 0%,
-    rgba(0, 255, 136, 0.05) 100%);
+    rgba(0, 255, 136, 0.05) 100%
+  );
   border-color: var(--color-glow, #00ff88);
   box-shadow:
     0 0 20px rgba(0, 255, 136, 0.4),
     inset 0 0 20px rgba(0, 255, 136, 0.1);
   text-shadow: 0 0 10px var(--color-glow, #00ff88);
-
 }
 
 .selected::before {
@@ -84,8 +87,11 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-image:
-    radial-gradient(circle at 2px 2px, rgba(0, 255, 136, 0.1) 1px, transparent 0);
+  background-image: radial-gradient(
+    circle at 2px 2px,
+    rgba(0, 255, 136, 0.1) 1px,
+    transparent 0
+  );
   background-size: 16px 16px;
   border-radius: 6px;
   pointer-events: none;
@@ -104,9 +110,11 @@
   font-size: 1.1rem !important;
   letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(0, 0, 0, 0.9) 0%,
-    rgba(42, 42, 42, 0.9) 100%) !important;
+    rgba(42, 42, 42, 0.9) 100%
+  ) !important;
   line-height: 1.3 !important;
   border: 1px solid var(--color-glow, #00ff88) !important;
   border-radius: 8px !important;
@@ -142,9 +150,11 @@
   right: 15px !important;
   width: 40px !important;
   height: 40px !important;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(0, 0, 0, 0.9) 0%,
-    rgba(42, 42, 42, 0.9) 100%) !important;
+    rgba(42, 42, 42, 0.9) 100%
+  ) !important;
   border: 1px solid var(--color-glow, #00ff88) !important;
   border-radius: 8px !important;
   backdrop-filter: blur(15px) !important;
@@ -179,9 +189,11 @@
 .lightsOn {
   width: 100% !important;
   height: 100% !important;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(0, 255, 136, 0.3) 0%,
-    rgba(0, 255, 136, 0.15) 100%) !important;
+    rgba(0, 255, 136, 0.15) 100%
+  ) !important;
   box-shadow:
     0 0 20px var(--color-glow, #00ff88),
     inset 0 0 20px rgba(0, 255, 136, 0.2) !important;
@@ -207,9 +219,11 @@
 }
 
 .lightsOn:hover {
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(0, 255, 136, 0.4) 0%,
-    rgba(0, 255, 136, 0.2) 100%) !important;
+    rgba(0, 255, 136, 0.2) 100%
+  ) !important;
   box-shadow:
     0 0 30px var(--color-glow, #00ff88),
     inset 0 0 30px rgba(0, 255, 136, 0.3) !important;
@@ -222,9 +236,11 @@
 .lightsOff {
   width: 100% !important;
   height: 100% !important;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(0, 0, 0, 0.8) 0%,
-    rgba(42, 42, 42, 0.8) 100%) !important;
+    rgba(42, 42, 42, 0.8) 100%
+  ) !important;
   border: none !important;
   border-radius: 8px !important;
   opacity: 0.7 !important;
@@ -249,9 +265,11 @@
 
 .lightsOff:hover {
   opacity: 0.9 !important;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(0, 0, 0, 0.9) 0%,
-    rgba(42, 42, 42, 0.9) 100%) !important;
+    rgba(42, 42, 42, 0.9) 100%
+  ) !important;
   color: rgba(255, 255, 255, 0.8) !important;
 }
 

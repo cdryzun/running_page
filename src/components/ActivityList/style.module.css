@@ -15,10 +15,12 @@
   margin-bottom: 4rem;
   overflow: visible;
   padding: 2rem 3rem;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(0, 0, 0, 0.9) 0%,
     rgba(42, 42, 42, 0.8) 50%,
-    rgba(0, 0, 0, 0.9) 100%);
+    rgba(0, 0, 0, 0.9) 100%
+  );
   border: 1px solid var(--color-glow, #00ff88);
   border-radius: 16px;
   backdrop-filter: blur(20px);
@@ -38,11 +40,34 @@
   right: 0;
   bottom: 0;
   background-image:
-    radial-gradient(circle at 2px 2px, rgba(0, 255, 136, 0.06) 1px, transparent 0),
-    linear-gradient(45deg, transparent 48%, rgba(0, 255, 136, 0.02) 49%, rgba(0, 255, 136, 0.04) 50%, rgba(0, 255, 136, 0.02) 51%, transparent 52%),
-    linear-gradient(-45deg, transparent 48%, rgba(0, 212, 255, 0.02) 49%, rgba(0, 212, 255, 0.03) 50%, rgba(0, 212, 255, 0.02) 51%, transparent 52%);
-  background-size: 25px 25px, 50px 50px, 75px 75px;
-  animation: filterGrid 20s linear infinite, gridShimmer 4s ease-in-out infinite alternate;
+    radial-gradient(
+      circle at 2px 2px,
+      rgba(0, 255, 136, 0.06) 1px,
+      transparent 0
+    ),
+    linear-gradient(
+      45deg,
+      transparent 48%,
+      rgba(0, 255, 136, 0.02) 49%,
+      rgba(0, 255, 136, 0.04) 50%,
+      rgba(0, 255, 136, 0.02) 51%,
+      transparent 52%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 48%,
+      rgba(0, 212, 255, 0.02) 49%,
+      rgba(0, 212, 255, 0.03) 50%,
+      rgba(0, 212, 255, 0.02) 51%,
+      transparent 52%
+    );
+  background-size:
+    25px 25px,
+    50px 50px,
+    75px 75px;
+  animation:
+    filterGrid 20s linear infinite,
+    gridShimmer 4s ease-in-out infinite alternate;
   pointer-events: none;
   z-index: 1;
 }
@@ -54,18 +79,26 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     transparent,
     rgba(0, 255, 136, 0.1),
-    transparent);
+    transparent
+  );
   animation: scan 3s infinite;
   z-index: 1;
 }
 
 @keyframes scan {
-  0% { left: -100%; }
-  50% { left: 100%; }
-  100% { left: 100%; }
+  0% {
+    left: -100%;
+  }
+  50% {
+    left: 100%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 .filterContainer select {
@@ -74,9 +107,11 @@
   padding: 1rem 1.5rem;
   border-radius: 12px;
   border: 1px solid var(--color-glow, #00ff88);
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     var(--color-charcoal, #2a2a2a) 0%,
-    var(--color-bg, #0a0a0a) 100%);
+    var(--color-bg, #0a0a0a) 100%
+  );
   color: var(--color-glow, #00ff88);
   cursor: pointer;
   text-align: center;
@@ -129,10 +164,12 @@
 }
 
 .activityCard {
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     var(--color-activity-card, #151515) 0%,
     var(--color-charcoal, #2a2a2a) 50%,
-    var(--color-activity-card, #151515) 100%);
+    var(--color-activity-card, #151515) 100%
+  );
   border: 1px solid var(--color-glow, #00ff88);
   border-radius: 16px;
   padding: 2rem;
@@ -158,11 +195,20 @@
   right: 0;
   bottom: 0;
   background-image:
-    radial-gradient(circle at 2px 2px, rgba(0, 255, 136, 0.08) 1px, transparent 0),
+    radial-gradient(
+      circle at 2px 2px,
+      rgba(0, 255, 136, 0.08) 1px,
+      transparent 0
+    ),
     linear-gradient(90deg, transparent 98%, rgba(0, 255, 136, 0.05) 100%),
     linear-gradient(0deg, transparent 98%, rgba(0, 255, 136, 0.05) 100%);
-  background-size: 20px 20px, 40px 40px, 40px 40px;
-  animation: cardGrid 15s linear infinite, gridPulse 3s ease-in-out infinite alternate;
+  background-size:
+    20px 20px,
+    40px 40px,
+    40px 40px;
+  animation:
+    cardGrid 15s linear infinite,
+    gridPulse 3s ease-in-out infinite alternate;
   pointer-events: none;
   z-index: 1;
 }
@@ -174,10 +220,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg,
+  background: linear-gradient(
+    45deg,
     transparent 30%,
     rgba(0, 255, 136, 0.05) 50%,
-    transparent 70%);
+    transparent 70%
+  );
   transform: translateX(-100%);
   transition: transform 0.6s;
   z-index: 1;
@@ -285,9 +333,11 @@
 .chart {
   height: 280px;
   width: 100%;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(0, 0, 0, 0.5) 0%,
-    rgba(42, 42, 42, 0.3) 100%);
+    rgba(42, 42, 42, 0.3) 100%
+  );
   border: 1px solid rgba(0, 255, 136, 0.2);
   border-radius: 8px;
   display: flex;
@@ -297,7 +347,6 @@
   position: relative;
   z-index: 2;
   backdrop-filter: blur(5px);
-
 }
 
 .chart::before {
@@ -308,12 +357,31 @@
   right: 0;
   bottom: 0;
   background-image:
-    radial-gradient(circle at 1px 1px, rgba(0, 255, 136, 0.05) 1px, transparent 0),
-    linear-gradient(90deg, transparent 95%, rgba(0, 255, 136, 0.03) 96%, transparent 97%),
-    linear-gradient(0deg, transparent 95%, rgba(0, 212, 255, 0.02) 96%, transparent 97%);
-  background-size: 16px 16px, 32px 32px, 32px 32px;
+    radial-gradient(
+      circle at 1px 1px,
+      rgba(0, 255, 136, 0.05) 1px,
+      transparent 0
+    ),
+    linear-gradient(
+      90deg,
+      transparent 95%,
+      rgba(0, 255, 136, 0.03) 96%,
+      transparent 97%
+    ),
+    linear-gradient(
+      0deg,
+      transparent 95%,
+      rgba(0, 212, 255, 0.02) 96%,
+      transparent 97%
+    );
+  background-size:
+    16px 16px,
+    32px 32px,
+    32px 32px;
   border-radius: 8px;
-  animation: chartGrid 12s linear infinite, chartPulse 2s ease-in-out infinite alternate;
+  animation:
+    chartGrid 12s linear infinite,
+    chartPulse 2s ease-in-out infinite alternate;
   pointer-events: none;
 }
 
@@ -321,10 +389,12 @@
   width: auto;
   min-width: 120px;
   padding: 1rem 1.5rem;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     var(--color-charcoal, #2a2a2a) 0%,
     var(--color-bg, #0a0a0a) 50%,
-    var(--color-charcoal, #2a2a2a) 100%);
+    var(--color-charcoal, #2a2a2a) 100%
+  );
   color: var(--color-glow, #00ff88);
   border: 1px solid var(--color-glow, #00ff88);
   border-radius: 12px;
@@ -349,7 +419,12 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.2), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 255, 136, 0.2),
+    transparent
+  );
   transition: left 0.5s;
 }
 
@@ -373,10 +448,12 @@
   justify-content: center;
   align-items: center;
   padding: 3rem 2rem;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(0, 0, 0, 0.8) 0%,
     rgba(42, 42, 42, 0.6) 50%,
-    rgba(0, 0, 0, 0.8) 100%);
+    rgba(0, 0, 0, 0.8) 100%
+  );
   border: 1px solid var(--color-glow, #00ff88);
   border-radius: 20px;
   backdrop-filter: blur(20px);
@@ -397,8 +474,11 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-image:
-    radial-gradient(circle at 3px 3px, rgba(0, 255, 136, 0.05) 2px, transparent 0);
+  background-image: radial-gradient(
+    circle at 3px 3px,
+    rgba(0, 255, 136, 0.05) 2px,
+    transparent 0
+  );
   background-size: 30px 30px;
   pointer-events: none;
   z-index: 1;
@@ -411,41 +491,77 @@
 
 /* Dynamic Grid Animations */
 @keyframes cardGrid {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(20px, 20px); }
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(20px, 20px);
+  }
 }
 
 @keyframes gridPulse {
-  0% { opacity: 0.3; }
-  100% { opacity: 0.7; }
+  0% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0.7;
+  }
 }
 
 /* Enhanced Scan Animation for Filter Container */
 @keyframes scan {
-  0% { left: -100%; }
-  50% { left: 100%; }
-  100% { left: 100%; }
+  0% {
+    left: -100%;
+  }
+  50% {
+    left: 100%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 @keyframes filterGrid {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  25% { transform: translate(10px, 5px) rotate(0.5deg); }
-  50% { transform: translate(5px, 10px) rotate(0deg); }
-  75% { transform: translate(-5px, 5px) rotate(-0.5deg); }
-  100% { transform: translate(0, 0) rotate(0deg); }
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(10px, 5px) rotate(0.5deg);
+  }
+  50% {
+    transform: translate(5px, 10px) rotate(0deg);
+  }
+  75% {
+    transform: translate(-5px, 5px) rotate(-0.5deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
 }
 
 @keyframes gridShimmer {
-  0% { opacity: 0.4; }
-  100% { opacity: 0.8; }
+  0% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0.8;
+  }
 }
 
 @keyframes chartGrid {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(16px, 16px); }
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(16px, 16px);
+  }
 }
 
 @keyframes chartPulse {
-  0% { opacity: 0.5; }
-  100% { opacity: 0.9; }
+  0% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.9;
+  }
 }

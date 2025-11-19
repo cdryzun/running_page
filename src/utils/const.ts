@@ -162,11 +162,11 @@ export {
 };
 
 // GitHub-inspired color palette - elegant and minimal
-const github_blue = '#0969da';      // GitHub's primary blue
-const github_green = '#1a7f37';     // GitHub's success green
-const github_orange = '#d1242f';    // GitHub's danger red-orange
-const github_purple = '#8250df';    // GitHub's purple
-const github_gray = '#656d76';      // GitHub's muted gray
+const github_blue = '#0969da'; // GitHub's primary blue
+const github_green = '#1a7f37'; // GitHub's success green
+const github_orange = '#d1242f'; // GitHub's danger red-orange
+const github_purple = '#8250df'; // GitHub's purple
+const github_gray = '#656d76'; // GitHub's muted gray
 const github_light_gray = '#f6f8fa'; // GitHub's light background
 
 // If your map has an offset please change this line

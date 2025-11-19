@@ -115,7 +115,12 @@ const Index = () => {
   // Initialize with year overview on first load
   useEffect(() => {
     if (activities.length > 0 && year && year !== 'Total') {
-      const yearRuns = filterAndSortRuns(activities, year, filterYearRuns, sortDateFunc);
+      const yearRuns = filterAndSortRuns(
+        activities,
+        year,
+        filterYearRuns,
+        sortDateFunc
+      );
       setActivity(yearRuns);
       setGeoData(geoJsonForRuns(yearRuns));
       setTitle(`${year} Year Activity Heatmap`);
