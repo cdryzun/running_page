@@ -16,18 +16,17 @@ const Stat = ({
   onClick,
 }: IStatProperties) => (
   <div
-    className={`${className} cursor-pointer transition-all duration-300`}
+    className={`${className} cursor-pointer hover-lift fade-in`}
     onClick={onClick}
     style={{
-      background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.08) 0%, rgba(0, 212, 255, 0.05) 50%, rgba(0, 255, 136, 0.08) 100%)',
-      border: '1px solid rgba(0, 255, 136, 0.4)',
+      background: 'var(--color-activity-card)',
+      border: '1px solid var(--color-border)',
       borderRadius: '12px',
       padding: '1.5rem 1.25rem',
       margin: '0.75rem 0',
-      backdropFilter: 'blur(15px)',
       position: 'relative',
       overflow: 'hidden',
-      boxShadow: '0 0 20px rgba(0, 255, 136, 0.1), inset 0 1px 0 rgba(0, 255, 136, 0.1)',
+      boxShadow: '0 1px 3px var(--color-shadow)',
       minHeight: '120px',
       display: 'flex',
       flexDirection: 'column',
@@ -37,27 +36,25 @@ const Stat = ({
     }}
   >
     <span
-      className="font-bold geometric-font glow-text block"
+      className="font-bold block"
       style={{
-        color: 'var(--color-glow, #00ff88)',
-        textShadow: '0 0 15px var(--color-glow, #00ff88)',
-        letterSpacing: '0.05em',
+        color: 'var(--color-brand)',
         fontSize: citySize ? `${Math.max(2.5, citySize * 0.8)}rem` : '2.5rem',
         lineHeight: '1.1',
-        marginBottom: '0.5rem'
+        marginBottom: '0.5rem',
+        fontFamily: 'var(--font-sans)'
       }}
     >
       {intComma(value.toString())}
     </span>
     <span
-      className="font-medium terminal-font block"
+      className="font-medium block"
       style={{
-        color: 'var(--color-tx, #e8e8e8)',
-        opacity: 0.85,
-        letterSpacing: '0.02em',
-        fontSize: '0.9rem',
+        color: 'var(--color-secondary)',
+        fontSize: '0.875rem',
         textTransform: 'uppercase',
-        fontWeight: '500'
+        fontWeight: '500',
+        letterSpacing: '0.05em'
       }}
     >
       {description}
