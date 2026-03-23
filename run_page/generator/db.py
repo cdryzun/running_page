@@ -1,4 +1,5 @@
 import datetime
+import math
 import random
 import string
 
@@ -28,6 +29,11 @@ def randomword():
 options.default_user_agent = "running_page"
 # reverse the location (lat, lon) -> location detail
 g = Nominatim(user_agent=randomword())
+
+CYCLING_TYPE_KEYWORDS = ("ride", "cycling", "bike", "ebike", "mountainbike")
+LOOP_END_DISTANCE_M = 500.0
+LOOP_ELEVATION_FIX_TRIGGER_M = 20.0
+LOOP_ELEVATION_BALANCE_TOLERANCE_M = 5.0
 
 
 ACTIVITY_KEYS = [
@@ -95,6 +101,86 @@ class Activity(Base):
             out["streak"] = self.streak
 
         return out
+
+
+def _looks_like_cycling(activity_type):
+    lower = str(activity_type or "").lower()
+    return any(keyword in lower for keyword in CYCLING_TYPE_KEYWORDS)
+
+
+def _decode_polyline_start_end_distance(summary_polyline):
+    if not summary_polyline:
+        return None
+    try:
+        index = 0
+        lat = 0
+        lng = 0
+        first = None
+        last = None
+        length = len(summary_polyline)
+        while index < length:
+            shift = 0
+            result = 0
+            while True:
+                b = ord(summary_polyline[index]) - 63
+                index += 1
+                result |= (b & 0x1F) << shift
+                shift += 5
+                if b < 0x20:
+                    break
+            dlat = ~(result >> 1) if (result & 1) else (result >> 1)
+            lat += dlat
+
+            shift = 0
+            result = 0
+            while True:
+                b = ord(summary_polyline[index]) - 63
+                index += 1
+                result |= (b & 0x1F) << shift
+                shift += 5
+                if b < 0x20:
+                    break
+            dlng = ~(result >> 1) if (result & 1) else (result >> 1)
+            lng += dlng
+            point = (lat / 1e5, lng / 1e5)
+            if first is None:
+                first = point
+            last = point
+        if first is None or last is None:
+            return None
+
+        lat1, lon1 = first
+        lat2, lon2 = last
+        r = 6371000.0
+        p1 = math.radians(lat1)
+        p2 = math.radians(lat2)
+        dp = math.radians(lat2 - lat1)
+        dl = math.radians(lon2 - lon1)
+        a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+        return 2 * r * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    except Exception:
+        return None
+
+
+def _normalize_loop_cycling_loss(activity_type, elevation_gain, elevation_loss, summary_polyline):
+    if (
+        elevation_gain is None
+        or elevation_loss is None
+        or not _looks_like_cycling(activity_type)
+    ):
+        return elevation_loss
+
+    diff = float(elevation_loss) - float(elevation_gain)
+    if abs(diff) <= LOOP_ELEVATION_FIX_TRIGGER_M:
+        return elevation_loss
+
+    start_end_distance = _decode_polyline_start_end_distance(summary_polyline)
+    if start_end_distance is None or start_end_distance > LOOP_END_DISTANCE_M:
+        return elevation_loss
+
+    if diff >= 0:
+        return float(elevation_gain) + LOOP_ELEVATION_BALANCE_TOLERANCE_M
+    return max(0.0, float(elevation_gain) - LOOP_ELEVATION_BALANCE_TOLERANCE_M)
 
 
 def update_or_create_activity(session, run_activity):
@@ -279,7 +365,12 @@ def update_or_create_activity(session, run_activity):
                 average_heartrate=run_activity.average_heartrate,
                 average_speed=float(run_activity.average_speed),
                 elevation_gain=current_elevation_gain if current_elevation_gain is not None else 0.0,
-                elevation_loss=current_elevation_loss,
+                elevation_loss=_normalize_loop_cycling_loss(
+                    run_activity.type,
+                    current_elevation_gain if current_elevation_gain is not None else 0.0,
+                    current_elevation_loss,
+                    _extract_summary_polyline(run_activity),
+                ),
                 max_elevation=current_max_elevation,
                 min_elevation=current_min_elevation,
                 average_watts=current_average_watts,
@@ -324,6 +415,13 @@ def update_or_create_activity(session, run_activity):
             current_polyline = _extract_summary_polyline(run_activity)
             if current_polyline:
                 activity.summary_polyline = current_polyline
+
+            activity.elevation_loss = _normalize_loop_cycling_loss(
+                activity.type,
+                activity.elevation_gain,
+                activity.elevation_loss,
+                activity.summary_polyline,
+            )
     except Exception as e:
         print(f"something wrong with {run_activity.id}")
         print(str(e))
