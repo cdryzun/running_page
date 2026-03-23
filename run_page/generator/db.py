@@ -1,7 +1,10 @@
 import datetime
+import json
 import math
+import os
 import random
 import string
+from functools import lru_cache
 
 from geopy.geocoders import options, Nominatim
 from sqlalchemy import (
@@ -34,6 +37,9 @@ CYCLING_TYPE_KEYWORDS = ("ride", "cycling", "bike", "ebike", "mountainbike")
 LOOP_END_DISTANCE_M = 500.0
 LOOP_ELEVATION_FIX_TRIGGER_M = 20.0
 LOOP_ELEVATION_BALANCE_TOLERANCE_M = 5.0
+MANUAL_METRIC_OVERRIDES_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "manual_metric_overrides.json"
+)
 
 
 ACTIVITY_KEYS = [
@@ -181,6 +187,47 @@ def _normalize_loop_cycling_loss(activity_type, elevation_gain, elevation_loss, 
     if diff >= 0:
         return float(elevation_gain) + LOOP_ELEVATION_BALANCE_TOLERANCE_M
     return max(0.0, float(elevation_gain) - LOOP_ELEVATION_BALANCE_TOLERANCE_M)
+
+
+@lru_cache(maxsize=1)
+def _load_manual_metric_overrides():
+    if not os.path.exists(MANUAL_METRIC_OVERRIDES_FILE):
+        return {}
+    try:
+        with open(MANUAL_METRIC_OVERRIDES_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _apply_manual_metric_overrides(activity):
+    overrides = _load_manual_metric_overrides()
+    if not overrides:
+        return
+    override = overrides.get(str(activity.run_id), {})
+    if not isinstance(override, dict):
+        return
+
+    fields = (
+        "elevation_gain",
+        "elevation_loss",
+        "max_elevation",
+        "min_elevation",
+        "average_watts",
+        "average_cadence",
+    )
+    for field in fields:
+        if field not in override:
+            continue
+        value = override.get(field)
+        if value is None:
+            setattr(activity, field, None)
+            continue
+        try:
+            setattr(activity, field, float(value))
+        except Exception:
+            continue
 
 
 def update_or_create_activity(session, run_activity):
@@ -422,6 +469,10 @@ def update_or_create_activity(session, run_activity):
                 activity.elevation_loss,
                 activity.summary_polyline,
             )
+            _apply_manual_metric_overrides(activity)
+
+        if created:
+            _apply_manual_metric_overrides(activity)
     except Exception as e:
         print(f"something wrong with {run_activity.id}")
         print(str(e))
