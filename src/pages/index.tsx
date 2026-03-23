@@ -429,6 +429,7 @@ const Index = () => {
             locateActivity={locateActivity}
             setActivity={setActivity}
             runIndex={runIndex}
+            sportType={sportType}
             setRunIndex={setRunIndex}
           />
         )}

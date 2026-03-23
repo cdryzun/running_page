@@ -98,3 +98,9 @@
 .runDate {
   color: var(--color-run-date);
 }
+
+.metricAux {
+  margin-left: 0.2rem;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}

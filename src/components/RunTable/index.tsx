@@ -6,8 +6,12 @@ import {
   Activity,
   RunIds,
 } from '@/utils/utils';
-import { SHOW_ELEVATION_GAIN } from '@/utils/const';
+import { SHOW_ELEVATION_GAIN, type SportTypeFilter } from '@/utils/const';
 import { DIST_UNIT } from '@/utils/utils';
+import {
+  getPrimaryMetricLabel,
+  getPrimaryMetricSortValue,
+} from '@/utils/sportMetrics';
 
 import RunRow from './RunRow';
 import styles from './style.module.css';
@@ -17,6 +21,7 @@ interface IRunTableProperties {
   locateActivity: (_runIds: RunIds) => void;
   setActivity: (_runs: Activity[]) => void;
   runIndex: number;
+  sportType?: SportTypeFilter;
   setRunIndex: (_index: number) => void;
 }
 
@@ -27,9 +32,11 @@ const RunTable = ({
   locateActivity,
   setActivity,
   runIndex,
+  sportType = 'all',
   setRunIndex,
 }: IRunTableProperties) => {
   const [sortFuncInfo, setSortFuncInfo] = useState('');
+  const primaryMetricLabel = getPrimaryMetricLabel(sportType);
 
   // Memoize sort functions to prevent recreating them on every render
   const sortFunctions = useMemo(() => {
@@ -41,10 +48,16 @@ const RunTable = ({
       sortFuncInfo === 'Elev'
         ? (a.elevation_gain ?? 0) - (b.elevation_gain ?? 0)
         : (b.elevation_gain ?? 0) - (a.elevation_gain ?? 0);
-    const sortPaceFunc: SortFunc = (a, b) =>
-      sortFuncInfo === 'Pace'
-        ? a.average_speed - b.average_speed
-        : b.average_speed - a.average_speed;
+    const sortPrimaryMetricFunc: SortFunc = (a, b) => {
+      const aValue = getPrimaryMetricSortValue(a, sportType);
+      const bValue = getPrimaryMetricSortValue(b, sportType);
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return 1;
+      if (bValue === null) return -1;
+      return sortFuncInfo === primaryMetricLabel
+        ? aValue - bValue
+        : bValue - aValue;
+    };
     const sortBPMFunc: SortFunc = (a, b) => {
       return sortFuncInfo === 'BPM'
         ? (a.average_heartrate ?? 0) - (b.average_heartrate ?? 0)
@@ -63,7 +76,7 @@ const RunTable = ({
     const sortFuncMap = new Map([
       [DIST_UNIT, sortKMFunc],
       ['Elev', sortElevationGainFunc],
-      ['Pace', sortPaceFunc],
+      [primaryMetricLabel, sortPrimaryMetricFunc],
       ['BPM', sortBPMFunc],
       ['Time', sortRunTimeFunc],
       ['Date', sortDateFuncClick],
@@ -74,11 +87,11 @@ const RunTable = ({
     }
 
     return sortFuncMap;
-  }, [sortFuncInfo]);
+  }, [sortFuncInfo, primaryMetricLabel, sportType]);
 
   const handleClick = useCallback<React.MouseEventHandler<HTMLElement>>(
     (e) => {
-      const funcName = (e.target as HTMLElement).innerHTML;
+      const funcName = (e.currentTarget as HTMLElement).dataset.sortKey || '';
       const f = sortFunctions.get(funcName);
 
       setRunIndex(-1);
@@ -95,7 +108,7 @@ const RunTable = ({
           <tr>
             <th />
             {Array.from(sortFunctions.keys()).map((k) => (
-              <th key={k} onClick={handleClick}>
+              <th key={k} data-sort-key={k} onClick={handleClick}>
                 {k}
               </th>
             ))}
@@ -109,6 +122,7 @@ const RunTable = ({
               locateActivity={locateActivity}
               run={run}
               runIndex={runIndex}
+              sportType={sportType}
               setRunIndex={setRunIndex}
             />
           ))}

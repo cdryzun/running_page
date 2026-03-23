@@ -1,12 +1,7 @@
-import {
-  formatPace,
-  titleForRun,
-  formatRunTime,
-  Activity,
-  RunIds,
-} from '@/utils/utils';
-import { SHOW_ELEVATION_GAIN } from '@/utils/const';
+import { titleForRun, formatRunTime, Activity, RunIds } from '@/utils/utils';
+import { SHOW_ELEVATION_GAIN, type SportTypeFilter } from '@/utils/const';
 import { M_TO_DIST, M_TO_ELEV } from '@/utils/utils';
+import { getActivityPrimaryMetric } from '@/utils/sportMetrics';
 import styles from './style.module.css';
 
 interface IRunRowProperties {
@@ -14,6 +9,7 @@ interface IRunRowProperties {
   locateActivity: (_runIds: RunIds) => void;
   run: Activity;
   runIndex: number;
+  sportType: SportTypeFilter;
   setRunIndex: (_ndex: number) => void;
 }
 
@@ -22,10 +18,11 @@ const RunRow = ({
   locateActivity,
   run,
   runIndex,
+  sportType,
   setRunIndex,
 }: IRunRowProperties) => {
   const distance = (run.distance / M_TO_DIST).toFixed(2);
-  const paceParts = run.average_speed ? formatPace(run.average_speed) : null;
+  const primaryMetric = getActivityPrimaryMetric(run, sportType);
   const heartRate = run.average_heartrate;
   const runTime = formatRunTime(run.moving_time);
   const handleClick = () => {
@@ -49,8 +46,16 @@ const RunRow = ({
       {SHOW_ELEVATION_GAIN && (
         <td>{((run.elevation_gain ?? 0) * M_TO_ELEV).toFixed(1)}</td>
       )}
-      {paceParts && <td>{paceParts}</td>}
-      <td>{heartRate && heartRate.toFixed(0)}</td>
+      <td title={primaryMetric.label}>
+        {primaryMetric.value}
+        {primaryMetric.auxiliaryValue && (
+          <span className={styles.metricAux}>
+            {' '}
+            {primaryMetric.auxiliaryValue}
+          </span>
+        )}
+      </td>
+      <td>{heartRate ? heartRate.toFixed(0) : '--'}</td>
       <td>{runTime}</td>
       <td className={styles.runDate}>{run.start_date_local}</td>
     </tr>

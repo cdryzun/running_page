@@ -1,11 +1,21 @@
 import { lazy, Suspense } from 'react';
 import Stat from '@/components/Stat';
 import useActivities from '@/hooks/useActivities';
-import { formatPace } from '@/utils/utils';
 import useHover from '@/hooks/useHover';
 import { yearStats, githubYearStats } from '@assets/index';
 import { loadSvgComponent } from '@/utils/svgUtils';
-import { SHOW_ELEVATION_GAIN, type SportTypeFilter } from '@/utils/const';
+import {
+  IS_CHINESE,
+  SHOW_ELEVATION_GAIN,
+  type SportTypeFilter,
+} from '@/utils/const';
+import {
+  formatAveragePrimaryMetric,
+  formatPaceMetric,
+  formatSpeedMetric,
+  getAveragePrimaryMetricLabel,
+  isPacePrimaryForSportType,
+} from '@/utils/sportMetrics';
 import {
   DIST_UNIT,
   M_TO_DIST,
@@ -40,8 +50,6 @@ const YearStat = ({
   let sumDistance = 0;
   let streak = 0;
   let sumElevationGain = 0;
-  let _pace = 0;
-  let _paceNullCount = 0;
   let heartRate = 0;
   let heartRateNullCount = 0;
   let totalMetersAvail = 0;
@@ -50,11 +58,8 @@ const YearStat = ({
     sumDistance += run.distance || 0;
     sumElevationGain += run.elevation_gain || 0;
     if (run.average_speed) {
-      _pace += run.average_speed;
       totalMetersAvail += run.distance || 0;
       totalSecondsAvail += (run.distance || 0) / run.average_speed;
-    } else {
-      _paceNullCount++;
     }
     if (run.average_heartrate) {
       heartRate += run.average_heartrate;
@@ -67,7 +72,24 @@ const YearStat = ({
   });
   sumDistance = parseFloat((sumDistance / M_TO_DIST).toFixed(1));
   const sumElevationGainStr = (sumElevationGain * M_TO_ELEV).toFixed(0);
-  const avgPace = formatPace(totalMetersAvail / totalSecondsAvail);
+  const averageSpeed =
+    totalMetersAvail > 0 && totalSecondsAvail > 0
+      ? totalMetersAvail / totalSecondsAvail
+      : 0;
+  const avgPrimaryMetric = formatAveragePrimaryMetric(averageSpeed, sportType);
+  const avgPrimaryMetricLabel = getAveragePrimaryMetricLabel(sportType);
+  const pacePrimary = isPacePrimaryForSportType(sportType);
+  const avgSecondaryMetricLabel = pacePrimary
+    ? IS_CHINESE
+      ? '平均速度'
+      : 'Avg Speed'
+    : IS_CHINESE
+      ? '平均配速'
+      : 'Avg Pace';
+  const avgSecondaryMetricValue = pacePrimary
+    ? formatSpeedMetric(averageSpeed)
+    : formatPaceMetric(averageSpeed);
+  const showSecondaryMetric = averageSpeed > 0;
   const hasHeartRate = !(heartRate === 0);
   const avgHeartRate = (heartRate / (runs.length - heartRateNullCount)).toFixed(
     0
@@ -81,7 +103,16 @@ const YearStat = ({
         {SHOW_ELEVATION_GAIN && (
           <Stat value={sumElevationGainStr} description=" Elevation Gain" />
         )}
-        <Stat value={avgPace} description=" Avg Pace" />
+        <Stat
+          value={avgPrimaryMetric}
+          description={` ${avgPrimaryMetricLabel}`}
+        />
+        {showSecondaryMetric && (
+          <Stat
+            value={avgSecondaryMetricValue}
+            description={` ${avgSecondaryMetricLabel}`}
+          />
+        )}
         <Stat value={`${streak} day`} description=" Streak" />
         {hasHeartRate && (
           <Stat value={avgHeartRate} description=" Avg Heart Rate" />
