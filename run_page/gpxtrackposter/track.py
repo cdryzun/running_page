@@ -9,6 +9,7 @@ import datetime
 from datetime import timezone
 import os
 from collections import namedtuple
+from statistics import median
 
 import gpxpy as mod_gpxpy
 import lxml
@@ -59,6 +60,7 @@ class Track:
         self.average_cadence = None
         self.max_cadence = None
         self.moving_dict = {}
+        self._time_elev_points = []
         self.run_id = 0
         self.start_latlng = []
         self.type = "Run"
@@ -253,6 +255,45 @@ class Track:
             prev = current
         return gain, loss
 
+    def _estimate_hiking_drift_corrected_loss(self):
+        points = self._time_elev_points
+        if not points or len(points) < 100:
+            return None
+        if self.elevation_gain is None:
+            return None
+        if self.elevation_loss is None:
+            return None
+        if (self.elevation_loss - self.elevation_gain) <= 30:
+            return None
+
+        start_time = points[0][0]
+        end_time = points[-1][0]
+        if start_time is None or end_time is None:
+            return None
+
+        duration_min = (end_time - start_time).total_seconds() / 60
+        if duration_min <= 0:
+            return None
+
+        # Use stable start/end windows to suppress barometer drift at activity edges.
+        window_min = max(10.0, min(35.0, duration_min * 0.1))
+        window_delta = datetime.timedelta(minutes=window_min)
+        start_cutoff = start_time + window_delta
+        end_cutoff = end_time - window_delta
+
+        start_samples = [e for t, e in points if t <= start_cutoff]
+        end_samples = [e for t, e in points if t >= end_cutoff]
+        if len(start_samples) < 20 or len(end_samples) < 20:
+            return None
+
+        robust_start = median(start_samples)
+        robust_end = median(end_samples)
+        robust_net = robust_end - robust_start
+        corrected_loss = float(self.elevation_gain) - robust_net
+        if corrected_loss < 0:
+            return None
+        return corrected_loss
+
     @staticmethod
     def _pick_elevation_metric(smoothed, raw, prefer_raw=False):
         smoothed_value = float(smoothed) if smoothed is not None else 0.0
@@ -352,13 +393,17 @@ class Track:
         uphill_downhill = gpx.get_uphill_downhill()
         smoothed_gain = uphill_downhill.uphill
         smoothed_loss = uphill_downhill.downhill
-        elevations = [
-            p.elevation
-            for t in gpx.tracks
-            for s in t.segments
-            for p in s.points
-            if p.elevation is not None
-        ]
+        elevations = []
+        self._time_elev_points = []
+        for t in gpx.tracks:
+            for s in t.segments:
+                for p in s.points:
+                    if p.elevation is None:
+                        continue
+                    elevations.append(p.elevation)
+                    if p.time is not None:
+                        self._time_elev_points.append((p.time, p.elevation))
+
         if elevations:
             calc_gain, calc_loss = self._calc_elevation_gain_loss(elevations)
             creator = str(getattr(gpx, "creator", "") or "").lower()
@@ -482,17 +527,9 @@ class Track:
         )
 
         if extension_gain is not None:
-            if self.elevation_gain is None:
-                self.elevation_gain = extension_gain
-            else:
-                # Avoid regressing to smaller summary values when cumulative point
-                # calculation already produced a higher ascent.
-                self.elevation_gain = max(float(self.elevation_gain), extension_gain)
+            self.elevation_gain = extension_gain
         if extension_loss is not None:
-            if self.elevation_loss is None:
-                self.elevation_loss = extension_loss
-            else:
-                self.elevation_loss = max(float(self.elevation_loss), extension_loss)
+            self.elevation_loss = extension_loss
         if extension_max_elevation is not None:
             if self.max_elevation is None:
                 self.max_elevation = extension_max_elevation
@@ -503,6 +540,17 @@ class Track:
                 self.min_elevation = extension_min_elevation
             else:
                 self.min_elevation = min(float(self.min_elevation), extension_min_elevation)
+
+        normalized_type = get_normalized_sport_type(self.type)
+        if (
+            normalized_type == "hiking"
+            and extension_loss is None
+            and self.elevation_gain is not None
+            and self.elevation_loss is not None
+        ):
+            corrected_loss = self._estimate_hiking_drift_corrected_loss()
+            if corrected_loss is not None:
+                self.elevation_loss = corrected_loss
 
         self.average_watts = _ext_float(
             "average_watts",
@@ -720,10 +768,14 @@ class Track:
                 int(self.average_heartrate) if self.average_heartrate else None
             ),
             "elevation_gain": (
-                int(self.elevation_gain) if self.elevation_gain is not None else 0
+                int(self.elevation_gain)
+                if self.elevation_gain is not None
+                else 0
             ),
             "elevation_loss": (
-                int(self.elevation_loss) if self.elevation_loss is not None else None
+                int(round(self.elevation_loss))
+                if self.elevation_loss is not None
+                else None
             ),
             "max_elevation": (
                 float(self.max_elevation) if self.max_elevation is not None else None
