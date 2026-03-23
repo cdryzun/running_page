@@ -52,6 +52,14 @@ export interface Activity {
   summary_polyline?: string | null;
   average_heartrate?: number | null;
   elevation_gain: number | null;
+  elevation_loss?: number | null;
+  max_elevation?: number | null;
+  min_elevation?: number | null;
+  average_watts?: number | null;
+  weighted_average_watts?: number | null;
+  max_watts?: number | null;
+  average_cadence?: number | null;
+  max_cadence?: number | null;
   average_speed: number;
   streak: number;
 }

@@ -44,6 +44,14 @@ ACTIVITY_KEYS = [
     "average_heartrate",
     "average_speed",
     "elevation_gain",
+    "elevation_loss",
+    "max_elevation",
+    "min_elevation",
+    "average_watts",
+    "weighted_average_watts",
+    "max_watts",
+    "average_cadence",
+    "max_cadence",
 ]
 
 
@@ -64,6 +72,14 @@ class Activity(Base):
     average_heartrate = Column(Float)
     average_speed = Column(Float)
     elevation_gain = Column(Float)
+    elevation_loss = Column(Float)
+    max_elevation = Column(Float)
+    min_elevation = Column(Float)
+    average_watts = Column(Float)
+    weighted_average_watts = Column(Float)
+    max_watts = Column(Float)
+    average_cadence = Column(Float)
+    max_cadence = Column(Float)
     streak = None
 
     def to_dict(self):
@@ -82,25 +98,64 @@ class Activity(Base):
 
 
 def update_or_create_activity(session, run_activity):
+    def _pick_attr(obj, names):
+        for name in names:
+            if hasattr(obj, name):
+                value = getattr(obj, name)
+                if value is not None:
+                    return value
+        return None
+
+    def _to_float_or_none(value):
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except Exception:
+            try:
+                return float(getattr(value, "num"))
+            except Exception:
+                return None
+
     created = False
     try:
         activity = (
             session.query(Activity).filter_by(run_id=int(run_activity.id)).first()
         )
 
-        current_elevation_gain = 0.0  # default value
-
-        # https://github.com/stravalib/stravalib/blob/main/src/stravalib/strava_model.py#L639C1-L643C41
-        if (
-            hasattr(run_activity, "total_elevation_gain")
-            and run_activity.total_elevation_gain is not None
-        ):
-            current_elevation_gain = float(run_activity.total_elevation_gain)
-        elif (
-            hasattr(run_activity, "elevation_gain")
-            and run_activity.elevation_gain is not None
-        ):
-            current_elevation_gain = float(run_activity.elevation_gain)
+        current_elevation_gain = _to_float_or_none(
+            _pick_attr(run_activity, ["total_elevation_gain", "elevation_gain"])
+        )
+        current_elevation_loss = _to_float_or_none(
+            _pick_attr(
+                run_activity,
+                ["total_elevation_loss", "elevation_loss", "total_downhill"],
+            )
+        )
+        current_max_elevation = _to_float_or_none(
+            _pick_attr(run_activity, ["elev_high", "max_elevation"])
+        )
+        current_min_elevation = _to_float_or_none(
+            _pick_attr(run_activity, ["elev_low", "min_elevation"])
+        )
+        current_average_watts = _to_float_or_none(
+            _pick_attr(run_activity, ["average_watts", "avg_watts"])
+        )
+        current_weighted_average_watts = _to_float_or_none(
+            _pick_attr(
+                run_activity,
+                ["weighted_average_watts", "weighted_avg_watts"],
+            )
+        )
+        current_max_watts = _to_float_or_none(
+            _pick_attr(run_activity, ["max_watts"])
+        )
+        current_average_cadence = _to_float_or_none(
+            _pick_attr(run_activity, ["average_cadence", "avg_cadence"])
+        )
+        current_max_cadence = _to_float_or_none(
+            _pick_attr(run_activity, ["max_cadence"])
+        )
 
         if not activity:
             start_point = run_activity.start_latlng
@@ -138,7 +193,15 @@ def update_or_create_activity(session, run_activity):
                 location_country=location_country,
                 average_heartrate=run_activity.average_heartrate,
                 average_speed=float(run_activity.average_speed),
-                elevation_gain=current_elevation_gain,
+                elevation_gain=current_elevation_gain if current_elevation_gain is not None else 0.0,
+                elevation_loss=current_elevation_loss,
+                max_elevation=current_max_elevation,
+                min_elevation=current_min_elevation,
+                average_watts=current_average_watts,
+                weighted_average_watts=current_weighted_average_watts,
+                max_watts=current_max_watts,
+                average_cadence=current_average_cadence,
+                max_cadence=current_max_cadence,
                 summary_polyline=(
                     run_activity.map and run_activity.map.summary_polyline or ""
                 ),
@@ -154,7 +217,17 @@ def update_or_create_activity(session, run_activity):
             activity.subtype = run_activity.subtype
             activity.average_heartrate = run_activity.average_heartrate
             activity.average_speed = float(run_activity.average_speed)
-            activity.elevation_gain = current_elevation_gain
+            activity.elevation_gain = (
+                current_elevation_gain if current_elevation_gain is not None else 0.0
+            )
+            activity.elevation_loss = current_elevation_loss
+            activity.max_elevation = current_max_elevation
+            activity.min_elevation = current_min_elevation
+            activity.average_watts = current_average_watts
+            activity.weighted_average_watts = current_weighted_average_watts
+            activity.max_watts = current_max_watts
+            activity.average_cadence = current_average_cadence
+            activity.max_cadence = current_max_cadence
             activity.summary_polyline = (
                 run_activity.map and run_activity.map.summary_polyline or ""
             )

@@ -50,13 +50,25 @@ const YearStat = ({
   let sumDistance = 0;
   let streak = 0;
   let sumElevationGain = 0;
+  let sumElevationLoss = 0;
+  let elevationLossCount = 0;
   let heartRate = 0;
   let heartRateNullCount = 0;
+  let power = 0;
+  let powerCount = 0;
+  let weightedPower = 0;
+  let weightedPowerCount = 0;
+  let cadence = 0;
+  let cadenceCount = 0;
   let totalMetersAvail = 0;
   let totalSecondsAvail = 0;
   runs.forEach((run) => {
     sumDistance += run.distance || 0;
     sumElevationGain += run.elevation_gain || 0;
+    if (run.elevation_loss !== null && run.elevation_loss !== undefined) {
+      sumElevationLoss += run.elevation_loss;
+      elevationLossCount++;
+    }
     if (run.average_speed) {
       totalMetersAvail += run.distance || 0;
       totalSecondsAvail += (run.distance || 0) / run.average_speed;
@@ -66,12 +78,25 @@ const YearStat = ({
     } else {
       heartRateNullCount++;
     }
+    if (run.average_watts && run.average_watts > 0) {
+      power += run.average_watts;
+      powerCount++;
+    }
+    if (run.weighted_average_watts && run.weighted_average_watts > 0) {
+      weightedPower += run.weighted_average_watts;
+      weightedPowerCount++;
+    }
+    if (run.average_cadence && run.average_cadence > 0) {
+      cadence += run.average_cadence;
+      cadenceCount++;
+    }
     if (run.streak) {
       streak = Math.max(streak, run.streak);
     }
   });
   sumDistance = parseFloat((sumDistance / M_TO_DIST).toFixed(1));
   const sumElevationGainStr = (sumElevationGain * M_TO_ELEV).toFixed(0);
+  const sumElevationLossStr = (sumElevationLoss * M_TO_ELEV).toFixed(0);
   const averageSpeed =
     totalMetersAvail > 0 && totalSecondsAvail > 0
       ? totalMetersAvail / totalSecondsAvail
@@ -94,6 +119,14 @@ const YearStat = ({
   const avgHeartRate = (heartRate / (runs.length - heartRateNullCount)).toFixed(
     0
   );
+  const hasPower = powerCount > 0;
+  const avgPower = hasPower ? (power / powerCount).toFixed(0) : '0';
+  const hasWeightedPower = weightedPowerCount > 0;
+  const avgWeightedPower = hasWeightedPower
+    ? (weightedPower / weightedPowerCount).toFixed(0)
+    : '0';
+  const hasCadence = cadenceCount > 0;
+  const avgCadence = hasCadence ? (cadence / cadenceCount).toFixed(0) : '0';
   return (
     <div className="cursor-pointer" onClick={() => onClick(year)}>
       <section {...eventHandlers}>
@@ -102,6 +135,12 @@ const YearStat = ({
         <Stat value={sumDistance} description={` ${DIST_UNIT}`} />
         {SHOW_ELEVATION_GAIN && (
           <Stat value={sumElevationGainStr} description=" Elevation Gain" />
+        )}
+        {SHOW_ELEVATION_GAIN && elevationLossCount > 0 && (
+          <Stat
+            value={sumElevationLossStr}
+            description={IS_CHINESE ? ' 海拔下降' : ' Elevation Loss'}
+          />
         )}
         <Stat
           value={avgPrimaryMetric}
@@ -116,6 +155,24 @@ const YearStat = ({
         <Stat value={`${streak} day`} description=" Streak" />
         {hasHeartRate && (
           <Stat value={avgHeartRate} description=" Avg Heart Rate" />
+        )}
+        {hasPower && (
+          <Stat
+            value={avgPower}
+            description={IS_CHINESE ? ' 平均功率' : ' Avg Power'}
+          />
+        )}
+        {hasWeightedPower && (
+          <Stat
+            value={avgWeightedPower}
+            description={IS_CHINESE ? ' 加权功率' : ' Weighted Power'}
+          />
+        )}
+        {hasCadence && (
+          <Stat
+            value={avgCadence}
+            description={IS_CHINESE ? ' 平均踏频' : ' Avg Cadence'}
+          />
         )}
       </section>
       {year !== 'Total' && hovered && (

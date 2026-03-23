@@ -95,6 +95,7 @@ interface ActivitySummary {
   totalDistance: number;
   totalTime: number;
   totalElevationGain: number;
+  totalElevationLoss: number;
   count: number;
   dailyDistances: number[];
   maxDistance: number;
@@ -105,6 +106,15 @@ interface ActivitySummary {
   maxDuration: number;
   maxElevationGain: number;
   elevationGainCount: number;
+  elevationLossCount: number;
+  totalPower: number;
+  powerCount: number;
+  weightedPowerTotal: number;
+  weightedPowerCount: number;
+  maxPower: number;
+  totalCadence: number;
+  cadenceCount: number;
+  maxCadence: number;
   activities: Activity[]; // Add activities array for day interval
 }
 
@@ -119,10 +129,16 @@ interface DisplaySummary {
   averageDuration: number;
   maxDuration: number;
   totalElevationGain?: number;
+  totalElevationLoss?: number;
   averageHeartRate?: number; // Add heart rate display
   maxElevationGain?: number;
   climbRate?: number;
   elevationPerDistance?: number;
+  averagePower?: number;
+  weightedAveragePower?: number;
+  maxPower?: number;
+  averageCadence?: number;
+  maxCadence?: number;
 }
 
 interface ChartData {
@@ -155,10 +171,16 @@ const METRIC_LABELS = {
   avgDuration: IS_CHINESE ? '平均时长' : 'Avg Duration',
   maxDuration: IS_CHINESE ? '最长时长' : 'Longest Duration',
   maxElevation: IS_CHINESE ? '单次最大爬升' : 'Max Elevation',
+  totalElevationLoss: IS_CHINESE ? '总海拔下降' : 'Total Descent',
   climbRate: IS_CHINESE ? '爬升速率' : 'Climb Rate',
   elevationPerDistance: IS_CHINESE
     ? `每${DIST_UNIT}爬升`
     : `Elevation per ${DIST_UNIT}`,
+  avgPower: IS_CHINESE ? '平均功率' : 'Avg Power',
+  weightedPower: IS_CHINESE ? '加权功率' : 'Weighted Power',
+  maxPower: IS_CHINESE ? '最大功率' : 'Max Power',
+  avgCadence: IS_CHINESE ? '平均踏频' : 'Avg Cadence',
+  maxCadence: IS_CHINESE ? '最大踏频' : 'Max Cadence',
 };
 
 const speedDistPerHourToMps = (speed: number): number =>
@@ -271,6 +293,13 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
                   {summary.totalElevationGain.toFixed(0)} m
                 </p>
               )}
+            {SHOW_ELEVATION_GAIN &&
+              summary.totalElevationLoss !== undefined && (
+                <p>
+                  <strong>{METRIC_LABELS.totalElevationLoss}:</strong>{' '}
+                  {summary.totalElevationLoss.toFixed(0)} m
+                </p>
+              )}
             <p>
               <strong>{avgPrimaryMetricLabel}:</strong> {avgPrimaryMetricValue}
             </p>
@@ -292,6 +321,24 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
               <p>
                 <strong>{ACTIVITY_TOTAL.AVERAGE_HEART_RATE_TITLE}:</strong>{' '}
                 {summary.averageHeartRate.toFixed(0)} bpm
+              </p>
+            )}
+            {summary.averagePower !== undefined && (
+              <p>
+                <strong>{METRIC_LABELS.avgPower}:</strong>{' '}
+                {summary.averagePower.toFixed(0)} W
+              </p>
+            )}
+            {summary.weightedAveragePower !== undefined && (
+              <p>
+                <strong>{METRIC_LABELS.weightedPower}:</strong>{' '}
+                {summary.weightedAveragePower.toFixed(0)} W
+              </p>
+            )}
+            {summary.averageCadence !== undefined && (
+              <p>
+                <strong>{METRIC_LABELS.avgCadence}:</strong>{' '}
+                {summary.averageCadence.toFixed(0)} rpm
               </p>
             )}
             {SHOW_ELEVATION_GAIN &&
@@ -335,6 +382,18 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
                 {bestMetric && (
                   <p>
                     <strong>{bestMetric.label}:</strong> {bestMetric.value}
+                  </p>
+                )}
+                {summary.maxPower !== undefined && (
+                  <p>
+                    <strong>{METRIC_LABELS.maxPower}:</strong>{' '}
+                    {summary.maxPower.toFixed(0)} W
+                  </p>
+                )}
+                {summary.maxCadence !== undefined && (
+                  <p>
+                    <strong>{METRIC_LABELS.maxCadence}:</strong>{' '}
+                    {summary.maxCadence.toFixed(0)} rpm
                   </p>
                 )}
                 <p>
@@ -424,11 +483,19 @@ const activityCardAreEqual = (
     s1.maxDuration !== s2.maxDuration ||
     (s1.totalElevationGain ?? undefined) !==
       (s2.totalElevationGain ?? undefined) ||
+    (s1.totalElevationLoss ?? undefined) !==
+      (s2.totalElevationLoss ?? undefined) ||
     (s1.averageHeartRate ?? undefined) !== (s2.averageHeartRate ?? undefined) ||
     (s1.maxElevationGain ?? undefined) !== (s2.maxElevationGain ?? undefined) ||
     (s1.climbRate ?? undefined) !== (s2.climbRate ?? undefined) ||
     (s1.elevationPerDistance ?? undefined) !==
-      (s2.elevationPerDistance ?? undefined)
+      (s2.elevationPerDistance ?? undefined) ||
+    (s1.averagePower ?? undefined) !== (s2.averagePower ?? undefined) ||
+    (s1.weightedAveragePower ?? undefined) !==
+      (s2.weightedAveragePower ?? undefined) ||
+    (s1.maxPower ?? undefined) !== (s2.maxPower ?? undefined) ||
+    (s1.averageCadence ?? undefined) !== (s2.averageCadence ?? undefined) ||
+    (s1.maxCadence ?? undefined) !== (s2.maxCadence ?? undefined)
   ) {
     return false;
   }
@@ -577,6 +644,7 @@ const ActivityList: React.FC = () => {
           totalDistance: 0,
           totalTime: 0,
           totalElevationGain: 0,
+          totalElevationLoss: 0,
           count: 0,
           dailyDistances: [],
           maxDistance: 0,
@@ -587,6 +655,15 @@ const ActivityList: React.FC = () => {
           maxDuration: 0,
           maxElevationGain: 0,
           elevationGainCount: 0,
+          elevationLossCount: 0,
+          totalPower: 0,
+          powerCount: 0,
+          weightedPowerTotal: 0,
+          weightedPowerCount: 0,
+          maxPower: 0,
+          totalCadence: 0,
+          cadenceCount: 0,
+          maxCadence: 0,
           activities: [],
         };
 
@@ -611,10 +688,56 @@ const ActivityList: React.FC = () => {
           acc[key].maxElevationGain = activity.elevation_gain;
         }
       }
+      if (
+        SHOW_ELEVATION_GAIN &&
+        activity.elevation_loss !== null &&
+        activity.elevation_loss !== undefined
+      ) {
+        acc[key].totalElevationLoss += activity.elevation_loss;
+        acc[key].elevationLossCount += 1;
+      }
 
       if (activity.average_heartrate) {
         acc[key].totalHeartRate += activity.average_heartrate;
         acc[key].heartRateCount += 1;
+      }
+      if (
+        activity.average_watts !== null &&
+        activity.average_watts !== undefined &&
+        activity.average_watts > 0
+      ) {
+        acc[key].totalPower += activity.average_watts;
+        acc[key].powerCount += 1;
+      }
+      if (
+        activity.weighted_average_watts !== null &&
+        activity.weighted_average_watts !== undefined &&
+        activity.weighted_average_watts > 0
+      ) {
+        acc[key].weightedPowerTotal += activity.weighted_average_watts;
+        acc[key].weightedPowerCount += 1;
+      }
+      if (
+        activity.max_watts !== null &&
+        activity.max_watts !== undefined &&
+        activity.max_watts > acc[key].maxPower
+      ) {
+        acc[key].maxPower = activity.max_watts;
+      }
+      if (
+        activity.average_cadence !== null &&
+        activity.average_cadence !== undefined &&
+        activity.average_cadence > 0
+      ) {
+        acc[key].totalCadence += activity.average_cadence;
+        acc[key].cadenceCount += 1;
+      }
+      if (
+        activity.max_cadence !== null &&
+        activity.max_cadence !== undefined &&
+        activity.max_cadence > acc[key].maxCadence
+      ) {
+        acc[key].maxCadence = activity.max_cadence;
       }
 
       acc[key].count += 1;
@@ -647,6 +770,10 @@ const ActivityList: React.FC = () => {
       totalElevationGain: SHOW_ELEVATION_GAIN
         ? summary.totalElevationGain
         : undefined,
+      totalElevationLoss:
+        SHOW_ELEVATION_GAIN && summary.elevationLossCount > 0
+          ? summary.totalElevationLoss
+          : undefined,
       maxElevationGain:
         SHOW_ELEVATION_GAIN && summary.elevationGainCount > 0
           ? summary.maxElevationGain
@@ -663,6 +790,20 @@ const ActivityList: React.FC = () => {
         summary.heartRateCount > 0
           ? summary.totalHeartRate / summary.heartRateCount
           : undefined,
+      averagePower:
+        summary.powerCount > 0
+          ? summary.totalPower / summary.powerCount
+          : undefined,
+      weightedAveragePower:
+        summary.weightedPowerCount > 0
+          ? summary.weightedPowerTotal / summary.weightedPowerCount
+          : undefined,
+      maxPower: summary.maxPower > 0 ? summary.maxPower : undefined,
+      averageCadence:
+        summary.cadenceCount > 0
+          ? summary.totalCadence / summary.cadenceCount
+          : undefined,
+      maxCadence: summary.maxCadence > 0 ? summary.maxCadence : undefined,
     };
   };
 
