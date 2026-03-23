@@ -482,13 +482,27 @@ class Track:
         )
 
         if extension_gain is not None:
-            self.elevation_gain = extension_gain
+            if self.elevation_gain is None:
+                self.elevation_gain = extension_gain
+            else:
+                # Avoid regressing to smaller summary values when cumulative point
+                # calculation already produced a higher ascent.
+                self.elevation_gain = max(float(self.elevation_gain), extension_gain)
         if extension_loss is not None:
-            self.elevation_loss = extension_loss
+            if self.elevation_loss is None:
+                self.elevation_loss = extension_loss
+            else:
+                self.elevation_loss = max(float(self.elevation_loss), extension_loss)
         if extension_max_elevation is not None:
-            self.max_elevation = extension_max_elevation
+            if self.max_elevation is None:
+                self.max_elevation = extension_max_elevation
+            else:
+                self.max_elevation = max(float(self.max_elevation), extension_max_elevation)
         if extension_min_elevation is not None:
-            self.min_elevation = extension_min_elevation
+            if self.min_elevation is None:
+                self.min_elevation = extension_min_elevation
+            else:
+                self.min_elevation = min(float(self.min_elevation), extension_min_elevation)
 
         self.average_watts = _ext_float(
             "average_watts",
