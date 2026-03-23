@@ -104,10 +104,7 @@ const YearStat = ({
       maxCadence = run.max_cadence;
     }
     if (run.max_elevation !== null && run.max_elevation !== undefined) {
-      if (
-        highestElevationCount === 0 ||
-        run.max_elevation > highestElevation
-      ) {
+      if (highestElevationCount === 0 || run.max_elevation > highestElevation) {
         highestElevation = run.max_elevation;
       }
       highestElevationCount++;
@@ -230,9 +227,7 @@ const YearStat = ({
         {hasWeightedPower && (
           <Stat
             value={avgWeightedPower}
-            description={
-              IS_CHINESE ? ' 加权功率 (W)' : ' Weighted Power (W)'
-            }
+            description={IS_CHINESE ? ' 加权功率 (W)' : ' Weighted Power (W)'}
           />
         )}
         {hasMaxPower && (

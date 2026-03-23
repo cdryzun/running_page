@@ -375,22 +375,18 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
                   {ELEV_UNIT}
                 </p>
               )}
-            {showElevationMetrics &&
-              summary.highestElevation !== undefined && (
-                <p>
-                  <strong>{METRIC_LABELS.highestElevation}:</strong>{' '}
-                  {(summary.highestElevation * M_TO_ELEV).toFixed(0)}{' '}
-                  {ELEV_UNIT}
-                </p>
-              )}
-            {showElevationMetrics &&
-              summary.lowestElevation !== undefined && (
-                <p>
-                  <strong>{METRIC_LABELS.lowestElevation}:</strong>{' '}
-                  {(summary.lowestElevation * M_TO_ELEV).toFixed(0)}{' '}
-                  {ELEV_UNIT}
-                </p>
-              )}
+            {showElevationMetrics && summary.highestElevation !== undefined && (
+              <p>
+                <strong>{METRIC_LABELS.highestElevation}:</strong>{' '}
+                {(summary.highestElevation * M_TO_ELEV).toFixed(0)} {ELEV_UNIT}
+              </p>
+            )}
+            {showElevationMetrics && summary.lowestElevation !== undefined && (
+              <p>
+                <strong>{METRIC_LABELS.lowestElevation}:</strong>{' '}
+                {(summary.lowestElevation * M_TO_ELEV).toFixed(0)} {ELEV_UNIT}
+              </p>
+            )}
             {showElevationMetrics &&
               summary.elevationPerDistance !== undefined &&
               summary.elevationPerDistance > 0 && (

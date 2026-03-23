@@ -52,7 +52,8 @@ const RunRow = ({
     run.elevation_loss !== null && run.elevation_loss !== undefined;
   const hasPositiveGain = hasGainValue && (run.elevation_gain as number) > 0;
   const hasPositiveLoss = hasLossValue && (run.elevation_loss as number) > 0;
-  const hasPower = run.average_watts !== null && run.average_watts !== undefined;
+  const hasPower =
+    run.average_watts !== null && run.average_watts !== undefined;
   const hasCadence =
     run.average_cadence !== null && run.average_cadence !== undefined;
   const canEstimateElevation =
@@ -69,8 +70,10 @@ const RunRow = ({
     ? formatElevation(run.elevation_loss as number)
     : lossEstimated
       ? `~${formatElevation(run.elevation_gain as number)}`
+      : '--';
+  const powerText = hasPower
+    ? `${(run.average_watts as number).toFixed(0)}W`
     : '--';
-  const powerText = hasPower ? `${(run.average_watts as number).toFixed(0)}W` : '--';
   const cadenceText = hasCadence
     ? `${(run.average_cadence as number).toFixed(0)}rpm`
     : '--';

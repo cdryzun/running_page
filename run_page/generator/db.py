@@ -162,7 +162,9 @@ def _decode_polyline_start_end_distance(summary_polyline):
         return None
 
 
-def _normalize_loop_cycling_loss(activity_type, elevation_gain, elevation_loss, summary_polyline):
+def _normalize_loop_cycling_loss(
+    activity_type, elevation_gain, elevation_loss, summary_polyline
+):
     if (
         elevation_gain is None
         or elevation_loss is None
@@ -364,10 +366,18 @@ def update_or_create_activity(session, run_activity):
                 location_country=location_country,
                 average_heartrate=run_activity.average_heartrate,
                 average_speed=float(run_activity.average_speed),
-                elevation_gain=current_elevation_gain if current_elevation_gain is not None else 0.0,
+                elevation_gain=(
+                    current_elevation_gain
+                    if current_elevation_gain is not None
+                    else 0.0
+                ),
                 elevation_loss=_normalize_loop_cycling_loss(
                     run_activity.type,
-                    current_elevation_gain if current_elevation_gain is not None else 0.0,
+                    (
+                        current_elevation_gain
+                        if current_elevation_gain is not None
+                        else 0.0
+                    ),
                     current_elevation_loss,
                     _extract_summary_polyline(run_activity),
                 ),
@@ -394,7 +404,11 @@ def update_or_create_activity(session, run_activity):
             activity.elevation_gain = (
                 current_elevation_gain
                 if current_elevation_gain is not None
-                else (activity.elevation_gain if activity.elevation_gain is not None else 0.0)
+                else (
+                    activity.elevation_gain
+                    if activity.elevation_gain is not None
+                    else 0.0
+                )
             )
             if current_elevation_loss is not None:
                 activity.elevation_loss = current_elevation_loss

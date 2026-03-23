@@ -9,7 +9,6 @@ from generator import Generator
 from generator.db import Activity, update_or_create_activity
 from stravalib.exc import RateLimitExceeded
 
-
 CYCLING_TYPE_KEYWORDS = (
     "ride",
     "cycling",

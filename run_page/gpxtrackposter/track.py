@@ -538,12 +538,16 @@ class Track:
             if self.max_elevation is None:
                 self.max_elevation = extension_max_elevation
             else:
-                self.max_elevation = max(float(self.max_elevation), extension_max_elevation)
+                self.max_elevation = max(
+                    float(self.max_elevation), extension_max_elevation
+                )
         if extension_min_elevation is not None:
             if self.min_elevation is None:
                 self.min_elevation = extension_min_elevation
             else:
-                self.min_elevation = min(float(self.min_elevation), extension_min_elevation)
+                self.min_elevation = min(
+                    float(self.min_elevation), extension_min_elevation
+                )
 
         normalized_type = get_normalized_sport_type(self.type)
         if (
@@ -626,9 +630,7 @@ class Track:
         self.average_cadence = message.get(
             "avg_bike_cadence", message.get("avg_cadence")
         )
-        self.max_cadence = message.get(
-            "max_bike_cadence", message.get("max_cadence")
-        )
+        self.max_cadence = message.get("max_bike_cadence", message.get("max_cadence"))
         # moving_dict
         self.moving_dict["distance"] = message["total_distance"]
         self.moving_dict["moving_time"] = datetime.timedelta(
@@ -653,16 +655,23 @@ class Track:
                 lng = record["position_long"] / SEMICIRCLE
                 _polylines.append(s2.LatLng.from_degrees(lat, lng))
                 self.polyline_container.append([lat, lng])
-            if "enhanced_altitude" in record and record["enhanced_altitude"] is not None:
+            if (
+                "enhanced_altitude" in record
+                and record["enhanced_altitude"] is not None
+            ):
                 elevation_points.append(float(record["enhanced_altitude"]))
             elif "altitude" in record and record["altitude"] is not None:
                 elevation_points.append(float(record["altitude"]))
 
         if elevation_points:
             calc_gain, calc_loss = self._calc_elevation_gain_loss(elevation_points)
-            if (self.elevation_gain is None or self.elevation_gain <= 0) and calc_gain > 0:
+            if (
+                self.elevation_gain is None or self.elevation_gain <= 0
+            ) and calc_gain > 0:
                 self.elevation_gain = calc_gain
-            if (self.elevation_loss is None or self.elevation_loss <= 0) and calc_loss > 0:
+            if (
+                self.elevation_loss is None or self.elevation_loss <= 0
+            ) and calc_loss > 0:
                 self.elevation_loss = calc_loss
             if self.max_elevation is None:
                 self.max_elevation = max(elevation_points)
@@ -772,9 +781,7 @@ class Track:
                 int(self.average_heartrate) if self.average_heartrate else None
             ),
             "elevation_gain": (
-                int(self.elevation_gain)
-                if self.elevation_gain is not None
-                else 0
+                int(self.elevation_gain) if self.elevation_gain is not None else 0
             ),
             "elevation_loss": (
                 int(round(self.elevation_loss))
