@@ -22,6 +22,7 @@ import {
   M_TO_DIST,
   M_TO_ELEV,
   filterSportRuns,
+  normalizeActivityType,
 } from '@/utils/utils';
 
 const YearStat = ({
@@ -54,7 +55,7 @@ const YearStat = ({
   let sumElevationLoss = 0;
   let elevationLossCount = 0;
   let heartRate = 0;
-  let heartRateNullCount = 0;
+  let heartRateCount = 0;
   let power = 0;
   let powerCount = 0;
   let weightedPower = 0;
@@ -72,18 +73,26 @@ const YearStat = ({
   runs.forEach((run) => {
     sumDistance += run.distance || 0;
     sumElevationGain += run.elevation_gain || 0;
+    const normalizedType = normalizeActivityType(run.type);
+    const canEstimateLoss =
+      (normalizedType === 'cycling' || normalizedType === 'hiking') &&
+      run.elevation_gain !== null &&
+      run.elevation_gain !== undefined;
     if (run.elevation_loss !== null && run.elevation_loss !== undefined) {
       sumElevationLoss += run.elevation_loss;
+      elevationLossCount++;
+    } else if (canEstimateLoss) {
+      // Keep aggregated descent closer to source semantics when only gain is present.
+      sumElevationLoss += run.elevation_gain as number;
       elevationLossCount++;
     }
     if (run.average_speed) {
       totalMetersAvail += run.distance || 0;
       totalSecondsAvail += (run.distance || 0) / run.average_speed;
     }
-    if (run.average_heartrate) {
+    if (run.average_heartrate !== null && run.average_heartrate !== undefined) {
       heartRate += run.average_heartrate;
-    } else {
-      heartRateNullCount++;
+      heartRateCount++;
     }
     if (run.average_watts && run.average_watts > 0) {
       power += run.average_watts;
@@ -140,10 +149,10 @@ const YearStat = ({
     ? formatSpeedMetric(averageSpeed)
     : formatPaceMetric(averageSpeed);
   const showSecondaryMetric = averageSpeed > 0;
-  const hasHeartRate = !(heartRate === 0);
-  const avgHeartRate = (heartRate / (runs.length - heartRateNullCount)).toFixed(
-    0
-  );
+  const hasHeartRate = heartRateCount > 0;
+  const avgHeartRate = hasHeartRate
+    ? (heartRate / heartRateCount).toFixed(0)
+    : '0';
   const hasPower = powerCount > 0;
   const avgPower = hasPower ? (power / powerCount).toFixed(0) : '0';
   const hasWeightedPower = weightedPowerCount > 0;
@@ -152,6 +161,14 @@ const YearStat = ({
     : '0';
   const hasCadence = cadenceCount > 0;
   const avgCadence = hasCadence ? (cadence / cadenceCount).toFixed(0) : '0';
+  const cadenceUnit =
+    sportType === 'cycling'
+      ? 'rpm'
+      : sportType === 'running' ||
+          sportType === 'walking' ||
+          sportType === 'hiking'
+        ? 'spm'
+        : 'rpm/spm';
   const hasMaxPower = maxPower > 0;
   const hasMaxCadence = maxCadence > 0;
   const hasHighestElevation = highestElevationCount > 0;
@@ -239,13 +256,21 @@ const YearStat = ({
         {hasCadence && (
           <Stat
             value={avgCadence}
-            description={IS_CHINESE ? ' 平均踏频 (rpm)' : ' Avg Cadence (rpm)'}
+            description={
+              IS_CHINESE
+                ? ` 平均踏频 (${cadenceUnit})`
+                : ` Avg Cadence (${cadenceUnit})`
+            }
           />
         )}
         {hasMaxCadence && (
           <Stat
             value={maxCadence.toFixed(0)}
-            description={IS_CHINESE ? ' 最大踏频 (rpm)' : ' Max Cadence (rpm)'}
+            description={
+              IS_CHINESE
+                ? ` 最大踏频 (${cadenceUnit})`
+                : ` Max Cadence (${cadenceUnit})`
+            }
           />
         )}
       </section>

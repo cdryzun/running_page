@@ -41,6 +41,7 @@ const RunRow = ({
   const distance = (run.distance / M_TO_DIST).toFixed(2);
   const primaryMetric = getActivityPrimaryMetric(run, sportType);
   const heartRate = run.average_heartrate;
+  const hasHeartRate = heartRate !== null && heartRate !== undefined;
   const runTime = formatRunTime(run.moving_time);
   const normalizedType = normalizeActivityType(run.type);
   const rowMetaItems: RowMetaItem[] = [];
@@ -74,8 +75,16 @@ const RunRow = ({
   const powerText = hasPower
     ? `${(run.average_watts as number).toFixed(0)}W`
     : '--';
+  const cadenceUnit =
+    normalizedType === 'cycling'
+      ? 'rpm'
+      : normalizedType === 'running' ||
+          normalizedType === 'walking' ||
+          normalizedType === 'hiking'
+        ? 'spm'
+        : 'rpm';
   const cadenceText = hasCadence
-    ? `${(run.average_cadence as number).toFixed(0)}rpm`
+    ? `${(run.average_cadence as number).toFixed(0)}${cadenceUnit}`
     : '--';
   const addMeta = (
     key: string,
@@ -149,7 +158,11 @@ const RunRow = ({
       </td>
       <td>{distance}</td>
       {SHOW_ELEVATION_GAIN && (
-        <td>{((run.elevation_gain ?? 0) * M_TO_ELEV).toFixed(1)}</td>
+        <td>
+          {hasGainValue
+            ? ((run.elevation_gain as number) * M_TO_ELEV).toFixed(1)
+            : '--'}
+        </td>
       )}
       <td title={primaryMetric.label}>
         {primaryMetric.value}
@@ -160,7 +173,7 @@ const RunRow = ({
           </span>
         )}
       </td>
-      <td>{heartRate ? heartRate.toFixed(0) : '--'}</td>
+      <td>{hasHeartRate ? heartRate.toFixed(0) : '--'}</td>
       <td>{runTime}</td>
       <td className={styles.runDate}>{run.start_date_local}</td>
     </tr>

@@ -40,14 +40,29 @@ const RunTable = ({
 
   // Memoize sort functions to prevent recreating them on every render
   const sortFunctions = useMemo(() => {
+    const compareNullableNumber = (
+      aValue: number | null | undefined,
+      bValue: number | null | undefined,
+      ascending: boolean
+    ): number => {
+      const aMissing = aValue === null || aValue === undefined;
+      const bMissing = bValue === null || bValue === undefined;
+      if (aMissing && bMissing) return 0;
+      if (aMissing) return 1;
+      if (bMissing) return -1;
+      return ascending ? aValue - bValue : bValue - aValue;
+    };
+
     const sortKMFunc: SortFunc = (a, b) =>
       sortFuncInfo === DIST_UNIT
         ? a.distance - b.distance
         : b.distance - a.distance;
     const sortElevationGainFunc: SortFunc = (a, b) =>
-      sortFuncInfo === 'Elev'
-        ? (a.elevation_gain ?? 0) - (b.elevation_gain ?? 0)
-        : (b.elevation_gain ?? 0) - (a.elevation_gain ?? 0);
+      compareNullableNumber(
+        a.elevation_gain,
+        b.elevation_gain,
+        sortFuncInfo === 'Elev'
+      );
     const sortPrimaryMetricFunc: SortFunc = (a, b) => {
       const aValue = getPrimaryMetricSortValue(a, sportType);
       const bValue = getPrimaryMetricSortValue(b, sportType);
@@ -59,9 +74,11 @@ const RunTable = ({
         : bValue - aValue;
     };
     const sortBPMFunc: SortFunc = (a, b) => {
-      return sortFuncInfo === 'BPM'
-        ? (a.average_heartrate ?? 0) - (b.average_heartrate ?? 0)
-        : (b.average_heartrate ?? 0) - (a.average_heartrate ?? 0);
+      return compareNullableNumber(
+        a.average_heartrate,
+        b.average_heartrate,
+        sortFuncInfo === 'BPM'
+      );
     };
     const sortRunTimeFunc: SortFunc = (a, b) => {
       const aTotalSeconds = convertMovingTime2Sec(a.moving_time);

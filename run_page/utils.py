@@ -13,19 +13,40 @@ from stravalib.client import Client
 from stravalib.exc import RateLimitExceeded
 
 
+def _safe_timezone(tz_name):
+    try:
+        return pytz.timezone(tz_name)
+    except Exception:
+        return pytz.utc
+
+
+def _to_aware(dt, default_tz):
+    if dt.tzinfo is not None:
+        return dt
+    return default_tz.localize(dt)
+
+
 def adjust_time(time, tz_name):
-    tc_offset = datetime.now(pytz.timezone(tz_name)).utcoffset()
-    return time + tc_offset
+    target_tz = _safe_timezone(tz_name)
+    # Preserve old behavior for naive datetimes: treat input as UTC.
+    aware_time = _to_aware(time, pytz.utc)
+    return aware_time.astimezone(target_tz).replace(tzinfo=None)
 
 
 def adjust_time_to_utc(time, tz_name):
-    tc_offset = datetime.now(pytz.timezone(tz_name)).utcoffset()
-    return time - tc_offset
+    source_tz = _safe_timezone(tz_name)
+    # Preserve old behavior for naive datetimes: interpret input in source_tz.
+    aware_time = _to_aware(time, source_tz)
+    return aware_time.astimezone(pytz.utc).replace(tzinfo=None)
 
 
 def adjust_timestamp_to_utc(timestamp, tz_name):
-    tc_offset = datetime.now(pytz.timezone(tz_name)).utcoffset()
-    delta = int(tc_offset.total_seconds())
+    source_tz = _safe_timezone(tz_name)
+    # Keep original semantics (local timestamp -> utc timestamp),
+    # but compute offset at the target timestamp (DST-safe).
+    utc_dt = datetime.fromtimestamp(int(timestamp), tz=pytz.utc)
+    local_offset = utc_dt.astimezone(source_tz).utcoffset()
+    delta = int(local_offset.total_seconds()) if local_offset else 0
     return int(timestamp) - delta
 
 

@@ -7,7 +7,6 @@
 
 import locale
 import math
-from datetime import datetime
 from typing import List, Optional, Tuple
 
 import colour
@@ -120,23 +119,28 @@ def format_float(f):
 
 
 def parse_datetime_to_local(start_time, end_time, point):
-    if not point:
-        timezone = "Asia/Shanghai"
-    else:
-        # just parse the start time, because start/end maybe different
-        offset = start_time.utcoffset()
-        if offset:
-            return start_time + offset, end_time + offset
+    timezone = "Asia/Shanghai"
+    if point:
         lat, lng = point
         try:
             timezone = get_tz(lng=lng, lat=lat)
         except Exception as e:
             # just a little trick when tzfpy support windows will delete this
             print(f"tzfpy error: {e} fallback to timezonefinder")
-            lat, lng = point
             timezone = tf.timezone_at(lng=lng, lat=lat)
-    tc_offset = datetime.now(pytz.timezone(timezone)).utcoffset()
-    return start_time + tc_offset, end_time + tc_offset
+
+    if not timezone:
+        timezone = "Asia/Shanghai"
+
+    target_tz = pytz.timezone(timezone)
+
+    def _to_local_naive(dt):
+        if dt.tzinfo is None:
+            # GPX/TCX timestamps are expected to be UTC when timezone is absent.
+            dt = pytz.utc.localize(dt)
+        return dt.astimezone(target_tz).replace(tzinfo=None)
+
+    return _to_local_naive(start_time), _to_local_naive(end_time)
 
 
 def get_normalized_sport_type(sport_type):

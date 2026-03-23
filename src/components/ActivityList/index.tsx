@@ -40,6 +40,7 @@ import {
   convertMovingTime2Sec,
   filterSportRuns,
   normalizeActivityType,
+  parseDateTimeLocal,
 } from '@/utils/utils';
 import {
   formatAveragePrimaryMetric,
@@ -581,8 +582,10 @@ const ActivityList: React.FC = () => {
   const availableYears = useMemo(() => {
     const years = new Set<string>();
     ALL_ACTIVITIES.forEach((activity) => {
-      const year = new Date(activity.start_date_local).getFullYear().toString();
-      years.add(year);
+      const date = parseDateTimeLocal(activity.start_date_local);
+      if (!Number.isNaN(date.getTime())) {
+        years.add(date.getFullYear().toString());
+      }
     });
     return Array.from(years).sort((a, b) => Number(b) - Number(a));
   }, []);
@@ -666,7 +669,10 @@ const ActivityList: React.FC = () => {
     return ALL_ACTIVITIES.filter((activity) =>
       filterSportRuns(activity, sportTypeArg)
     ).reduce((acc: ActivityGroups, activity) => {
-      const date = new Date(activity.start_date_local);
+      const date = parseDateTimeLocal(activity.start_date_local);
+      if (Number.isNaN(date.getTime())) {
+        return acc;
+      }
       let key: string;
       let index: number;
       switch (intervalArg) {
@@ -752,11 +758,24 @@ const ActivityList: React.FC = () => {
           acc[key].maxElevationGain = activity.elevation_gain;
         }
       }
+
+      const normalizedType = normalizeActivityType(activity.type);
+      const estimatedLoss =
+        (activity.elevation_loss === null ||
+          activity.elevation_loss === undefined) &&
+        (normalizedType === 'cycling' || normalizedType === 'hiking') &&
+        activity.elevation_gain !== null &&
+        activity.elevation_gain !== undefined
+          ? activity.elevation_gain
+          : null;
       if (
         activity.elevation_loss !== null &&
         activity.elevation_loss !== undefined
       ) {
         acc[key].totalElevationLoss += activity.elevation_loss;
+        acc[key].elevationLossCount += 1;
+      } else if (estimatedLoss !== null) {
+        acc[key].totalElevationLoss += estimatedLoss;
         acc[key].elevationLossCount += 1;
       }
       if (
@@ -784,7 +803,10 @@ const ActivityList: React.FC = () => {
         acc[key].minElevationCount += 1;
       }
 
-      if (activity.average_heartrate) {
+      if (
+        activity.average_heartrate !== null &&
+        activity.average_heartrate !== undefined
+      ) {
         acc[key].totalHeartRate += activity.average_heartrate;
         acc[key].heartRateCount += 1;
       }
@@ -911,7 +933,9 @@ const ActivityList: React.FC = () => {
       Object.entries(activitiesByInterval)
         .sort(([a], [b]) => {
           if (interval === 'day') {
-            return new Date(b).getTime() - new Date(a).getTime(); // Sort by date
+            return (
+              parseDateTimeLocal(b).getTime() - parseDateTimeLocal(a).getTime()
+            ); // Sort by date
           } else if (interval === 'week') {
             const [yearA, weekA] = a.split('-W').map(Number);
             const [yearB, weekB] = b.split('-W').map(Number);

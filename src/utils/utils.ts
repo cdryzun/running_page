@@ -110,11 +110,34 @@ const titleForShow = (run: Activity): string => {
 };
 
 const formatPace = (d: number): string => {
-  if (Number.isNaN(d)) return '0';
-  const pace = (M_TO_DIST / 60.0) * (1.0 / d);
-  const minutes = Math.floor(pace);
-  const seconds = Math.floor((pace - minutes) * 60.0);
-  return `${minutes}'${seconds.toFixed(0).toString().padStart(2, '0')}"`;
+  if (!Number.isFinite(d) || d <= 0) return '0';
+  const paceSeconds = Math.round(M_TO_DIST / d);
+  const minutes = Math.floor(paceSeconds / 60);
+  const seconds = paceSeconds % 60;
+  return `${minutes}'${seconds.toString().padStart(2, '0')}"`;
+};
+
+const parseDateTimeLocal = (input: string): Date => {
+  const value = (input || '').trim();
+  if (!value) return new Date(Number.NaN);
+
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) return parsed;
+
+  const match = value.match(
+    /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2})(?::(\d{1,2})(?::(\d{1,2}))?)?)?$/
+  );
+  if (!match) return new Date(Number.NaN);
+
+  const [, year, month, day, hour = '0', minute = '0', second = '0'] = match;
+  return new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second)
+  );
 };
 
 const convertMovingTime2Sec = (moving_time: string): number => {
@@ -482,8 +505,8 @@ const filterAndSortRuns = (
 
 const sortDateFunc = (a: Activity, b: Activity) => {
   return (
-    new Date(b.start_date_local.replace(' ', 'T')).getTime() -
-    new Date(a.start_date_local.replace(' ', 'T')).getTime()
+    parseDateTimeLocal(b.start_date_local).getTime() -
+    parseDateTimeLocal(a.start_date_local).getTime()
   );
 };
 const sortDateFuncReverse = (a: Activity, b: Activity) => sortDateFunc(b, a);
@@ -540,6 +563,7 @@ const getMapTheme = (): string => {
 export {
   titleForShow,
   formatPace,
+  parseDateTimeLocal,
   scrollToMap,
   locationForRun,
   intComma,

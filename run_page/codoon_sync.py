@@ -547,8 +547,18 @@ class Codoon:
 
     @staticmethod
     def _gt(dt_str):
-        dt, _, _ = dt_str.partition(".")
-        return datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S")
+        value = str(dt_str).strip()
+        if value.endswith("Z"):
+            value = value[:-1] + "+00:00"
+        try:
+            parsed = datetime.fromisoformat(value)
+        except ValueError:
+            dt, _, _ = value.partition(".")
+            parsed = datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S")
+
+        if parsed.tzinfo is not None:
+            return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+        return parsed
 
     def parse_raw_data_to_namedtuple(
         self, run_data, old_gpx_ids, with_gpx=False, with_tcx=False

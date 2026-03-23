@@ -221,17 +221,20 @@ class Track:
         }
 
     def _calc_moving_time(self, trackpoints, seconds_threshold=10):
-        moving_time = 0
+        moving_time = 0.0
         try:
-            start_time = self.start_time
+            if not trackpoints or len(trackpoints) < 2:
+                return 0
             for i in range(1, len(trackpoints)):
-                if trackpoints[i].time - trackpoints[i - 1].time <= datetime.timedelta(
-                    seconds=seconds_threshold
-                ):
-                    moving_time += (
-                        trackpoints[i].time.timestamp() - start_time.timestamp()
-                    )
-                start_time = trackpoints[i].time
+                prev_time = getattr(trackpoints[i - 1], "time", None)
+                curr_time = getattr(trackpoints[i], "time", None)
+                if prev_time is None or curr_time is None:
+                    continue
+                delta = curr_time - prev_time
+                if delta < datetime.timedelta(0):
+                    continue
+                if delta <= datetime.timedelta(seconds=seconds_threshold):
+                    moving_time += delta.total_seconds()
             return int(moving_time)
         except Exception as e:
             print(f"Error calculating moving time: {e}")
@@ -643,10 +646,16 @@ class Track:
         self.moving_dict["elapsed_time"] = datetime.timedelta(
             seconds=message["total_elapsed_time"]
         )
+        enhanced_avg_speed = message.get("enhanced_avg_speed")
+        raw_avg_speed = message.get("avg_speed")
+        moving_seconds = self.moving_dict["moving_time"].total_seconds()
+        fallback_avg_speed = (
+            self.moving_dict["distance"] / moving_seconds if moving_seconds > 0 else 0
+        )
         self.moving_dict["average_speed"] = (
-            message["enhanced_avg_speed"]
-            if message["enhanced_avg_speed"]
-            else message["avg_speed"]
+            enhanced_avg_speed
+            if enhanced_avg_speed is not None
+            else (raw_avg_speed if raw_avg_speed is not None else fallback_avg_speed)
         )
         elevation_points = []
         for record in fit["record_mesgs"]:
@@ -755,14 +764,26 @@ class Track:
     @staticmethod
     def _get_moving_data(gpx, moving_time):
         moving_data = gpx.get_moving_data()
-        elapsed_time = moving_data.moving_time
-        moving_time = moving_time or elapsed_time
+        # Prefer custom moving_time estimate when provided by upstream loader.
+        moving_time_seconds = float(
+            moving_time if moving_time is not None else moving_data.moving_time
+        )
+        if moving_time_seconds <= 0:
+            moving_time_seconds = float(moving_data.moving_time)
+
+        # elapsed_time should include stopped time, not just moving_time.
+        stopped_time_seconds = float(getattr(moving_data, "stopped_time", 0) or 0)
+        elapsed_time_seconds = moving_time_seconds + stopped_time_seconds
+        if elapsed_time_seconds <= 0:
+            elapsed_time_seconds = float(moving_data.moving_time)
+
+        moving_distance = float(getattr(moving_data, "moving_distance", 0) or 0)
         return {
-            "distance": moving_data.moving_distance,
-            "moving_time": datetime.timedelta(seconds=moving_time),
-            "elapsed_time": datetime.timedelta(seconds=elapsed_time),
+            "distance": moving_distance,
+            "moving_time": datetime.timedelta(seconds=moving_time_seconds),
+            "elapsed_time": datetime.timedelta(seconds=elapsed_time_seconds),
             "average_speed": (
-                moving_data.moving_distance / moving_time if moving_time else 0
+                moving_distance / moving_time_seconds if moving_time_seconds else 0
             ),
         }
 

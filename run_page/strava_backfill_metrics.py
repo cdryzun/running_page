@@ -28,6 +28,9 @@ MISSING_METRIC_FIELDS = (
     "max_cadence",
 )
 
+# Ignore tiny point-to-point altitude jitter when deriving elevation metrics.
+ELEVATION_NOISE_THRESHOLD_M = 0.5
+
 
 def is_cycling_type(activity_type: str) -> bool:
     lower = (activity_type or "").lower()
@@ -123,7 +126,9 @@ def extract_altitude_points(streams) -> list[float]:
     return out
 
 
-def calculate_elevation_gain_loss(points: list[float]) -> tuple[float, float]:
+def calculate_elevation_gain_loss(
+    points: list[float], min_delta_m: float = ELEVATION_NOISE_THRESHOLD_M
+) -> tuple[float, float]:
     if len(points) < 2:
         return 0.0, 0.0
     gain = 0.0
@@ -131,6 +136,9 @@ def calculate_elevation_gain_loss(points: list[float]) -> tuple[float, float]:
     prev = points[0]
     for curr in points[1:]:
         delta = curr - prev
+        if abs(delta) < min_delta_m:
+            prev = curr
+            continue
         if delta > 0:
             gain += delta
         elif delta < 0:
@@ -251,23 +259,37 @@ def run_backfill(
             detail.elevation_gain = getattr(
                 detail, "total_elevation_gain", getattr(detail, "elevation_gain", None)
             )
-            if derive_elevation_loss and (
+            needs_loss = (
                 getattr(detail, "total_elevation_loss", None) is None
                 and getattr(detail, "elevation_loss", None) is None
+            )
+            needs_gain = (
+                getattr(detail, "total_elevation_gain", None) is None
+                and getattr(detail, "elevation_gain", None) is None
+            )
+            needs_high = getattr(detail, "elev_high", None) is None
+            needs_low = getattr(detail, "elev_low", None) is None
+
+            # Reuse one altitude stream fetch to enrich multiple missing metrics.
+            if (
+                (derive_elevation_loss and needs_loss)
+                or needs_gain
+                or needs_high
+                or needs_low
             ):
                 try:
                     streams = fetch_streams_with_retry(generator, run_id)
                     points = extract_altitude_points(streams)
-                    stream_gain, stream_loss = calculate_elevation_gain_loss(points)
-                    if stream_loss > 0:
-                        detail.total_elevation_loss = stream_loss
-                    if getattr(detail, "total_elevation_gain", None) is None and (
-                        stream_gain > 0
-                    ):
-                        detail.total_elevation_gain = stream_gain
-                    if getattr(detail, "elev_high", None) is None and points:
-                        detail.elev_high = max(points)
-                        detail.elev_low = min(points)
+                    if points:
+                        stream_gain, stream_loss = calculate_elevation_gain_loss(points)
+                        if derive_elevation_loss and needs_loss:
+                            detail.total_elevation_loss = stream_loss
+                        if needs_gain:
+                            detail.total_elevation_gain = stream_gain
+                        if needs_high:
+                            detail.elev_high = max(points)
+                        if needs_low:
+                            detail.elev_low = min(points)
                 except Exception as stream_err:
                     print(f"stream enrichment skipped for {run_id}: {stream_err}")
             detail.subtype = getattr(detail, "type", activity.subtype or activity.type)
