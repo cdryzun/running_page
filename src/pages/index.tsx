@@ -10,7 +10,7 @@ import YearsStat from '@/components/YearsStat';
 import useActivities from '@/hooks/useActivities';
 import useSiteMetadata from '@/hooks/useSiteMetadata';
 import { useInterval } from '@/hooks/useInterval';
-import { IS_CHINESE } from '@/utils/const';
+import { IS_CHINESE, type SportTypeFilter } from '@/utils/const';
 import {
   Activity,
   IViewState,
@@ -18,6 +18,7 @@ import {
   filterCityRuns,
   filterTitleRuns,
   filterYearRuns,
+  filterSportRuns,
   geoJsonForRuns,
   getBoundsForGeoData,
   scrollToMap,
@@ -31,7 +32,8 @@ const Index = () => {
   const { siteTitle, siteUrl } = useSiteMetadata();
   const { activities, thisYear } = useActivities();
   const themeChangeCounter = useThemeChangeCounter();
-  const [year, setYear] = useState(thisYear);
+  const [year, setYear] = useState('Total');
+  const [sportType, setSportType] = useState<SportTypeFilter>('all');
   const [runIndex, setRunIndex] = useState(-1);
   const [title, setTitle] = useState('');
   // Animation states for replacing intervalIdRef
@@ -41,7 +43,7 @@ const Index = () => {
   const [currentFilter, setCurrentFilter] = useState<{
     item: string;
     func: (_run: Activity, _value: string) => boolean;
-  }>({ item: thisYear, func: filterYearRuns });
+  }>({ item: 'Total', func: filterYearRuns });
 
   // State to track if we're showing a single run from URL hash
   const [singleRunId, setSingleRunId] = useState<number | null>(null);
@@ -83,15 +85,17 @@ const Index = () => {
     };
   }, []);
 
-  // Memoize expensive calculations
+  // Memoize expensive calculations with sport type filtering
   const runs = useMemo(() => {
-    return filterAndSortRuns(
+    const filtered = filterAndSortRuns(
       activities,
       currentFilter.item,
       currentFilter.func,
       sortDateFunc
     );
-  }, [activities, currentFilter.item, currentFilter.func]);
+    if (sportType === 'all') return filtered;
+    return filtered.filter((run) => filterSportRuns(run, sportType));
+  }, [activities, currentFilter.item, currentFilter.func, sportType]);
 
   const geoData = useMemo(() => {
     return geoJsonForRuns(runs);
@@ -162,7 +166,7 @@ const Index = () => {
       }
       setCurrentFilter({ item, func });
       setRunIndex(-1);
-      setTitle(`${item} ${name} Running Heatmap`);
+      setTitle(`${item} ${name} Activity Heatmap`);
       // Reset single run state when changing filters
       setSingleRunId(null);
       if (window.location.hash) {
@@ -384,7 +388,7 @@ const Index = () => {
     return () => {
       svgStat && svgStat.removeEventListener('click', handleClick);
     };
-  }, [year]);
+  }, [year, runs, locateActivity, thisYear]);
 
   const { theme } = useTheme();
 
@@ -404,7 +408,7 @@ const Index = () => {
             changeTitle={changeTitle}
           />
         ) : (
-          <YearsStat year={year} onClick={changeYear} />
+          <YearsStat year={year} onClick={changeYear} sportType={sportType} />
         )}
       </div>
       <div className="w-full lg:w-2/3" id="map-container">
@@ -418,7 +422,7 @@ const Index = () => {
           animationTrigger={animationTrigger}
         />
         {year === 'Total' ? (
-          <SVGStat />
+          <SVGStat sportType={sportType} onSportTypeChange={setSportType} />
         ) : (
           <RunTable
             runs={runs}

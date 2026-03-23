@@ -1,14 +1,16 @@
 import { useMemo } from 'react';
 import YearStat from '@/components/YearStat';
 import useActivities from '@/hooks/useActivities';
-import { INFO_MESSAGE } from '@/utils/const';
+import { INFO_MESSAGE, type SportTypeFilter } from '@/utils/const';
 
 const YearsStat = ({
   year,
   onClick,
+  sportType = 'all',
 }: {
   year: string;
   onClick: (_year: string) => void;
+  sportType?: SportTypeFilter;
 }) => {
   const { years } = useActivities();
 
@@ -37,7 +39,12 @@ const YearsStat = ({
       </section>
       <hr />
       {yearsArrayUpdate.map((yearItem) => (
-        <YearStat key={yearItem} year={yearItem} onClick={onClick} />
+        <YearStat
+          key={yearItem}
+          year={yearItem}
+          onClick={onClick}
+          sportType={sportType}
+        />
       ))}
     </div>
   );

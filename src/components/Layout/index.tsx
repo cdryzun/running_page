@@ -13,7 +13,10 @@ const Layout = ({ children }: React.PropsWithChildren) => {
         <html lang="en" />
         <title>{siteTitle}</title>
         <meta name="description" content={description} />
-        <meta name="keywords" content="running" />
+        <meta
+          name="keywords"
+          content="activity,sports,running,cycling,hiking,walking"
+        />
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, shrink-to-fit=no"

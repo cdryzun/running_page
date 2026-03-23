@@ -13,7 +13,7 @@ const PeriodStat = ({ onClick }: { onClick: (_period: string) => void }) => {
           <Stat
             key={period}
             value={period}
-            description={` ${times} Runs`}
+            description={` ${times} Activities`}
             citySize={3}
             onClick={() => onClick(period)}
           />

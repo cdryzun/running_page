@@ -116,6 +116,18 @@ const ACTIVITY_TYPES = {
   ALL_TITLE,
 };
 
+// Sport type filter options for the UI dropdown
+const SPORT_TYPE_OPTIONS = [
+  { value: 'all', label: ALL_TITLE },
+  { value: 'running', label: RUN_GENERIC_TITLE },
+  { value: 'cycling', label: CYCLING_TITLE },
+  { value: 'hiking', label: HIKING_TITLE },
+  { value: 'walking', label: WALKING_TITLE },
+  { value: 'swimming', label: SWIMMING_TITLE },
+  { value: 'skiing', label: SKIING_TITLE },
+] as const;
+type SportTypeFilter = (typeof SPORT_TYPE_OPTIONS)[number]['value'];
+
 const RUN_TITLES = {
   FULL_MARATHON_RUN_TITLE,
   HALF_MARATHON_RUN_TITLE,
@@ -164,11 +176,14 @@ export {
   RICH_TITLE,
   ACTIVITY_TYPES,
   ACTIVITY_TOTAL,
+  SPORT_TYPE_OPTIONS,
   HOME_PAGE_TITLE,
   LOADING_TEXT,
   NO_ROUTE_DATA,
   INVALID_ROUTE_DATA,
 };
+
+export type { SportTypeFilter };
 
 const nike = 'rgb(224,237,94)'; // if you want to change the main color, modify this value in src/styles/variables.scss
 const dark_vanilla = 'rgb(228,212,220)';

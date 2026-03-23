@@ -5,15 +5,22 @@ import { formatPace } from '@/utils/utils';
 import useHover from '@/hooks/useHover';
 import { yearStats, githubYearStats } from '@assets/index';
 import { loadSvgComponent } from '@/utils/svgUtils';
-import { SHOW_ELEVATION_GAIN } from '@/utils/const';
-import { DIST_UNIT, M_TO_DIST, M_TO_ELEV } from '@/utils/utils';
+import { SHOW_ELEVATION_GAIN, type SportTypeFilter } from '@/utils/const';
+import {
+  DIST_UNIT,
+  M_TO_DIST,
+  M_TO_ELEV,
+  filterSportRuns,
+} from '@/utils/utils';
 
 const YearStat = ({
   year,
   onClick,
+  sportType = 'all',
 }: {
   year: string;
   onClick: (_year: string) => void;
+  sportType?: SportTypeFilter;
 }) => {
   let { activities: runs, years } = useActivities();
   // for hover
@@ -26,6 +33,9 @@ const YearStat = ({
 
   if (years.includes(year)) {
     runs = runs.filter((run) => run.start_date_local.slice(0, 4) === year);
+  }
+  if (sportType !== 'all') {
+    runs = runs.filter((run) => filterSportRuns(run, sportType));
   }
   let sumDistance = 0;
   let streak = 0;
@@ -66,7 +76,7 @@ const YearStat = ({
     <div className="cursor-pointer" onClick={() => onClick(year)}>
       <section {...eventHandlers}>
         <Stat value={year} description=" Journey" />
-        <Stat value={runs.length} description=" Runs" />
+        <Stat value={runs.length} description=" Activities" />
         <Stat value={sumDistance} description={` ${DIST_UNIT}`} />
         {SHOW_ELEVATION_GAIN && (
           <Stat value={sumElevationGainStr} description=" Elevation Gain" />
