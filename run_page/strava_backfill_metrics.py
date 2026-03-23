@@ -59,6 +59,10 @@ def snapshot_metrics(activity: Activity) -> tuple:
 
 
 def fetch_activity_with_retry(generator: Generator, run_id: int, max_retry: int = 2):
+    def _is_rate_limit_error(err: Exception) -> bool:
+        msg = str(err).lower()
+        return "429" in msg or "rate limit" in msg or "too many requests" in msg
+
     last_error = None
     for retry in range(max_retry + 1):
         try:
@@ -72,7 +76,97 @@ def fetch_activity_with_retry(generator: Generator, run_id: int, max_retry: int 
             time.sleep(sleep_seconds)
         except Exception as err:  # pragma: no cover - keep broad to avoid run abort
             last_error = err
-            break
+            if not _is_rate_limit_error(err):
+                break
+            sleep_seconds = min(120, 10 * (retry + 1))
+            print(
+                f"Rate limit-like error for activity {run_id}, sleep {sleep_seconds}s then retry ({retry + 1}/{max_retry + 1})"
+            )
+            time.sleep(sleep_seconds)
+    raise last_error  # type: ignore[misc]
+
+
+def extract_altitude_points(streams) -> list[float]:
+    if not streams:
+        return []
+
+    altitude_stream = None
+    if isinstance(streams, dict):
+        altitude_stream = streams.get("altitude")
+    elif isinstance(streams, list):
+        for item in streams:
+            stream_type = getattr(item, "type", None)
+            if stream_type == "altitude":
+                altitude_stream = item
+                break
+            if isinstance(item, dict) and item.get("type") == "altitude":
+                altitude_stream = item
+                break
+
+    if altitude_stream is None:
+        return []
+
+    data = None
+    if hasattr(altitude_stream, "data"):
+        data = getattr(altitude_stream, "data")
+    elif isinstance(altitude_stream, dict):
+        data = altitude_stream.get("data")
+
+    if not data:
+        return []
+
+    out: list[float] = []
+    for value in data:
+        try:
+            out.append(float(value))
+        except Exception:
+            continue
+    return out
+
+
+def calculate_elevation_gain_loss(points: list[float]) -> tuple[float, float]:
+    if len(points) < 2:
+        return 0.0, 0.0
+    gain = 0.0
+    loss = 0.0
+    prev = points[0]
+    for curr in points[1:]:
+        delta = curr - prev
+        if delta > 0:
+            gain += delta
+        elif delta < 0:
+            loss += -delta
+        prev = curr
+    return gain, loss
+
+
+def fetch_streams_with_retry(generator: Generator, run_id: int, max_retry: int = 2):
+    def _is_rate_limit_error(err: Exception) -> bool:
+        msg = str(err).lower()
+        return "429" in msg or "rate limit" in msg or "too many requests" in msg
+
+    last_error = None
+    for retry in range(max_retry + 1):
+        try:
+            return generator.client.get_activity_streams(
+                run_id, types=["altitude"], key_by_type=True
+            )
+        except RateLimitExceeded as err:
+            last_error = err
+            sleep_seconds = max(int(getattr(err, "timeout", 0)), 1) + 1
+            print(
+                f"Rate limit hit for streams {run_id}, sleep {sleep_seconds}s then retry ({retry + 1}/{max_retry + 1})"
+            )
+            time.sleep(sleep_seconds)
+        except Exception as err:
+            last_error = err
+            if not _is_rate_limit_error(err):
+                break
+            sleep_seconds = min(120, 10 * (retry + 1))
+            print(
+                f"Rate limit-like error for streams {run_id}, sleep {sleep_seconds}s then retry ({retry + 1}/{max_retry + 1})"
+            )
+            time.sleep(sleep_seconds)
     raise last_error  # type: ignore[misc]
 
 
@@ -116,6 +210,7 @@ def run_backfill(
     since: str | None,
     limit: int,
     commit_every: int,
+    derive_elevation_loss: bool,
 ) -> None:
     generator = Generator(SQL_FILE)
     generator.set_strava_config(client_id, client_secret, refresh_token)
@@ -149,6 +244,25 @@ def run_backfill(
             detail.elevation_gain = getattr(
                 detail, "total_elevation_gain", getattr(detail, "elevation_gain", None)
             )
+            if derive_elevation_loss and (
+                getattr(detail, "total_elevation_loss", None) is None
+                and getattr(detail, "elevation_loss", None) is None
+            ):
+                try:
+                    streams = fetch_streams_with_retry(generator, run_id)
+                    points = extract_altitude_points(streams)
+                    stream_gain, stream_loss = calculate_elevation_gain_loss(points)
+                    if stream_loss > 0:
+                        detail.total_elevation_loss = stream_loss
+                    if getattr(detail, "total_elevation_gain", None) is None and (
+                        stream_gain > 0
+                    ):
+                        detail.total_elevation_gain = stream_gain
+                    if getattr(detail, "elev_high", None) is None and points:
+                        detail.elev_high = max(points)
+                        detail.elev_low = min(points)
+                except Exception as stream_err:
+                    print(f"stream enrichment skipped for {run_id}: {stream_err}")
             detail.subtype = getattr(detail, "type", activity.subtype or activity.type)
             update_or_create_activity(generator.session, detail)
             generator.session.flush()
@@ -198,7 +312,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--limit",
         type=int,
-        default=180,
+        default=90,
         help="max candidate activities per run, set <=0 for no limit",
     )
     parser.add_argument(
@@ -207,6 +321,13 @@ if __name__ == "__main__":
         default=20,
         help="commit frequency to reduce long transaction risk",
     )
+    parser.add_argument(
+        "--no-derive-elevation-loss",
+        dest="derive_elevation_loss",
+        action="store_false",
+        help="disable deriving elevation loss from altitude streams",
+    )
+    parser.set_defaults(derive_elevation_loss=True)
     options = parser.parse_args()
 
     run_backfill(
@@ -217,4 +338,5 @@ if __name__ == "__main__":
         options.since,
         options.limit,
         options.commit_every,
+        options.derive_elevation_loss,
     )

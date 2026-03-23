@@ -10,7 +10,7 @@ on:
       limit:
         description: "Max activities to backfill in one run (set 0 for unlimited)"
         required: true
-        default: "180"
+        default: "90"
       types:
         description: "Activity groups to backfill (cycling or all)"
         required: true
