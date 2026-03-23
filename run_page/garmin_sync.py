@@ -16,6 +16,8 @@ from io import BytesIO
 from lxml import etree
 
 import aiofiles
+# Disable garth telemetry by default to avoid Logfire auth requirements in CI/process pools.
+os.environ.setdefault("GARTH_TELEMETRY_ENABLED", "false")
 import garth
 import httpx
 from config import FOLDER_DICT, JSON_FILE, SQL_FILE

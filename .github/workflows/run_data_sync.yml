@@ -26,6 +26,8 @@ on:
 env:
   # please change to your own config.
   RUN_TYPE: dual_sync # changing from garmin_cn to a new type for dual sync
+  # garth>=0.7 enables telemetry by default and may fail in ProcessPool without logfire auth
+  GARTH_TELEMETRY_ENABLED: false
   ATHLETE: Zayn
   TITLE: Zayn Running
   MIN_GRID_DISTANCE: 10 # change min distance here
