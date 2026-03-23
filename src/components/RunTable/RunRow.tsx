@@ -1,5 +1,5 @@
 import { titleForRun, formatRunTime, Activity, RunIds } from '@/utils/utils';
-import { IS_CHINESE, SHOW_ELEVATION_GAIN, type SportTypeFilter } from '@/utils/const';
+import { SHOW_ELEVATION_GAIN, type SportTypeFilter } from '@/utils/const';
 import { ELEV_UNIT, M_TO_DIST, M_TO_ELEV } from '@/utils/utils';
 import { getActivityPrimaryMetric } from '@/utils/sportMetrics';
 import styles from './style.module.css';
@@ -26,20 +26,23 @@ const RunRow = ({
   const heartRate = run.average_heartrate;
   const runTime = formatRunTime(run.moving_time);
   const rowExtras: string[] = [];
+  const formatElevation = (meters: number): string =>
+    `${(meters * M_TO_ELEV).toFixed(0)}${ELEV_UNIT}`;
+  if (
+    run.elevation_gain !== null &&
+    run.elevation_gain !== undefined &&
+    run.elevation_gain > 0
+  ) {
+    rowExtras.push(`↑${formatElevation(run.elevation_gain)}`);
+  }
   if (run.elevation_loss !== null && run.elevation_loss !== undefined) {
-    rowExtras.push(
-      `${IS_CHINESE ? '下降' : 'Loss'} ${(run.elevation_loss * M_TO_ELEV).toFixed(0)}${ELEV_UNIT}`
-    );
+    rowExtras.push(`↓${formatElevation(run.elevation_loss)}`);
   }
   if (run.average_watts && run.average_watts > 0) {
-    rowExtras.push(
-      `${IS_CHINESE ? '功率' : 'Power'} ${run.average_watts.toFixed(0)}W`
-    );
+    rowExtras.push(`⚡${run.average_watts.toFixed(0)}W`);
   }
   if (run.average_cadence && run.average_cadence > 0) {
-    rowExtras.push(
-      `${IS_CHINESE ? '踏频' : 'Cad'} ${run.average_cadence.toFixed(0)}rpm`
-    );
+    rowExtras.push(`⟳${run.average_cadence.toFixed(0)}rpm`);
   }
   const handleClick = () => {
     if (runIndex === elementIndex) {
