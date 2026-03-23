@@ -253,6 +253,24 @@ class Track:
             prev = current
         return gain, loss
 
+    @staticmethod
+    def _pick_elevation_metric(smoothed, raw, prefer_raw=False):
+        smoothed_value = float(smoothed) if smoothed is not None else 0.0
+        raw_value = float(raw) if raw is not None else 0.0
+
+        if raw_value <= 0 and smoothed_value <= 0:
+            return None
+        if raw_value <= 0:
+            return smoothed_value
+        if smoothed_value <= 0:
+            return raw_value
+        if prefer_raw:
+            return raw_value
+        # If the smoothed result underestimates too much, use raw cumulative value.
+        if raw_value > smoothed_value * 1.3:
+            return raw_value
+        return smoothed_value
+
     def _load_gpx_data(self, gpx):
         self.start_time, self.end_time = gpx.get_time_bounds()
         if self.start_time is None or self.end_time is None:
@@ -332,8 +350,8 @@ class Track:
         )
         self.moving_dict = self._get_moving_data(gpx, moving_time)
         uphill_downhill = gpx.get_uphill_downhill()
-        self.elevation_gain = uphill_downhill.uphill
-        self.elevation_loss = uphill_downhill.downhill
+        smoothed_gain = uphill_downhill.uphill
+        smoothed_loss = uphill_downhill.downhill
         elevations = [
             p.elevation
             for t in gpx.tracks
@@ -343,12 +361,23 @@ class Track:
         ]
         if elevations:
             calc_gain, calc_loss = self._calc_elevation_gain_loss(elevations)
-            if (self.elevation_gain is None or self.elevation_gain <= 0) and calc_gain > 0:
-                self.elevation_gain = calc_gain
-            if (self.elevation_loss is None or self.elevation_loss <= 0) and calc_loss > 0:
-                self.elevation_loss = calc_loss
+            creator = str(getattr(gpx, "creator", "") or "").lower()
+            prefer_raw = "garmin" in creator
+            self.elevation_gain = self._pick_elevation_metric(
+                smoothed_gain, calc_gain, prefer_raw=prefer_raw
+            )
+            self.elevation_loss = self._pick_elevation_metric(
+                smoothed_loss, calc_loss, prefer_raw=prefer_raw
+            )
             self.max_elevation = max(elevations)
             self.min_elevation = min(elevations)
+        else:
+            self.elevation_gain = (
+                float(smoothed_gain) if smoothed_gain is not None else None
+            )
+            self.elevation_loss = (
+                float(smoothed_loss) if smoothed_loss is not None else None
+            )
         self._load_gpx_extensions_data(gpx)
 
     def _load_gpx_extensions_item(self, gpx, item_name):
