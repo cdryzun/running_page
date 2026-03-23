@@ -129,32 +129,71 @@ def update_or_create_activity(session, run_activity):
         current_elevation_loss = _to_float_or_none(
             _pick_attr(
                 run_activity,
-                ["total_elevation_loss", "elevation_loss", "total_downhill"],
+                [
+                    "total_elevation_loss",
+                    "elevation_loss",
+                    "total_downhill",
+                    "total_descent",
+                    "totalDescent",
+                    "descent",
+                ],
             )
         )
         current_max_elevation = _to_float_or_none(
-            _pick_attr(run_activity, ["elev_high", "max_elevation"])
+            _pick_attr(
+                run_activity,
+                [
+                    "elev_high",
+                    "max_elevation",
+                    "max_altitude",
+                    "enhanced_max_altitude",
+                ],
+            )
         )
         current_min_elevation = _to_float_or_none(
-            _pick_attr(run_activity, ["elev_low", "min_elevation"])
+            _pick_attr(
+                run_activity,
+                [
+                    "elev_low",
+                    "min_elevation",
+                    "min_altitude",
+                    "enhanced_min_altitude",
+                ],
+            )
         )
         current_average_watts = _to_float_or_none(
-            _pick_attr(run_activity, ["average_watts", "avg_watts"])
+            _pick_attr(
+                run_activity,
+                ["average_watts", "avg_watts", "avg_power", "average_power"],
+            )
         )
         current_weighted_average_watts = _to_float_or_none(
             _pick_attr(
                 run_activity,
-                ["weighted_average_watts", "weighted_avg_watts"],
+                [
+                    "weighted_average_watts",
+                    "weighted_avg_watts",
+                    "weighted_power",
+                    "normalized_power",
+                ],
             )
         )
         current_max_watts = _to_float_or_none(
-            _pick_attr(run_activity, ["max_watts"])
+            _pick_attr(run_activity, ["max_watts", "max_power"])
         )
         current_average_cadence = _to_float_or_none(
-            _pick_attr(run_activity, ["average_cadence", "avg_cadence"])
+            _pick_attr(
+                run_activity,
+                [
+                    "average_cadence",
+                    "avg_cadence",
+                    "average_bike_cadence",
+                    "avg_cad",
+                ],
+            )
         )
         current_max_cadence = _to_float_or_none(
-            _pick_attr(run_activity, ["max_cadence"])
+            _pick_attr(run_activity, ["max_cadence", "max_bike_cadence", "max_cad"])
         )
 
         if not activity:

@@ -5,7 +5,11 @@ import {
   RunIds,
   normalizeActivityType,
 } from '@/utils/utils';
-import { SHOW_ELEVATION_GAIN, type SportTypeFilter } from '@/utils/const';
+import {
+  IS_CHINESE,
+  SHOW_ELEVATION_GAIN,
+  type SportTypeFilter,
+} from '@/utils/const';
 import { ELEV_UNIT, M_TO_DIST, M_TO_ELEV } from '@/utils/utils';
 import { getActivityPrimaryMetric } from '@/utils/sportMetrics';
 import styles from './style.module.css';
@@ -17,6 +21,13 @@ interface IRunRowProperties {
   runIndex: number;
   sportType: SportTypeFilter;
   setRunIndex: (_ndex: number) => void;
+}
+
+interface RowMetaItem {
+  key: string;
+  icon: string;
+  value: string;
+  estimated?: boolean;
 }
 
 const RunRow = ({
@@ -32,7 +43,7 @@ const RunRow = ({
   const heartRate = run.average_heartrate;
   const runTime = formatRunTime(run.moving_time);
   const normalizedType = normalizeActivityType(run.type);
-  const rowExtras: string[] = [];
+  const rowMetaItems: RowMetaItem[] = [];
   const formatElevation = (meters: number): string =>
     `${(meters * M_TO_ELEV).toFixed(0)}${ELEV_UNIT}`;
   const hasGain =
@@ -44,33 +55,46 @@ const RunRow = ({
   const hasCadence =
     run.average_cadence !== null && run.average_cadence !== undefined;
 
-  const elevationGainText = hasGain ? formatElevation(run.elevation_gain as number) : '--';
-  const elevationLossText = hasLoss ? formatElevation(run.elevation_loss as number) : '--';
+  const elevationGainText = hasGain
+    ? formatElevation(run.elevation_gain as number)
+    : '--';
+  const lossEstimated = !hasLoss && normalizedType === 'hiking' && hasGain;
+  const elevationLossText = hasLoss
+    ? formatElevation(run.elevation_loss as number)
+    : lossEstimated
+      ? `~${formatElevation(run.elevation_gain as number)}`
+      : '--';
   const powerText = hasPower ? `${(run.average_watts as number).toFixed(0)}W` : '--';
   const cadenceText = hasCadence
     ? `${(run.average_cadence as number).toFixed(0)}rpm`
     : '--';
+  const addMeta = (
+    key: string,
+    icon: string,
+    value: string,
+    estimated = false
+  ) => rowMetaItems.push({ key, icon, value, estimated });
 
   if (normalizedType === 'cycling') {
-    rowExtras.push(`↑${elevationGainText}`);
-    rowExtras.push(`↓${elevationLossText}`);
-    rowExtras.push(`⚡${powerText}`);
-    rowExtras.push(`⟳${cadenceText}`);
+    addMeta('gain', '↑', elevationGainText);
+    addMeta('loss', '↓', elevationLossText);
+    addMeta('power', '⚡', powerText);
+    addMeta('cadence', '⟳', cadenceText);
   } else if (normalizedType === 'hiking') {
-    rowExtras.push(`↑${elevationGainText}`);
-    rowExtras.push(`↓${elevationLossText}`);
+    addMeta('gain', '↑', elevationGainText);
+    addMeta('loss', '↓', elevationLossText, lossEstimated);
   } else {
     if (hasGain) {
-      rowExtras.push(`↑${elevationGainText}`);
+      addMeta('gain', '↑', elevationGainText);
     }
     if (hasLoss) {
-      rowExtras.push(`↓${elevationLossText}`);
+      addMeta('loss', '↓', elevationLossText);
     }
     if (hasPower) {
-      rowExtras.push(`⚡${powerText}`);
+      addMeta('power', '⚡', powerText);
     }
     if (hasCadence) {
-      rowExtras.push(`⟳${cadenceText}`);
+      addMeta('cadence', '⟳', cadenceText);
     }
   }
   const handleClick = () => {
@@ -91,8 +115,27 @@ const RunRow = ({
     >
       <td>
         {titleForRun(run)}
-        {rowExtras.length > 0 && (
-          <span className={styles.rowMeta}> · {rowExtras.join(' · ')}</span>
+        {rowMetaItems.length > 0 && (
+          <span className={styles.rowMeta}>
+            {rowMetaItems.map((item, idx) => (
+              <span
+                key={`${item.key}-${idx}`}
+                className={`${styles.metaSlot} ${
+                  item.estimated ? styles.metaSlotEstimated : ''
+                }`}
+                title={
+                  item.estimated
+                    ? IS_CHINESE
+                      ? '估算值（原始下降缺失）'
+                      : 'Estimated (loss missing from source)'
+                    : undefined
+                }
+              >
+                <span className={styles.metaIcon}>{item.icon}</span>
+                <span className={styles.metaValue}>{item.value}</span>
+              </span>
+            ))}
+          </span>
         )}
       </td>
       <td>{distance}</td>

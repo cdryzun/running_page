@@ -106,7 +106,34 @@
 }
 
 .rowMeta {
-  margin-left: 0.25rem;
+  margin-left: 0.35rem;
   font-size: 0.72rem;
-  opacity: 0.8;
+  opacity: 0.86;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18rem;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.metaSlot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.1rem;
+  min-width: 7.2ch;
+  line-height: 1;
+}
+
+.metaSlotEstimated {
+  opacity: 0.72;
+}
+
+.metaIcon {
+  width: 0.7rem;
+  text-align: center;
+}
+
+.metaValue {
+  font-variant-numeric: tabular-nums;
 }

@@ -50,6 +50,9 @@ class Track:
         self.special = False
         self.average_heartrate = None
         self.elevation_gain = None
+        self.elevation_loss = None
+        self.max_elevation = None
+        self.min_elevation = None
         self.moving_dict = {}
         self.run_id = 0
         self.start_latlng = []
@@ -196,6 +199,9 @@ class Track:
                 pass
             self.polyline_str = polyline.encode(polyline_container)
         self.elevation_gain = tcx.ascent
+        self.elevation_loss = getattr(tcx, "descent", None)
+        self.max_elevation = getattr(tcx, "max_altitude", None)
+        self.min_elevation = getattr(tcx, "min_altitude", None)
         self.moving_dict = {
             "distance": self.length,
             "moving_time": datetime.timedelta(seconds=moving_time),
@@ -298,7 +304,19 @@ class Track:
             sum(heart_rate_list) / len(heart_rate_list) if heart_rate_list else None
         )
         self.moving_dict = self._get_moving_data(gpx, moving_time)
-        self.elevation_gain = gpx.get_uphill_downhill().uphill
+        uphill_downhill = gpx.get_uphill_downhill()
+        self.elevation_gain = uphill_downhill.uphill
+        self.elevation_loss = uphill_downhill.downhill
+        elevations = [
+            p.elevation
+            for t in gpx.tracks
+            for s in t.segments
+            for p in s.points
+            if p.elevation is not None
+        ]
+        if elevations:
+            self.max_elevation = max(elevations)
+            self.min_elevation = min(elevations)
         self._load_gpx_extensions_data(gpx)
 
     def _load_gpx_extensions_item(self, gpx, item_name):
@@ -387,6 +405,15 @@ class Track:
         self.elevation_gain = (
             message["total_ascent"] if "total_ascent" in message else None
         )
+        self.elevation_loss = (
+            message["total_descent"] if "total_descent" in message else None
+        )
+        self.max_elevation = message.get(
+            "enhanced_max_altitude", message.get("max_altitude")
+        )
+        self.min_elevation = message.get(
+            "enhanced_min_altitude", message.get("min_altitude")
+        )
         # moving_dict
         self.moving_dict["distance"] = message["total_distance"]
         self.moving_dict["moving_time"] = datetime.timedelta(
@@ -451,6 +478,19 @@ class Track:
             self.elevation_gain = (
                 self.elevation_gain if self.elevation_gain else 0
             ) + (other.elevation_gain if other.elevation_gain else 0)
+            self.elevation_loss = (
+                self.elevation_loss if self.elevation_loss else 0
+            ) + (other.elevation_loss if other.elevation_loss else 0)
+            if other.max_elevation is not None:
+                if self.max_elevation is None:
+                    self.max_elevation = other.max_elevation
+                else:
+                    self.max_elevation = max(self.max_elevation, other.max_elevation)
+            if other.min_elevation is not None:
+                if self.min_elevation is None:
+                    self.min_elevation = other.min_elevation
+                else:
+                    self.min_elevation = min(self.min_elevation, other.min_elevation)
         except Exception as e:
             print(
                 f"something wrong append this {self.end_time},in files {str(self.file_names)}: {e}"
@@ -486,6 +526,15 @@ class Track:
                 int(self.average_heartrate) if self.average_heartrate else None
             ),
             "elevation_gain": (int(self.elevation_gain) if self.elevation_gain else 0),
+            "elevation_loss": (
+                int(self.elevation_loss) if self.elevation_loss else None
+            ),
+            "max_elevation": (
+                float(self.max_elevation) if self.max_elevation is not None else None
+            ),
+            "min_elevation": (
+                float(self.min_elevation) if self.min_elevation is not None else None
+            ),
             "map": run_map(self.polyline_str),
             "start_latlng": self.start_latlng,
         }
