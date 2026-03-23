@@ -34,7 +34,9 @@ import { loadSvgComponent } from '@/utils/svgUtils';
 import {
   Activity,
   DIST_UNIT,
+  ELEV_UNIT,
   M_TO_DIST,
+  M_TO_ELEV,
   convertMovingTime2Sec,
   filterSportRuns,
   normalizeActivityType,
@@ -107,6 +109,10 @@ interface ActivitySummary {
   maxElevationGain: number;
   elevationGainCount: number;
   elevationLossCount: number;
+  maxElevationCount: number;
+  minElevationCount: number;
+  highestElevation: number;
+  lowestElevation: number;
   totalPower: number;
   powerCount: number;
   weightedPowerTotal: number;
@@ -132,8 +138,12 @@ interface DisplaySummary {
   totalElevationLoss?: number;
   averageHeartRate?: number; // Add heart rate display
   maxElevationGain?: number;
+  highestElevation?: number;
+  lowestElevation?: number;
   climbRate?: number;
+  descentRate?: number;
   elevationPerDistance?: number;
+  descentPerDistance?: number;
   averagePower?: number;
   weightedAveragePower?: number;
   maxPower?: number;
@@ -171,11 +181,17 @@ const METRIC_LABELS = {
   avgDuration: IS_CHINESE ? '平均时长' : 'Avg Duration',
   maxDuration: IS_CHINESE ? '最长时长' : 'Longest Duration',
   maxElevation: IS_CHINESE ? '单次最大爬升' : 'Max Elevation',
+  highestElevation: IS_CHINESE ? '最高海拔' : 'Highest Elevation',
+  lowestElevation: IS_CHINESE ? '最低海拔' : 'Lowest Elevation',
   totalElevationLoss: IS_CHINESE ? '总海拔下降' : 'Total Descent',
   climbRate: IS_CHINESE ? '爬升速率' : 'Climb Rate',
+  descentRate: IS_CHINESE ? '下降速率' : 'Descent Rate',
   elevationPerDistance: IS_CHINESE
     ? `每${DIST_UNIT}爬升`
     : `Elevation per ${DIST_UNIT}`,
+  descentPerDistance: IS_CHINESE
+    ? `每${DIST_UNIT}下降`
+    : `Descent per ${DIST_UNIT}`,
   avgPower: IS_CHINESE ? '平均功率' : 'Avg Power',
   weightedPower: IS_CHINESE ? '加权功率' : 'Weighted Power',
   maxPower: IS_CHINESE ? '最大功率' : 'Max Power',
@@ -258,6 +274,13 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
             value: formatSpeedMetric(maxSpeedMps),
           }
       : null;
+  const showElevationMetrics =
+    SHOW_ELEVATION_GAIN ||
+    summary.totalElevationGain !== undefined ||
+    summary.totalElevationLoss !== undefined ||
+    summary.maxElevationGain !== undefined ||
+    summary.highestElevation !== undefined ||
+    summary.lowestElevation !== undefined;
 
   // Calculate Y-axis maximum value and ticks
   const yAxisMax = Math.ceil(
@@ -286,18 +309,20 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
               <strong>{ACTIVITY_TOTAL.TOTAL_DISTANCE_TITLE}:</strong>{' '}
               {summary.totalDistance.toFixed(2)} {DIST_UNIT}
             </p>
-            {SHOW_ELEVATION_GAIN &&
+            {showElevationMetrics &&
               summary.totalElevationGain !== undefined && (
                 <p>
                   <strong>{ACTIVITY_TOTAL.TOTAL_ELEVATION_GAIN_TITLE}:</strong>{' '}
-                  {summary.totalElevationGain.toFixed(0)} m
+                  {(summary.totalElevationGain * M_TO_ELEV).toFixed(0)}{' '}
+                  {ELEV_UNIT}
                 </p>
               )}
-            {SHOW_ELEVATION_GAIN &&
+            {showElevationMetrics &&
               summary.totalElevationLoss !== undefined && (
                 <p>
                   <strong>{METRIC_LABELS.totalElevationLoss}:</strong>{' '}
-                  {summary.totalElevationLoss.toFixed(0)} m
+                  {(summary.totalElevationLoss * M_TO_ELEV).toFixed(0)}{' '}
+                  {ELEV_UNIT}
                 </p>
               )}
             <p>
@@ -341,28 +366,63 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
                 {summary.averageCadence.toFixed(0)} rpm
               </p>
             )}
-            {SHOW_ELEVATION_GAIN &&
+            {showElevationMetrics &&
               summary.maxElevationGain !== undefined &&
               summary.maxElevationGain > 0 && (
                 <p>
                   <strong>{METRIC_LABELS.maxElevation}:</strong>{' '}
-                  {summary.maxElevationGain.toFixed(0)} m
+                  {(summary.maxElevationGain * M_TO_ELEV).toFixed(0)}{' '}
+                  {ELEV_UNIT}
                 </p>
               )}
-            {SHOW_ELEVATION_GAIN &&
+            {showElevationMetrics &&
+              summary.highestElevation !== undefined && (
+                <p>
+                  <strong>{METRIC_LABELS.highestElevation}:</strong>{' '}
+                  {(summary.highestElevation * M_TO_ELEV).toFixed(0)}{' '}
+                  {ELEV_UNIT}
+                </p>
+              )}
+            {showElevationMetrics &&
+              summary.lowestElevation !== undefined && (
+                <p>
+                  <strong>{METRIC_LABELS.lowestElevation}:</strong>{' '}
+                  {(summary.lowestElevation * M_TO_ELEV).toFixed(0)}{' '}
+                  {ELEV_UNIT}
+                </p>
+              )}
+            {showElevationMetrics &&
               summary.elevationPerDistance !== undefined &&
               summary.elevationPerDistance > 0 && (
                 <p>
                   <strong>{METRIC_LABELS.elevationPerDistance}:</strong>{' '}
-                  {summary.elevationPerDistance.toFixed(1)} m/{DIST_UNIT}
+                  {(summary.elevationPerDistance * M_TO_ELEV).toFixed(1)}{' '}
+                  {ELEV_UNIT}/{DIST_UNIT}
                 </p>
               )}
-            {SHOW_ELEVATION_GAIN &&
+            {showElevationMetrics &&
+              summary.descentPerDistance !== undefined &&
+              summary.descentPerDistance > 0 && (
+                <p>
+                  <strong>{METRIC_LABELS.descentPerDistance}:</strong>{' '}
+                  {(summary.descentPerDistance * M_TO_ELEV).toFixed(1)}{' '}
+                  {ELEV_UNIT}/{DIST_UNIT}
+                </p>
+              )}
+            {showElevationMetrics &&
               summary.climbRate !== undefined &&
               summary.climbRate > 0 && (
                 <p>
                   <strong>{METRIC_LABELS.climbRate}:</strong>{' '}
-                  {summary.climbRate.toFixed(0)} m/h
+                  {(summary.climbRate * M_TO_ELEV).toFixed(0)} {ELEV_UNIT}/h
+                </p>
+              )}
+            {showElevationMetrics &&
+              summary.descentRate !== undefined &&
+              summary.descentRate > 0 && (
+                <p>
+                  <strong>{METRIC_LABELS.descentRate}:</strong>{' '}
+                  {(summary.descentRate * M_TO_ELEV).toFixed(0)} {ELEV_UNIT}/h
                 </p>
               )}
             {interval !== 'day' && (
@@ -487,9 +547,14 @@ const activityCardAreEqual = (
       (s2.totalElevationLoss ?? undefined) ||
     (s1.averageHeartRate ?? undefined) !== (s2.averageHeartRate ?? undefined) ||
     (s1.maxElevationGain ?? undefined) !== (s2.maxElevationGain ?? undefined) ||
+    (s1.highestElevation ?? undefined) !== (s2.highestElevation ?? undefined) ||
+    (s1.lowestElevation ?? undefined) !== (s2.lowestElevation ?? undefined) ||
     (s1.climbRate ?? undefined) !== (s2.climbRate ?? undefined) ||
+    (s1.descentRate ?? undefined) !== (s2.descentRate ?? undefined) ||
     (s1.elevationPerDistance ?? undefined) !==
       (s2.elevationPerDistance ?? undefined) ||
+    (s1.descentPerDistance ?? undefined) !==
+      (s2.descentPerDistance ?? undefined) ||
     (s1.averagePower ?? undefined) !== (s2.averagePower ?? undefined) ||
     (s1.weightedAveragePower ?? undefined) !==
       (s2.weightedAveragePower ?? undefined) ||
@@ -656,6 +721,10 @@ const ActivityList: React.FC = () => {
           maxElevationGain: 0,
           elevationGainCount: 0,
           elevationLossCount: 0,
+          maxElevationCount: 0,
+          minElevationCount: 0,
+          highestElevation: 0,
+          lowestElevation: 0,
           totalPower: 0,
           powerCount: 0,
           weightedPowerTotal: 0,
@@ -678,7 +747,6 @@ const ActivityList: React.FC = () => {
       }
 
       if (
-        SHOW_ELEVATION_GAIN &&
         activity.elevation_gain !== null &&
         activity.elevation_gain !== undefined
       ) {
@@ -689,12 +757,35 @@ const ActivityList: React.FC = () => {
         }
       }
       if (
-        SHOW_ELEVATION_GAIN &&
         activity.elevation_loss !== null &&
         activity.elevation_loss !== undefined
       ) {
         acc[key].totalElevationLoss += activity.elevation_loss;
         acc[key].elevationLossCount += 1;
+      }
+      if (
+        activity.max_elevation !== null &&
+        activity.max_elevation !== undefined
+      ) {
+        if (
+          acc[key].maxElevationCount === 0 ||
+          activity.max_elevation > acc[key].highestElevation
+        ) {
+          acc[key].highestElevation = activity.max_elevation;
+        }
+        acc[key].maxElevationCount += 1;
+      }
+      if (
+        activity.min_elevation !== null &&
+        activity.min_elevation !== undefined
+      ) {
+        if (
+          acc[key].minElevationCount === 0 ||
+          activity.min_elevation < acc[key].lowestElevation
+        ) {
+          acc[key].lowestElevation = activity.min_elevation;
+        }
+        acc[key].minElevationCount += 1;
       }
 
       if (activity.average_heartrate) {
@@ -767,24 +858,31 @@ const ActivityList: React.FC = () => {
       location: summary.location,
       averageDuration: summary.count ? summary.totalTime / summary.count : 0,
       maxDuration: summary.maxDuration,
-      totalElevationGain: SHOW_ELEVATION_GAIN
-        ? summary.totalElevationGain
-        : undefined,
+      totalElevationGain:
+        summary.elevationGainCount > 0 ? summary.totalElevationGain : undefined,
       totalElevationLoss:
-        SHOW_ELEVATION_GAIN && summary.elevationLossCount > 0
-          ? summary.totalElevationLoss
-          : undefined,
+        summary.elevationLossCount > 0 ? summary.totalElevationLoss : undefined,
       maxElevationGain:
-        SHOW_ELEVATION_GAIN && summary.elevationGainCount > 0
-          ? summary.maxElevationGain
-          : undefined,
+        summary.elevationGainCount > 0 ? summary.maxElevationGain : undefined,
+      highestElevation:
+        summary.maxElevationCount > 0 ? summary.highestElevation : undefined,
+      lowestElevation:
+        summary.minElevationCount > 0 ? summary.lowestElevation : undefined,
       climbRate:
-        SHOW_ELEVATION_GAIN && summary.totalTime > 0
+        summary.totalTime > 0 && summary.elevationGainCount > 0
           ? summary.totalElevationGain / (summary.totalTime / 3600)
           : undefined,
+      descentRate:
+        summary.totalTime > 0 && summary.elevationLossCount > 0
+          ? summary.totalElevationLoss / (summary.totalTime / 3600)
+          : undefined,
       elevationPerDistance:
-        SHOW_ELEVATION_GAIN && summary.totalDistance > 0
+        summary.totalDistance > 0 && summary.elevationGainCount > 0
           ? summary.totalElevationGain / summary.totalDistance
+          : undefined,
+      descentPerDistance:
+        summary.totalDistance > 0 && summary.elevationLossCount > 0
+          ? summary.totalElevationLoss / summary.totalDistance
           : undefined,
       averageHeartRate:
         summary.heartRateCount > 0

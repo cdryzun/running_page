@@ -18,6 +18,7 @@ import {
 } from '@/utils/sportMetrics';
 import {
   DIST_UNIT,
+  ELEV_UNIT,
   M_TO_DIST,
   M_TO_ELEV,
   filterSportRuns,
@@ -60,6 +61,12 @@ const YearStat = ({
   let weightedPowerCount = 0;
   let cadence = 0;
   let cadenceCount = 0;
+  let maxPower = 0;
+  let maxCadence = 0;
+  let highestElevation = 0;
+  let highestElevationCount = 0;
+  let lowestElevation = 0;
+  let lowestElevationCount = 0;
   let totalMetersAvail = 0;
   let totalSecondsAvail = 0;
   runs.forEach((run) => {
@@ -89,6 +96,27 @@ const YearStat = ({
     if (run.average_cadence && run.average_cadence > 0) {
       cadence += run.average_cadence;
       cadenceCount++;
+    }
+    if (run.max_watts && run.max_watts > maxPower) {
+      maxPower = run.max_watts;
+    }
+    if (run.max_cadence && run.max_cadence > maxCadence) {
+      maxCadence = run.max_cadence;
+    }
+    if (run.max_elevation !== null && run.max_elevation !== undefined) {
+      if (
+        highestElevationCount === 0 ||
+        run.max_elevation > highestElevation
+      ) {
+        highestElevation = run.max_elevation;
+      }
+      highestElevationCount++;
+    }
+    if (run.min_elevation !== null && run.min_elevation !== undefined) {
+      if (lowestElevationCount === 0 || run.min_elevation < lowestElevation) {
+        lowestElevation = run.min_elevation;
+      }
+      lowestElevationCount++;
     }
     if (run.streak) {
       streak = Math.max(streak, run.streak);
@@ -127,19 +155,56 @@ const YearStat = ({
     : '0';
   const hasCadence = cadenceCount > 0;
   const avgCadence = hasCadence ? (cadence / cadenceCount).toFixed(0) : '0';
+  const hasMaxPower = maxPower > 0;
+  const hasMaxCadence = maxCadence > 0;
+  const hasHighestElevation = highestElevationCount > 0;
+  const hasLowestElevation = lowestElevationCount > 0;
+  const showElevationMetrics =
+    SHOW_ELEVATION_GAIN ||
+    sumElevationGain > 0 ||
+    elevationLossCount > 0 ||
+    hasHighestElevation ||
+    hasLowestElevation;
   return (
     <div className="cursor-pointer" onClick={() => onClick(year)}>
       <section {...eventHandlers}>
         <Stat value={year} description=" Journey" />
         <Stat value={runs.length} description=" Activities" />
         <Stat value={sumDistance} description={` ${DIST_UNIT}`} />
-        {SHOW_ELEVATION_GAIN && (
-          <Stat value={sumElevationGainStr} description=" Elevation Gain" />
+        {showElevationMetrics && (
+          <Stat
+            value={sumElevationGainStr}
+            description={` Elevation Gain (${ELEV_UNIT})`}
+          />
         )}
-        {SHOW_ELEVATION_GAIN && elevationLossCount > 0 && (
+        {showElevationMetrics && elevationLossCount > 0 && (
           <Stat
             value={sumElevationLossStr}
-            description={IS_CHINESE ? ' 海拔下降' : ' Elevation Loss'}
+            description={
+              IS_CHINESE
+                ? ` 海拔下降 (${ELEV_UNIT})`
+                : ` Elevation Loss (${ELEV_UNIT})`
+            }
+          />
+        )}
+        {showElevationMetrics && hasHighestElevation && (
+          <Stat
+            value={(highestElevation * M_TO_ELEV).toFixed(0)}
+            description={
+              IS_CHINESE
+                ? ` 最高海拔 (${ELEV_UNIT})`
+                : ` Highest Elev (${ELEV_UNIT})`
+            }
+          />
+        )}
+        {showElevationMetrics && hasLowestElevation && (
+          <Stat
+            value={(lowestElevation * M_TO_ELEV).toFixed(0)}
+            description={
+              IS_CHINESE
+                ? ` 最低海拔 (${ELEV_UNIT})`
+                : ` Lowest Elev (${ELEV_UNIT})`
+            }
           />
         )}
         <Stat
@@ -159,19 +224,33 @@ const YearStat = ({
         {hasPower && (
           <Stat
             value={avgPower}
-            description={IS_CHINESE ? ' 平均功率' : ' Avg Power'}
+            description={IS_CHINESE ? ' 平均功率 (W)' : ' Avg Power (W)'}
           />
         )}
         {hasWeightedPower && (
           <Stat
             value={avgWeightedPower}
-            description={IS_CHINESE ? ' 加权功率' : ' Weighted Power'}
+            description={
+              IS_CHINESE ? ' 加权功率 (W)' : ' Weighted Power (W)'
+            }
+          />
+        )}
+        {hasMaxPower && (
+          <Stat
+            value={maxPower.toFixed(0)}
+            description={IS_CHINESE ? ' 最大功率 (W)' : ' Max Power (W)'}
           />
         )}
         {hasCadence && (
           <Stat
             value={avgCadence}
-            description={IS_CHINESE ? ' 平均踏频' : ' Avg Cadence'}
+            description={IS_CHINESE ? ' 平均踏频 (rpm)' : ' Avg Cadence (rpm)'}
+          />
+        )}
+        {hasMaxCadence && (
+          <Stat
+            value={maxCadence.toFixed(0)}
+            description={IS_CHINESE ? ' 最大踏频 (rpm)' : ' Max Cadence (rpm)'}
           />
         )}
       </section>
