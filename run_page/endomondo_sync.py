@@ -19,6 +19,22 @@ start_point = namedtuple("start_point", "lat lon")
 run_map = namedtuple("polyline", "summary_polyline")
 
 
+def _safe_average_speed(distance_m, duration_seconds):
+    try:
+        duration = float(duration_seconds)
+    except (TypeError, ValueError):
+        return 0
+    if duration <= 0:
+        return 0
+    try:
+        distance = float(distance_m)
+    except (TypeError, ValueError):
+        return 0
+    if distance <= 0:
+        return 0
+    return distance / duration
+
+
 def _make_heart_rate(en_dict):
     """
     #TODO
@@ -50,6 +66,11 @@ def parse_run_endomondo_to_nametuple(en_dict):
     start_date_local = adjust_time(start_date, BASE_TIMEZONE)
     end_date_local = adjust_time(end_date, BASE_TIMEZONE)
     heart_rate = _make_heart_rate(en_dict)
+    duration_seconds = int(en_dict.get("duration_s", 0) or 0)
+    try:
+        distance_m = float(en_dict.get("distance_km", 0) or 0) * 1000
+    except (TypeError, ValueError):
+        distance_m = 0
     d = {
         "id": en_dict.get("id"),
         "name": "run from endomondo",
@@ -59,16 +80,14 @@ def parse_run_endomondo_to_nametuple(en_dict):
         "end": datetime.strftime(end_date, "%Y-%m-%d %H:%M:%S"),
         "start_date_local": datetime.strftime(start_date_local, "%Y-%m-%d %H:%M:%S"),
         "end_local": datetime.strftime(end_date_local, "%Y-%m-%d %H:%M:%S"),
-        "length": en_dict.get("distance_km", 0) * 1000,
+        "length": distance_m,
         "average_heartrate": int(heart_rate) if heart_rate else None,
         "map": run_map(polyline_str),
         "start_latlng": start_latlng,
-        "distance": en_dict.get("distance_km", 0) * 1000,
-        "moving_time": timedelta(seconds=en_dict.get("duration_s", 0)),
-        "elapsed_time": timedelta(seconds=en_dict.get("duration_s", 0)),
-        "average_speed": en_dict.get("distance_km", 0)
-        / en_dict.get("duration_s", 1)
-        * 1000,
+        "distance": distance_m,
+        "moving_time": timedelta(seconds=max(0, duration_seconds)),
+        "elapsed_time": timedelta(seconds=max(0, duration_seconds)),
+        "average_speed": _safe_average_speed(distance_m, duration_seconds),
         "elevation_gain": None,
         "location_country": "",
     }

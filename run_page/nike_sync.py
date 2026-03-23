@@ -27,6 +27,22 @@ BASE_URL = "https://api.nike.com/plus/v3"
 TOKEN_REFRESH_URL = "https://api.nike.com/idn/shim/oauth/2.0/token"
 
 
+def _safe_average_speed(distance_m, duration_seconds):
+    try:
+        duration = float(duration_seconds)
+    except (TypeError, ValueError):
+        return 0
+    if duration <= 0:
+        return 0
+    try:
+        distance = float(distance_m)
+    except (TypeError, ValueError):
+        return 0
+    if distance <= 0:
+        return 0
+    return distance / duration
+
+
 class Nike:
     def __init__(self, access_token):
         self.client = httpx.Client()
@@ -318,8 +334,10 @@ def parse_no_gpx_data(activity):
         return
     start_stamp = activity["start_epoch_ms"] / 1000
     end_stamp = activity["end_epoch_ms"] / 1000
-    moving_time = timedelta(seconds=int(end_stamp - start_stamp))
-    elapsed_time = timedelta(seconds=int(activity["active_duration_ms"] / 1000))
+    moving_seconds = int(end_stamp - start_stamp)
+    active_duration_seconds = int((activity.get("active_duration_ms") or 0) / 1000)
+    moving_time = timedelta(seconds=max(0, moving_seconds))
+    elapsed_time = timedelta(seconds=max(0, active_duration_seconds))
 
     nike_id = activity["end_epoch_ms"]
     start_date = datetime.fromtimestamp(
@@ -344,7 +362,7 @@ def parse_no_gpx_data(activity):
         "distance": distance,
         "moving_time": moving_time,
         "elapsed_time": elapsed_time,
-        "average_speed": distance / int(activity["active_duration_ms"] / 1000),
+        "average_speed": _safe_average_speed(distance, active_duration_seconds),
         "elevation_gain": 0,
         "location_country": "",
     }

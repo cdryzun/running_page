@@ -55,6 +55,22 @@ TCX_TYPE_DICT = {
 }
 
 
+def _safe_average_speed(distance_m, duration_seconds):
+    try:
+        duration = float(duration_seconds)
+    except (TypeError, ValueError):
+        return 0
+    if duration <= 0:
+        return 0
+    try:
+        distance = float(distance_m)
+    except (TypeError, ValueError):
+        return 0
+    if distance <= 0:
+        return 0
+    return distance / duration
+
+
 def get_md5_data(data):
     return md5(str(data).encode("utf-8")).hexdigest().upper()
 
@@ -594,6 +610,9 @@ class Joyrun:
         # joyrun location is kind of fucking strange, you can comments this two lines to make a better location
         if run_data["city"] or run_data["province"]:
             location_country = str(run_data["city"]) + ":" + str(run_data["province"])
+        moving_seconds = int(run_data.get("second") or 0)
+        elapsed_seconds = int((run_data["endtime"] - run_data["starttime"]))
+        average_speed = _safe_average_speed(run_data.get("meter"), moving_seconds)
         d = {
             "id": int(joyrun_id),
             "name": "run from joyrun",
@@ -611,11 +630,9 @@ class Joyrun:
             "map": run_map(polyline_str),
             "start_latlng": start_latlng,
             "distance": run_data["meter"],
-            "moving_time": timedelta(seconds=run_data["second"]),
-            "elapsed_time": timedelta(
-                seconds=int((run_data["endtime"] - run_data["starttime"]))
-            ),
-            "average_speed": run_data["meter"] / run_data["second"],
+            "moving_time": timedelta(seconds=max(0, moving_seconds)),
+            "elapsed_time": timedelta(seconds=max(0, elapsed_seconds)),
+            "average_speed": average_speed,
             "elevation_gain": elevation_gain,
             "location_country": location_country,
         }

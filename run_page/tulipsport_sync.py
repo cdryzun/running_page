@@ -24,6 +24,22 @@ TIMEZONE_NAME = "Asia/Shanghai"
 DEFAULT_TIMEZONE = timezone(timedelta(hours=8), TIMEZONE_NAME)
 
 
+def _safe_average_speed(distance_m, duration_seconds):
+    try:
+        duration = float(duration_seconds)
+    except (TypeError, ValueError):
+        return 0
+    if duration <= 0:
+        return 0
+    try:
+        distance = float(distance_m)
+    except (TypeError, ValueError):
+        return 0
+    if distance <= 0:
+        return 0
+    return distance / duration
+
+
 def get_all_activity_summaries(session, headers, start_time=None):
     if start_time is None:
         start_time = datetime.fromisoformat("2015-01-01T00:00:00+08:00")
@@ -47,7 +63,8 @@ def get_all_activity_summaries(session, headers, start_time=None):
                     summary["start_date_local"] + TIMEZONE_OFFSET
                 )
                 start_date = adjust_time_to_utc(start_date_local, TIMEZONE_NAME)
-                moving_time = timedelta(seconds=int(summary["moving_time"]))
+                moving_seconds = int(summary.get("moving_time") or 0)
+                moving_time = timedelta(seconds=max(0, moving_seconds))
                 distance = float(summary["activity_distance"]) * 1000
                 result.append(
                     {
@@ -64,7 +81,7 @@ def get_all_activity_summaries(session, headers, start_time=None):
                         "end_date": start_date + moving_time,
                         "end_date_local": start_date_local + moving_time,
                         "average_heartrate": None,
-                        "average_speed": distance / int(summary["moving_time"]),
+                        "average_speed": _safe_average_speed(distance, moving_seconds),
                         "summary_polyline": "",
                         "outdoor": summary["location"] != ",,",
                     }
