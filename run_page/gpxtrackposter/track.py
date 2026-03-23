@@ -334,21 +334,12 @@ class Track:
             raise TrackLoadError("Track has no end time.")
         self.length = gpx.length_2d()
         moving_time = 0
+        full_elevations = []
+        full_time_elev_points = []
+        full_heart_rate_list = []
         for t in gpx.tracks:
             for s in t.segments:
                 moving_time += self._calc_moving_time(s.points, 10)
-        gpx.simplify()
-        if self.length == 0:
-            self._load_gpx_extensions_data(gpx)
-            return
-        polyline_container = []
-        heart_rate_list = []
-        for t in gpx.tracks:
-            if self.track_name is None:
-                self.track_name = t.name
-            if hasattr(t, "type") and t.type:
-                self.type = "Run" if t.type == "running" else t.type
-            for s in t.segments:
                 try:
                     extensions = [
                         {
@@ -358,18 +349,68 @@ class Track:
                         for p in s.points
                         if p.extensions
                     ]
-                    heart_rate_list.extend(
+                    full_heart_rate_list.extend(
                         [
                             int(p["hr"]) if p.__contains__("hr") else None
                             for p in extensions
                             if extensions
                         ]
                     )
-                    heart_rate_list = list(filter(None, heart_rate_list))
                 except lxml.etree.XMLSyntaxError:
                     # Ignore XML syntax errors in extensions
                     # This can happen if the GPX file is malformed
                     pass
+                for p in s.points:
+                    if p.elevation is None:
+                        continue
+                    full_elevations.append(p.elevation)
+                    if p.time is not None:
+                        full_time_elev_points.append((p.time, p.elevation))
+
+        full_heart_rate_list = list(filter(None, full_heart_rate_list))
+        self.average_heartrate = (
+            sum(full_heart_rate_list) / len(full_heart_rate_list)
+            if full_heart_rate_list
+            else None
+        )
+        self._time_elev_points = full_time_elev_points
+        self.moving_dict = self._get_moving_data(gpx, moving_time)
+        uphill_downhill = gpx.get_uphill_downhill()
+        smoothed_gain = uphill_downhill.uphill
+        smoothed_loss = uphill_downhill.downhill
+
+        if full_elevations:
+            calc_gain, calc_loss = self._calc_elevation_gain_loss(full_elevations)
+            creator = str(getattr(gpx, "creator", "") or "").lower()
+            prefer_raw = "garmin" in creator
+            self.elevation_gain = self._pick_elevation_metric(
+                smoothed_gain, calc_gain, prefer_raw=prefer_raw
+            )
+            self.elevation_loss = self._pick_elevation_metric(
+                smoothed_loss, calc_loss, prefer_raw=prefer_raw
+            )
+            self.max_elevation = max(full_elevations)
+            self.min_elevation = min(full_elevations)
+        else:
+            self.elevation_gain = (
+                float(smoothed_gain) if smoothed_gain is not None else None
+            )
+            self.elevation_loss = (
+                float(smoothed_loss) if smoothed_loss is not None else None
+            )
+
+        if self.length == 0:
+            self._load_gpx_extensions_data(gpx)
+            return
+
+        gpx.simplify()
+        polyline_container = []
+        for t in gpx.tracks:
+            if self.track_name is None:
+                self.track_name = t.name
+            if hasattr(t, "type") and t.type:
+                self.type = "Run" if t.type == "running" else t.type
+            for s in t.segments:
                 line = [
                     s2.LatLng.from_degrees(p.latitude, p.longitude) for p in s.points
                 ]
@@ -386,43 +427,6 @@ class Track:
             self.start_time, self.end_time, polyline_container[0]
         )
         self.polyline_str = polyline.encode(polyline_container)
-        self.average_heartrate = (
-            sum(heart_rate_list) / len(heart_rate_list) if heart_rate_list else None
-        )
-        self.moving_dict = self._get_moving_data(gpx, moving_time)
-        uphill_downhill = gpx.get_uphill_downhill()
-        smoothed_gain = uphill_downhill.uphill
-        smoothed_loss = uphill_downhill.downhill
-        elevations = []
-        self._time_elev_points = []
-        for t in gpx.tracks:
-            for s in t.segments:
-                for p in s.points:
-                    if p.elevation is None:
-                        continue
-                    elevations.append(p.elevation)
-                    if p.time is not None:
-                        self._time_elev_points.append((p.time, p.elevation))
-
-        if elevations:
-            calc_gain, calc_loss = self._calc_elevation_gain_loss(elevations)
-            creator = str(getattr(gpx, "creator", "") or "").lower()
-            prefer_raw = "garmin" in creator
-            self.elevation_gain = self._pick_elevation_metric(
-                smoothed_gain, calc_gain, prefer_raw=prefer_raw
-            )
-            self.elevation_loss = self._pick_elevation_metric(
-                smoothed_loss, calc_loss, prefer_raw=prefer_raw
-            )
-            self.max_elevation = max(elevations)
-            self.min_elevation = min(elevations)
-        else:
-            self.elevation_gain = (
-                float(smoothed_gain) if smoothed_gain is not None else None
-            )
-            self.elevation_loss = (
-                float(smoothed_loss) if smoothed_loss is not None else None
-            )
         self._load_gpx_extensions_data(gpx)
 
     def _load_gpx_extensions_item(self, gpx, item_name):
