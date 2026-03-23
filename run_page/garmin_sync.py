@@ -255,6 +255,15 @@ def add_summary_info(file_data, summary_infos, fields=None):
                 "end_time",
                 "moving_time",
                 "elapsed_time",
+                "elevation_gain",
+                "elevation_loss",
+                "max_elevation",
+                "min_elevation",
+                "average_watts",
+                "weighted_average_watts",
+                "max_watts",
+                "average_cadence",
+                "max_cadence",
             ]
         for field in fields:
             create_element(
@@ -334,18 +343,81 @@ def get_garmin_summary_infos(activity_summary, activity_id):
     garmin_summary_infos = {}
     try:
         summary_dto = activity_summary.get("summaryDTO")
-        garmin_summary_infos["distance"] = summary_dto.get("distance")
-        garmin_summary_infos["average_hr"] = summary_dto.get("averageHR")
-        garmin_summary_infos["average_speed"] = summary_dto.get("averageSpeed")
-        start_time = dt.datetime.fromisoformat(
-            summary_dto.get("startTimeGMT")[:-1] + "+00:00"
+        if summary_dto is None:
+            return garmin_summary_infos
+
+        def pick(*keys):
+            for key in keys:
+                value = summary_dto.get(key)
+                if value is not None:
+                    return value
+            return None
+
+        garmin_summary_infos["distance"] = pick("distance")
+        garmin_summary_infos["average_hr"] = pick("averageHR", "avgHR")
+        garmin_summary_infos["average_speed"] = pick("averageSpeed", "avgSpeed")
+
+        start_time_raw = pick("startTimeGMT")
+        if isinstance(start_time_raw, str):
+            start_time_iso = (
+                start_time_raw[:-1] + "+00:00"
+                if start_time_raw.endswith("Z")
+                else start_time_raw
+            )
+            start_time = dt.datetime.fromisoformat(start_time_iso)
+            duration_second = pick("duration", "elapsedDuration") or 0
+            end_time = start_time + dt.timedelta(seconds=duration_second)
+            garmin_summary_infos["start_time"] = start_time.isoformat()
+            garmin_summary_infos["end_time"] = end_time.isoformat()
+
+        garmin_summary_infos["moving_time"] = pick("movingDuration")
+        garmin_summary_infos["elapsed_time"] = pick("elapsedDuration", "duration")
+
+        # Garmin-standard metrics used by downstream GPX extension parsing.
+        garmin_summary_infos["elevation_gain"] = pick(
+            "elevationGain",
+            "totalElevationGain",
+            "totalAscent",
+            "ascent",
         )
-        duration_second = summary_dto.get("duration")
-        end_time = start_time + dt.timedelta(seconds=duration_second)
-        garmin_summary_infos["start_time"] = start_time.isoformat()
-        garmin_summary_infos["end_time"] = end_time.isoformat()
-        garmin_summary_infos["moving_time"] = summary_dto.get("movingDuration")
-        garmin_summary_infos["elapsed_time"] = summary_dto.get("elapsedDuration")
+        garmin_summary_infos["elevation_loss"] = pick(
+            "elevationLoss",
+            "totalElevationLoss",
+            "totalDescent",
+            "descent",
+        )
+        garmin_summary_infos["max_elevation"] = pick(
+            "maxElevation",
+            "enhancedMaxElevation",
+            "maxAltitude",
+            "enhancedMaxAltitude",
+        )
+        garmin_summary_infos["min_elevation"] = pick(
+            "minElevation",
+            "enhancedMinElevation",
+            "minAltitude",
+            "enhancedMinAltitude",
+        )
+        garmin_summary_infos["average_watts"] = pick(
+            "averagePower",
+            "avgPower",
+            "averageWatts",
+        )
+        garmin_summary_infos["weighted_average_watts"] = pick(
+            "weightedAveragePower",
+            "normalizedPower",
+        )
+        garmin_summary_infos["max_watts"] = pick("maxPower", "maxWatts")
+        garmin_summary_infos["average_cadence"] = pick(
+            "averageBikeCadenceInRevPerMinute",
+            "averageRunCadence",
+            "averageCadence",
+        )
+        garmin_summary_infos["max_cadence"] = pick(
+            "maxBikeCadenceInRevPerMinute",
+            "maxRunCadence",
+            "maxCadence",
+        )
     except Exception as e:
         print(f"Failed to get activity summary {activity_id}: {str(e)}")
     return garmin_summary_infos

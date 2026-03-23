@@ -53,6 +53,11 @@ class Track:
         self.elevation_loss = None
         self.max_elevation = None
         self.min_elevation = None
+        self.average_watts = None
+        self.weighted_average_watts = None
+        self.max_watts = None
+        self.average_cadence = None
+        self.max_cadence = None
         self.moving_dict = {}
         self.run_id = 0
         self.start_latlng = []
@@ -202,6 +207,10 @@ class Track:
         self.elevation_loss = getattr(tcx, "descent", None)
         self.max_elevation = getattr(tcx, "max_altitude", None)
         self.min_elevation = getattr(tcx, "min_altitude", None)
+        self.average_watts = getattr(tcx, "avg_power", None)
+        self.max_watts = getattr(tcx, "max_power", None)
+        self.average_cadence = getattr(tcx, "cadence_avg", None)
+        self.max_cadence = getattr(tcx, "cadence_max", None)
         self.moving_dict = {
             "distance": self.length,
             "moving_time": datetime.timedelta(seconds=moving_time),
@@ -225,6 +234,24 @@ class Track:
         except Exception as e:
             print(f"Error calculating moving time: {e}")
             return 0
+
+    @staticmethod
+    def _calc_elevation_gain_loss(elevations):
+        if not elevations or len(elevations) < 2:
+            return 0.0, 0.0
+        gain = 0.0
+        loss = 0.0
+        prev = elevations[0]
+        for current in elevations[1:]:
+            if current is None:
+                continue
+            delta = current - prev
+            if delta > 0:
+                gain += delta
+            elif delta < 0:
+                loss += -delta
+            prev = current
+        return gain, loss
 
     def _load_gpx_data(self, gpx):
         self.start_time, self.end_time = gpx.get_time_bounds()
@@ -315,6 +342,11 @@ class Track:
             if p.elevation is not None
         ]
         if elevations:
+            calc_gain, calc_loss = self._calc_elevation_gain_loss(elevations)
+            if (self.elevation_gain is None or self.elevation_gain <= 0) and calc_gain > 0:
+                self.elevation_gain = calc_gain
+            if (self.elevation_loss is None or self.elevation_loss <= 0) and calc_loss > 0:
+                self.elevation_loss = calc_loss
             self.max_elevation = max(elevations)
             self.min_elevation = min(elevations)
         self._load_gpx_extensions_data(gpx)
@@ -347,6 +379,18 @@ class Track:
                 for extension in gpx.extensions
             }
         )
+
+        def _ext_float(*keys):
+            for key in keys:
+                value = gpx_extensions.get(key)
+                if value is None or value == "":
+                    continue
+                try:
+                    return float(value)
+                except Exception:
+                    continue
+            return None
+
         self.length = (
             self.length
             if gpx_extensions.get("distance") is None
@@ -378,6 +422,71 @@ class Track:
             self.moving_dict["elapsed_time"]
             if gpx_extensions.get("elapsed_time") is None
             else datetime.timedelta(seconds=float(gpx_extensions.get("elapsed_time")))
+        )
+
+        # Garmin summary fields appended in garmin_sync.py
+        extension_gain = _ext_float(
+            "elevation_gain",
+            "total_elevation_gain",
+            "total_ascent",
+            "ascent",
+            "elevationGain",
+        )
+        extension_loss = _ext_float(
+            "elevation_loss",
+            "total_elevation_loss",
+            "total_descent",
+            "descent",
+            "elevationLoss",
+        )
+        extension_max_elevation = _ext_float(
+            "max_elevation",
+            "max_altitude",
+            "maxElevation",
+            "enhanced_max_altitude",
+        )
+        extension_min_elevation = _ext_float(
+            "min_elevation",
+            "min_altitude",
+            "minElevation",
+            "enhanced_min_altitude",
+        )
+
+        if extension_gain is not None:
+            self.elevation_gain = extension_gain
+        if extension_loss is not None:
+            self.elevation_loss = extension_loss
+        if extension_max_elevation is not None:
+            self.max_elevation = extension_max_elevation
+        if extension_min_elevation is not None:
+            self.min_elevation = extension_min_elevation
+
+        self.average_watts = _ext_float(
+            "average_watts",
+            "avg_watts",
+            "average_power",
+            "avg_power",
+            "avgPower",
+        )
+        self.weighted_average_watts = _ext_float(
+            "weighted_average_watts",
+            "weighted_power",
+            "normalized_power",
+            "normalizedPower",
+        )
+        self.max_watts = _ext_float("max_watts", "max_power", "maxPower")
+        self.average_cadence = _ext_float(
+            "average_cadence",
+            "avg_cadence",
+            "average_bike_cadence",
+            "averageBikeCadenceInRevPerMinute",
+            "averageRunCadence",
+        )
+        self.max_cadence = _ext_float(
+            "max_cadence",
+            "max_bike_cadence",
+            "maxBikeCadence",
+            "maxRunCadence",
         )
 
     def _load_fit_data(self, fit: dict):
@@ -414,6 +523,17 @@ class Track:
         self.min_elevation = message.get(
             "enhanced_min_altitude", message.get("min_altitude")
         )
+        self.average_watts = message.get("avg_power")
+        self.weighted_average_watts = message.get(
+            "normalized_power", message.get("weighted_average_power")
+        )
+        self.max_watts = message.get("max_power")
+        self.average_cadence = message.get(
+            "avg_bike_cadence", message.get("avg_cadence")
+        )
+        self.max_cadence = message.get(
+            "max_bike_cadence", message.get("max_cadence")
+        )
         # moving_dict
         self.moving_dict["distance"] = message["total_distance"]
         self.moving_dict["moving_time"] = datetime.timedelta(
@@ -431,12 +551,28 @@ class Track:
             if message["enhanced_avg_speed"]
             else message["avg_speed"]
         )
+        elevation_points = []
         for record in fit["record_mesgs"]:
             if "position_lat" in record and "position_long" in record:
                 lat = record["position_lat"] / SEMICIRCLE
                 lng = record["position_long"] / SEMICIRCLE
                 _polylines.append(s2.LatLng.from_degrees(lat, lng))
                 self.polyline_container.append([lat, lng])
+            if "enhanced_altitude" in record and record["enhanced_altitude"] is not None:
+                elevation_points.append(float(record["enhanced_altitude"]))
+            elif "altitude" in record and record["altitude"] is not None:
+                elevation_points.append(float(record["altitude"]))
+
+        if elevation_points:
+            calc_gain, calc_loss = self._calc_elevation_gain_loss(elevation_points)
+            if (self.elevation_gain is None or self.elevation_gain <= 0) and calc_gain > 0:
+                self.elevation_gain = calc_gain
+            if (self.elevation_loss is None or self.elevation_loss <= 0) and calc_loss > 0:
+                self.elevation_loss = calc_loss
+            if self.max_elevation is None:
+                self.max_elevation = max(elevation_points)
+            if self.min_elevation is None:
+                self.min_elevation = min(elevation_points)
         if self.polyline_container:
             self.start_time_local, self.end_time_local = parse_datetime_to_local(
                 self.start_time, self.end_time, self.polyline_container[0]
@@ -491,6 +627,21 @@ class Track:
                     self.min_elevation = other.min_elevation
                 else:
                     self.min_elevation = min(self.min_elevation, other.min_elevation)
+            self.average_watts = self.average_watts or other.average_watts
+            self.weighted_average_watts = (
+                self.weighted_average_watts or other.weighted_average_watts
+            )
+            if other.max_watts is not None:
+                if self.max_watts is None:
+                    self.max_watts = other.max_watts
+                else:
+                    self.max_watts = max(self.max_watts, other.max_watts)
+            self.average_cadence = self.average_cadence or other.average_cadence
+            if other.max_cadence is not None:
+                if self.max_cadence is None:
+                    self.max_cadence = other.max_cadence
+                else:
+                    self.max_cadence = max(self.max_cadence, other.max_cadence)
         except Exception as e:
             print(
                 f"something wrong append this {self.end_time},in files {str(self.file_names)}: {e}"
@@ -525,15 +676,34 @@ class Track:
             "average_heartrate": (
                 int(self.average_heartrate) if self.average_heartrate else None
             ),
-            "elevation_gain": (int(self.elevation_gain) if self.elevation_gain else 0),
+            "elevation_gain": (
+                int(self.elevation_gain) if self.elevation_gain is not None else 0
+            ),
             "elevation_loss": (
-                int(self.elevation_loss) if self.elevation_loss else None
+                int(self.elevation_loss) if self.elevation_loss is not None else None
             ),
             "max_elevation": (
                 float(self.max_elevation) if self.max_elevation is not None else None
             ),
             "min_elevation": (
                 float(self.min_elevation) if self.min_elevation is not None else None
+            ),
+            "average_watts": (
+                float(self.average_watts) if self.average_watts is not None else None
+            ),
+            "weighted_average_watts": (
+                float(self.weighted_average_watts)
+                if self.weighted_average_watts is not None
+                else None
+            ),
+            "max_watts": float(self.max_watts) if self.max_watts is not None else None,
+            "average_cadence": (
+                float(self.average_cadence)
+                if self.average_cadence is not None
+                else None
+            ),
+            "max_cadence": (
+                float(self.max_cadence) if self.max_cadence is not None else None
             ),
             "map": run_map(self.polyline_str),
             "start_latlng": self.start_latlng,

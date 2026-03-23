@@ -46,24 +46,30 @@ const RunRow = ({
   const rowMetaItems: RowMetaItem[] = [];
   const formatElevation = (meters: number): string =>
     `${(meters * M_TO_ELEV).toFixed(0)}${ELEV_UNIT}`;
-  const hasGain =
-    run.elevation_gain !== null &&
-    run.elevation_gain !== undefined &&
-    run.elevation_gain > 0;
-  const hasLoss = run.elevation_loss !== null && run.elevation_loss !== undefined;
+  const hasGainValue =
+    run.elevation_gain !== null && run.elevation_gain !== undefined;
+  const hasLossValue =
+    run.elevation_loss !== null && run.elevation_loss !== undefined;
+  const hasPositiveGain = hasGainValue && (run.elevation_gain as number) > 0;
+  const hasPositiveLoss = hasLossValue && (run.elevation_loss as number) > 0;
   const hasPower = run.average_watts !== null && run.average_watts !== undefined;
   const hasCadence =
     run.average_cadence !== null && run.average_cadence !== undefined;
+  const canEstimateElevation =
+    normalizedType === 'cycling' || normalizedType === 'hiking';
+  const gainEstimated = !hasGainValue && hasLossValue && canEstimateElevation;
+  const lossEstimated = !hasLossValue && hasGainValue && canEstimateElevation;
 
-  const elevationGainText = hasGain
+  const elevationGainText = hasGainValue
     ? formatElevation(run.elevation_gain as number)
-    : '--';
-  const lossEstimated = !hasLoss && normalizedType === 'hiking' && hasGain;
-  const elevationLossText = hasLoss
+    : gainEstimated
+      ? `~${formatElevation(run.elevation_loss as number)}`
+      : '--';
+  const elevationLossText = hasLossValue
     ? formatElevation(run.elevation_loss as number)
     : lossEstimated
       ? `~${formatElevation(run.elevation_gain as number)}`
-      : '--';
+    : '--';
   const powerText = hasPower ? `${(run.average_watts as number).toFixed(0)}W` : '--';
   const cadenceText = hasCadence
     ? `${(run.average_cadence as number).toFixed(0)}rpm`
@@ -76,18 +82,18 @@ const RunRow = ({
   ) => rowMetaItems.push({ key, icon, value, estimated });
 
   if (normalizedType === 'cycling') {
-    addMeta('gain', '↑', elevationGainText);
-    addMeta('loss', '↓', elevationLossText);
+    addMeta('gain', '↑', elevationGainText, gainEstimated);
+    addMeta('loss', '↓', elevationLossText, lossEstimated);
     addMeta('power', '⚡', powerText);
     addMeta('cadence', '⟳', cadenceText);
   } else if (normalizedType === 'hiking') {
-    addMeta('gain', '↑', elevationGainText);
+    addMeta('gain', '↑', elevationGainText, gainEstimated);
     addMeta('loss', '↓', elevationLossText, lossEstimated);
   } else {
-    if (hasGain) {
+    if (hasPositiveGain) {
       addMeta('gain', '↑', elevationGainText);
     }
-    if (hasLoss) {
+    if (hasPositiveLoss) {
       addMeta('loss', '↓', elevationLossText);
     }
     if (hasPower) {
@@ -126,8 +132,8 @@ const RunRow = ({
                 title={
                   item.estimated
                     ? IS_CHINESE
-                      ? '估算值（原始下降缺失）'
-                      : 'Estimated (loss missing from source)'
+                      ? '估算值（原始上升/下降缺失）'
+                      : 'Estimated (source ascent/descent missing)'
                     : undefined
                 }
               >

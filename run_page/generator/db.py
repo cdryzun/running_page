@@ -117,6 +117,12 @@ def update_or_create_activity(session, run_activity):
             except Exception:
                 return None
 
+    def _extract_summary_polyline(obj):
+        map_obj = getattr(obj, "map", None)
+        if map_obj is None:
+            return ""
+        return getattr(map_obj, "summary_polyline", "") or ""
+
     created = False
     try:
         activity = (
@@ -124,7 +130,17 @@ def update_or_create_activity(session, run_activity):
         )
 
         current_elevation_gain = _to_float_or_none(
-            _pick_attr(run_activity, ["total_elevation_gain", "elevation_gain"])
+            _pick_attr(
+                run_activity,
+                [
+                    "total_elevation_gain",
+                    "elevation_gain",
+                    "totalElevationGain",
+                    "elevationGain",
+                    "total_ascent",
+                    "ascent",
+                ],
+            )
         )
         current_elevation_loss = _to_float_or_none(
             _pick_attr(
@@ -132,9 +148,12 @@ def update_or_create_activity(session, run_activity):
                 [
                     "total_elevation_loss",
                     "elevation_loss",
+                    "totalElevationLoss",
+                    "elevationLoss",
                     "total_downhill",
                     "total_descent",
                     "totalDescent",
+                    "totalDownhill",
                     "descent",
                 ],
             )
@@ -146,6 +165,8 @@ def update_or_create_activity(session, run_activity):
                     "elev_high",
                     "max_elevation",
                     "max_altitude",
+                    "maxElevation",
+                    "enhancedMaxElevation",
                     "enhanced_max_altitude",
                 ],
             )
@@ -157,6 +178,8 @@ def update_or_create_activity(session, run_activity):
                     "elev_low",
                     "min_elevation",
                     "min_altitude",
+                    "minElevation",
+                    "enhancedMinElevation",
                     "enhanced_min_altitude",
                 ],
             )
@@ -164,7 +187,14 @@ def update_or_create_activity(session, run_activity):
         current_average_watts = _to_float_or_none(
             _pick_attr(
                 run_activity,
-                ["average_watts", "avg_watts", "avg_power", "average_power"],
+                [
+                    "average_watts",
+                    "avg_watts",
+                    "avg_power",
+                    "average_power",
+                    "avgPower",
+                    "averageWatts",
+                ],
             )
         )
         current_weighted_average_watts = _to_float_or_none(
@@ -175,11 +205,14 @@ def update_or_create_activity(session, run_activity):
                     "weighted_avg_watts",
                     "weighted_power",
                     "normalized_power",
+                    "weightedAverageWatts",
+                    "normalizedPower",
+                    "weightedAveragePower",
                 ],
             )
         )
         current_max_watts = _to_float_or_none(
-            _pick_attr(run_activity, ["max_watts", "max_power"])
+            _pick_attr(run_activity, ["max_watts", "max_power", "maxPower", "maxWatts"])
         )
         current_average_cadence = _to_float_or_none(
             _pick_attr(
@@ -189,11 +222,24 @@ def update_or_create_activity(session, run_activity):
                     "avg_cadence",
                     "average_bike_cadence",
                     "avg_cad",
+                    "averageBikeCadenceInRevPerMinute",
+                    "averageRunCadence",
+                    "averageCadence",
                 ],
             )
         )
         current_max_cadence = _to_float_or_none(
-            _pick_attr(run_activity, ["max_cadence", "max_bike_cadence", "max_cad"])
+            _pick_attr(
+                run_activity,
+                [
+                    "max_cadence",
+                    "max_bike_cadence",
+                    "max_cad",
+                    "maxBikeCadenceInRevPerMinute",
+                    "maxRunCadence",
+                    "maxCadence",
+                ],
+            )
         )
 
         if not activity:
@@ -241,9 +287,7 @@ def update_or_create_activity(session, run_activity):
                 max_watts=current_max_watts,
                 average_cadence=current_average_cadence,
                 max_cadence=current_max_cadence,
-                summary_polyline=(
-                    run_activity.map and run_activity.map.summary_polyline or ""
-                ),
+                summary_polyline=_extract_summary_polyline(run_activity),
             )
             session.add(activity)
             created = True
@@ -257,19 +301,29 @@ def update_or_create_activity(session, run_activity):
             activity.average_heartrate = run_activity.average_heartrate
             activity.average_speed = float(run_activity.average_speed)
             activity.elevation_gain = (
-                current_elevation_gain if current_elevation_gain is not None else 0.0
+                current_elevation_gain
+                if current_elevation_gain is not None
+                else (activity.elevation_gain if activity.elevation_gain is not None else 0.0)
             )
-            activity.elevation_loss = current_elevation_loss
-            activity.max_elevation = current_max_elevation
-            activity.min_elevation = current_min_elevation
-            activity.average_watts = current_average_watts
-            activity.weighted_average_watts = current_weighted_average_watts
-            activity.max_watts = current_max_watts
-            activity.average_cadence = current_average_cadence
-            activity.max_cadence = current_max_cadence
-            activity.summary_polyline = (
-                run_activity.map and run_activity.map.summary_polyline or ""
-            )
+            if current_elevation_loss is not None:
+                activity.elevation_loss = current_elevation_loss
+            if current_max_elevation is not None:
+                activity.max_elevation = current_max_elevation
+            if current_min_elevation is not None:
+                activity.min_elevation = current_min_elevation
+            if current_average_watts is not None:
+                activity.average_watts = current_average_watts
+            if current_weighted_average_watts is not None:
+                activity.weighted_average_watts = current_weighted_average_watts
+            if current_max_watts is not None:
+                activity.max_watts = current_max_watts
+            if current_average_cadence is not None:
+                activity.average_cadence = current_average_cadence
+            if current_max_cadence is not None:
+                activity.max_cadence = current_max_cadence
+            current_polyline = _extract_summary_polyline(run_activity)
+            if current_polyline:
+                activity.summary_polyline = current_polyline
     except Exception as e:
         print(f"something wrong with {run_activity.id}")
         print(str(e))
