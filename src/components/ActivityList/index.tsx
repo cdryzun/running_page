@@ -20,16 +20,37 @@ import VirtualList from 'rc-virtual-list';
 import { useNavigate } from 'react-router-dom';
 import activities from '@/static/activities.json';
 import styles from './style.module.css';
-import { ACTIVITY_TOTAL, LOADING_TEXT } from '@/utils/const';
+import {
+  ACTIVITY_TOTAL,
+  HOME_PAGE_TITLE,
+  IS_CHINESE,
+  LOADING_TEXT,
+  SHOW_ELEVATION_GAIN,
+  SPORT_TYPE_OPTIONS,
+  type SportTypeFilter,
+} from '@/utils/const';
 import { totalStat, yearSummaryStats } from '@assets/index';
 import { loadSvgComponent } from '@/utils/svgUtils';
-import { SHOW_ELEVATION_GAIN, HOME_PAGE_TITLE } from '@/utils/const';
-import { DIST_UNIT, M_TO_DIST } from '@/utils/utils';
+import {
+  Activity,
+  DIST_UNIT,
+  M_TO_DIST,
+  convertMovingTime2Sec,
+  filterSportRuns,
+  normalizeActivityType,
+} from '@/utils/utils';
+import {
+  formatAveragePrimaryMetric,
+  formatPaceMetric,
+  formatSpeedMetric,
+  getAveragePrimaryMetricLabel,
+  isPacePrimaryForSportType,
+} from '@/utils/sportMetrics';
 import RoutePreview from '@/components/RoutePreview';
-import { Activity } from '@/utils/utils';
 // Layout constants (avoid magic numbers)
 const ITEM_WIDTH = 280;
 const ITEM_GAP = 20;
+const ALL_ACTIVITIES = activities as Activity[];
 
 const VIRTUAL_LIST_STYLES = {
   horizontalScrollBar: {},
@@ -81,6 +102,9 @@ interface ActivitySummary {
   location: string;
   totalHeartRate: number; // Add heart rate statistics
   heartRateCount: number;
+  maxDuration: number;
+  maxElevationGain: number;
+  elevationGainCount: number;
   activities: Activity[]; // Add activities array for day interval
 }
 
@@ -92,8 +116,13 @@ interface DisplaySummary {
   maxDistance: number;
   maxSpeed: number;
   location: string;
+  averageDuration: number;
+  maxDuration: number;
   totalElevationGain?: number;
   averageHeartRate?: number; // Add heart rate display
+  maxElevationGain?: number;
+  climbRate?: number;
+  elevationPerDistance?: number;
 }
 
 interface ChartData {
@@ -105,7 +134,8 @@ interface ActivityCardProps {
   period: string;
   summary: DisplaySummary;
   dailyDistances: number[];
-  interval: string;
+  interval: IntervalType;
+  sportType: SportTypeFilter;
   activities?: Activity[]; // Add activities for day interval
 }
 
@@ -118,11 +148,28 @@ type IntervalType = 'year' | 'month' | 'week' | 'day' | 'life';
 // A row group contains multiple activity card data items that will be rendered in one virtualized row
 type RowGroup = Array<{ period: string; summary: ActivitySummary }>;
 
+const METRIC_LABELS = {
+  avgPace: IS_CHINESE ? '平均配速' : 'Average Pace',
+  avgSpeed: ACTIVITY_TOTAL.AVERAGE_SPEED_TITLE,
+  bestPace: IS_CHINESE ? '最佳配速' : 'Best Pace',
+  avgDuration: IS_CHINESE ? '平均时长' : 'Avg Duration',
+  maxDuration: IS_CHINESE ? '最长时长' : 'Longest Duration',
+  maxElevation: IS_CHINESE ? '单次最大爬升' : 'Max Elevation',
+  climbRate: IS_CHINESE ? '爬升速率' : 'Climb Rate',
+  elevationPerDistance: IS_CHINESE
+    ? `每${DIST_UNIT}爬升`
+    : `Elevation per ${DIST_UNIT}`,
+};
+
+const speedDistPerHourToMps = (speed: number): number =>
+  (speed * M_TO_DIST) / 3600;
+
 const ActivityCardInner: React.FC<ActivityCardProps> = ({
   period,
   summary,
   dailyDistances,
   interval,
+  sportType,
   activities = [],
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -156,14 +203,39 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
     return `${h}h ${m}m ${s}s`;
   };
 
-  const formatPace = (speed: number): string => {
-    if (speed === 0) return `0:00 min/${DIST_UNIT}`;
-    const pace = 60 / speed; // min/DIST_UNIT
-    const totalSeconds = Math.round(pace * 60); // Total seconds per DIST_UNIT
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds} min/${DIST_UNIT}`;
-  };
+  const avgSpeedMps = speedDistPerHourToMps(summary.averageSpeed);
+  const maxSpeedMps = speedDistPerHourToMps(summary.maxSpeed);
+  const avgPrimaryMetricLabel = getAveragePrimaryMetricLabel(sportType);
+  const avgPrimaryMetricValue = formatAveragePrimaryMetric(
+    avgSpeedMps,
+    sportType
+  );
+  const pacePrimary = isPacePrimaryForSportType(sportType);
+  const secondaryMetric =
+    summary.averageSpeed > 0
+      ? pacePrimary
+        ? {
+            label: METRIC_LABELS.avgSpeed,
+            value: formatSpeedMetric(avgSpeedMps),
+          }
+        : {
+            label: METRIC_LABELS.avgPace,
+            value: formatPaceMetric(avgSpeedMps),
+          }
+      : null;
+
+  const bestMetric =
+    summary.maxSpeed > 0
+      ? pacePrimary
+        ? {
+            label: METRIC_LABELS.bestPace,
+            value: formatPaceMetric(maxSpeedMps),
+          }
+        : {
+            label: ACTIVITY_TOTAL.MAX_SPEED_TITLE,
+            value: formatSpeedMetric(maxSpeedMps),
+          }
+      : null;
 
   // Calculate Y-axis maximum value and ticks
   const yAxisMax = Math.ceil(
@@ -200,12 +272,21 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
                 </p>
               )}
             <p>
-              <strong>{ACTIVITY_TOTAL.AVERAGE_SPEED_TITLE}:</strong>{' '}
-              {formatPace(summary.averageSpeed)}
+              <strong>{avgPrimaryMetricLabel}:</strong> {avgPrimaryMetricValue}
             </p>
+            {secondaryMetric && (
+              <p>
+                <strong>{secondaryMetric.label}:</strong>{' '}
+                {secondaryMetric.value}
+              </p>
+            )}
             <p>
               <strong>{ACTIVITY_TOTAL.TOTAL_TIME_TITLE}:</strong>{' '}
               {formatTime(summary.totalTime)}
+            </p>
+            <p>
+              <strong>{METRIC_LABELS.avgDuration}:</strong>{' '}
+              {formatTime(summary.averageDuration)}
             </p>
             {summary.averageHeartRate !== undefined && (
               <p>
@@ -213,6 +294,30 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
                 {summary.averageHeartRate.toFixed(0)} bpm
               </p>
             )}
+            {SHOW_ELEVATION_GAIN &&
+              summary.maxElevationGain !== undefined &&
+              summary.maxElevationGain > 0 && (
+                <p>
+                  <strong>{METRIC_LABELS.maxElevation}:</strong>{' '}
+                  {summary.maxElevationGain.toFixed(0)} m
+                </p>
+              )}
+            {SHOW_ELEVATION_GAIN &&
+              summary.elevationPerDistance !== undefined &&
+              summary.elevationPerDistance > 0 && (
+                <p>
+                  <strong>{METRIC_LABELS.elevationPerDistance}:</strong>{' '}
+                  {summary.elevationPerDistance.toFixed(1)} m/{DIST_UNIT}
+                </p>
+              )}
+            {SHOW_ELEVATION_GAIN &&
+              summary.climbRate !== undefined &&
+              summary.climbRate > 0 && (
+                <p>
+                  <strong>{METRIC_LABELS.climbRate}:</strong>{' '}
+                  {summary.climbRate.toFixed(0)} m/h
+                </p>
+              )}
             {interval !== 'day' && (
               <>
                 <p>
@@ -224,9 +329,14 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
                   {summary.maxDistance.toFixed(2)} {DIST_UNIT}
                 </p>
                 <p>
-                  <strong>{ACTIVITY_TOTAL.MAX_SPEED_TITLE}:</strong>{' '}
-                  {formatPace(summary.maxSpeed)}
+                  <strong>{METRIC_LABELS.maxDuration}:</strong>{' '}
+                  {formatTime(summary.maxDuration)}
                 </p>
+                {bestMetric && (
+                  <p>
+                    <strong>{bestMetric.label}:</strong> {bestMetric.value}
+                  </p>
+                )}
                 <p>
                   <strong>{ACTIVITY_TOTAL.AVERAGE_DISTANCE_TITLE}:</strong>{' '}
                   {(summary.totalDistance / summary.count).toFixed(2)}{' '}
@@ -299,6 +409,7 @@ const activityCardAreEqual = (
 ) => {
   if (prev.period !== next.period) return false;
   if (prev.interval !== next.interval) return false;
+  if (prev.sportType !== next.sportType) return false;
   const s1 = prev.summary;
   const s2 = next.summary;
   if (
@@ -309,9 +420,15 @@ const activityCardAreEqual = (
     s1.maxDistance !== s2.maxDistance ||
     s1.maxSpeed !== s2.maxSpeed ||
     s1.location !== s2.location ||
+    s1.averageDuration !== s2.averageDuration ||
+    s1.maxDuration !== s2.maxDuration ||
     (s1.totalElevationGain ?? undefined) !==
       (s2.totalElevationGain ?? undefined) ||
-    (s1.averageHeartRate ?? undefined) !== (s2.averageHeartRate ?? undefined)
+    (s1.averageHeartRate ?? undefined) !== (s2.averageHeartRate ?? undefined) ||
+    (s1.maxElevationGain ?? undefined) !== (s2.maxElevationGain ?? undefined) ||
+    (s1.climbRate ?? undefined) !== (s2.climbRate ?? undefined) ||
+    (s1.elevationPerDistance ?? undefined) !==
+      (s2.elevationPerDistance ?? undefined)
   ) {
     return false;
   }
@@ -329,18 +446,26 @@ const ActivityCard = React.memo(ActivityCardInner, activityCardAreEqual);
 
 const ActivityList: React.FC = () => {
   const [interval, setInterval] = useState<IntervalType>('month');
-  const [sportType, setSportType] = useState<string>('all');
-  const [sportTypeOptions, setSportTypeOptions] = useState<string[]>([]);
+  const [sportType, setSportType] = useState<SportTypeFilter>('all');
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
 
   // Get available years from activities
   const availableYears = useMemo(() => {
     const years = new Set<string>();
-    activities.forEach((activity) => {
+    ALL_ACTIVITIES.forEach((activity) => {
       const year = new Date(activity.start_date_local).getFullYear().toString();
       years.add(year);
     });
     return Array.from(years).sort((a, b) => Number(b) - Number(a));
+  }, []);
+
+  const sportTypeOptions = useMemo(() => {
+    const availableTypes = new Set(
+      ALL_ACTIVITIES.map((activity) => normalizeActivityType(activity.type))
+    );
+    return SPORT_TYPE_OPTIONS.filter(
+      (option) => option.value === 'all' || availableTypes.has(option.value)
+    );
   }, []);
 
   // Keyboard navigation for year selection in Life view
@@ -389,25 +514,6 @@ const ActivityList: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [interval, selectedYear, availableYears]);
 
-  useEffect(() => {
-    const sportTypeSet = new Set(activities.map((activity) => activity.type));
-    if (sportTypeSet.has('Run')) {
-      sportTypeSet.delete('Run');
-      sportTypeSet.add('running');
-    }
-    if (sportTypeSet.has('Walk')) {
-      sportTypeSet.delete('Walk');
-      sportTypeSet.add('walking');
-    }
-    if (sportTypeSet.has('Ride')) {
-      sportTypeSet.delete('Ride');
-      sportTypeSet.add('cycling');
-    }
-    const uniqueSportTypes = [...sportTypeSet];
-    uniqueSportTypes.unshift('all');
-    setSportTypeOptions(uniqueSportTypes);
-  }, []);
-
   // 添加useEffect监听interval变化
   useEffect(() => {
     if (interval === 'life' && sportType !== 'all') {
@@ -425,103 +531,140 @@ const ActivityList: React.FC = () => {
     setInterval(newInterval);
   }
 
-  function convertTimeToSeconds(time: string): number {
-    const [hours, minutes, seconds] = time.split(':').map(Number);
-    return hours * 3600 + minutes * 60 + seconds;
-  }
-
   function groupActivitiesFn(
     intervalArg: IntervalType,
-    sportTypeArg: string
+    sportTypeArg: SportTypeFilter
   ): ActivityGroups {
-    return (activities as Activity[])
-      .filter((activity) => {
-        if (sportTypeArg === 'all') return true;
-        if (sportTypeArg === 'running')
-          return activity.type === 'running' || activity.type === 'Run';
-        if (sportTypeArg === 'walking')
-          return activity.type === 'walking' || activity.type === 'Walk';
-        if (sportTypeArg === 'cycling')
-          return activity.type === 'cycling' || activity.type === 'Ride';
-        return activity.type === sportTypeArg;
-      })
-      .reduce((acc: ActivityGroups, activity) => {
-        const date = new Date(activity.start_date_local);
-        let key: string;
-        let index: number;
-        switch (intervalArg) {
-          case 'year':
-            key = date.getFullYear().toString();
-            index = date.getMonth();
-            break;
-          case 'month':
-            key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-            index = date.getDate() - 1;
-            break;
-          case 'week': {
-            const currentDate = new Date(date.valueOf());
-            currentDate.setDate(
-              currentDate.getDate() + 4 - (currentDate.getDay() || 7)
-            );
-            const yearStart = new Date(currentDate.getFullYear(), 0, 1);
-            const weekNum = Math.ceil(
-              ((currentDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7
-            );
-            key = `${currentDate.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`;
-            index = (date.getDay() + 6) % 7;
-            break;
-          }
-          case 'day':
-            key = date.toLocaleDateString('zh').replaceAll('/', '-');
-            index = 0;
-            break;
-          default:
-            key = date.getFullYear().toString();
-            index = 0;
+    return ALL_ACTIVITIES.filter((activity) =>
+      filterSportRuns(activity, sportTypeArg)
+    ).reduce((acc: ActivityGroups, activity) => {
+      const date = new Date(activity.start_date_local);
+      let key: string;
+      let index: number;
+      switch (intervalArg) {
+        case 'year':
+          key = date.getFullYear().toString();
+          index = date.getMonth();
+          break;
+        case 'month':
+          key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+          index = date.getDate() - 1;
+          break;
+        case 'week': {
+          const currentDate = new Date(date.valueOf());
+          currentDate.setDate(
+            currentDate.getDate() + 4 - (currentDate.getDay() || 7)
+          );
+          const yearStart = new Date(currentDate.getFullYear(), 0, 1);
+          const weekNum = Math.ceil(
+            ((currentDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7
+          );
+          key = `${currentDate.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`;
+          index = (date.getDay() + 6) % 7;
+          break;
         }
+        case 'day':
+          key = date.toLocaleDateString('zh').replaceAll('/', '-');
+          index = 0;
+          break;
+        default:
+          key = date.getFullYear().toString();
+          index = 0;
+      }
 
-        if (!acc[key])
-          acc[key] = {
-            totalDistance: 0,
-            totalTime: 0,
-            totalElevationGain: 0,
-            count: 0,
-            dailyDistances: [],
-            maxDistance: 0,
-            maxSpeed: 0,
-            location: '',
-            totalHeartRate: 0,
-            heartRateCount: 0,
-            activities: [],
-          };
+      if (!acc[key])
+        acc[key] = {
+          totalDistance: 0,
+          totalTime: 0,
+          totalElevationGain: 0,
+          count: 0,
+          dailyDistances: [],
+          maxDistance: 0,
+          maxSpeed: 0,
+          location: '',
+          totalHeartRate: 0,
+          heartRateCount: 0,
+          maxDuration: 0,
+          maxElevationGain: 0,
+          elevationGainCount: 0,
+          activities: [],
+        };
 
-        const distance = activity.distance / M_TO_DIST;
-        const timeInSeconds = convertTimeToSeconds(activity.moving_time);
-        const speed = timeInSeconds > 0 ? distance / (timeInSeconds / 3600) : 0;
+      const distance = activity.distance / M_TO_DIST;
+      const timeInSeconds = convertMovingTime2Sec(activity.moving_time);
+      const speed = timeInSeconds > 0 ? distance / (timeInSeconds / 3600) : 0;
 
-        acc[key].totalDistance += distance;
-        acc[key].totalTime += timeInSeconds;
+      acc[key].totalDistance += distance;
+      acc[key].totalTime += timeInSeconds;
+      if (timeInSeconds > acc[key].maxDuration) {
+        acc[key].maxDuration = timeInSeconds;
+      }
 
-        if (SHOW_ELEVATION_GAIN && activity.elevation_gain)
-          acc[key].totalElevationGain += activity.elevation_gain;
-
-        if (activity.average_heartrate) {
-          acc[key].totalHeartRate += activity.average_heartrate;
-          acc[key].heartRateCount += 1;
+      if (
+        SHOW_ELEVATION_GAIN &&
+        activity.elevation_gain !== null &&
+        activity.elevation_gain !== undefined
+      ) {
+        acc[key].totalElevationGain += activity.elevation_gain;
+        acc[key].elevationGainCount += 1;
+        if (activity.elevation_gain > acc[key].maxElevationGain) {
+          acc[key].maxElevationGain = activity.elevation_gain;
         }
+      }
 
-        acc[key].count += 1;
-        if (intervalArg === 'day') acc[key].activities.push(activity);
-        acc[key].dailyDistances[index] =
-          (acc[key].dailyDistances[index] || 0) + distance;
-        if (distance > acc[key].maxDistance) acc[key].maxDistance = distance;
-        if (speed > acc[key].maxSpeed) acc[key].maxSpeed = speed;
-        if (intervalArg === 'day')
-          acc[key].location = activity.location_country || '';
+      if (activity.average_heartrate) {
+        acc[key].totalHeartRate += activity.average_heartrate;
+        acc[key].heartRateCount += 1;
+      }
 
-        return acc;
-      }, {} as ActivityGroups);
+      acc[key].count += 1;
+      if (intervalArg === 'day') acc[key].activities.push(activity);
+      acc[key].dailyDistances[index] =
+        (acc[key].dailyDistances[index] || 0) + distance;
+      if (distance > acc[key].maxDistance) acc[key].maxDistance = distance;
+      if (speed > acc[key].maxSpeed) acc[key].maxSpeed = speed;
+      if (intervalArg === 'day')
+        acc[key].location = activity.location_country || '';
+
+      return acc;
+    }, {} as ActivityGroups);
   }
+
+  const toDisplaySummary = (summary: ActivitySummary): DisplaySummary => {
+    const averageSpeed = summary.totalTime
+      ? summary.totalDistance / (summary.totalTime / 3600)
+      : 0;
+    return {
+      totalDistance: summary.totalDistance,
+      averageSpeed,
+      totalTime: summary.totalTime,
+      count: summary.count,
+      maxDistance: summary.maxDistance,
+      maxSpeed: summary.maxSpeed,
+      location: summary.location,
+      averageDuration: summary.count ? summary.totalTime / summary.count : 0,
+      maxDuration: summary.maxDuration,
+      totalElevationGain: SHOW_ELEVATION_GAIN
+        ? summary.totalElevationGain
+        : undefined,
+      maxElevationGain:
+        SHOW_ELEVATION_GAIN && summary.elevationGainCount > 0
+          ? summary.maxElevationGain
+          : undefined,
+      climbRate:
+        SHOW_ELEVATION_GAIN && summary.totalTime > 0
+          ? summary.totalElevationGain / (summary.totalTime / 3600)
+          : undefined,
+      elevationPerDistance:
+        SHOW_ELEVATION_GAIN && summary.totalDistance > 0
+          ? summary.totalElevationGain / summary.totalDistance
+          : undefined,
+      averageHeartRate:
+        summary.heartRateCount > 0
+          ? summary.totalHeartRate / summary.heartRateCount
+          : undefined,
+    };
+  };
 
   const activitiesByInterval = useMemo(
     () => groupActivitiesFn(interval, sportType),
@@ -700,16 +843,16 @@ const ActivityList: React.FC = () => {
           {HOME_PAGE_TITLE}
         </button>
         <select
-          onChange={(e) => setSportType(e.target.value)}
+          onChange={(e) => setSportType(e.target.value as SportTypeFilter)}
           value={sportType}
         >
           {sportTypeOptions.map((type) => (
             <option
-              key={type}
-              value={type}
-              disabled={interval === 'life' && type !== 'all'}
+              key={type.value}
+              value={type.value}
+              disabled={interval === 'life' && type.value !== 'all'}
             >
-              {type}
+              {type.label}
             </option>
           ))}
         </select>
@@ -751,9 +894,7 @@ const ActivityList: React.FC = () => {
             ) : (
               // Show Life SVG when no year is selected
               <>
-                {(sportType === 'running' || sportType === 'Run') && (
-                  <RunningSvg />
-                )}
+                {sportType === 'running' && <RunningSvg />}
                 {sportType === 'walking' && <WalkingSvg />}
                 {sportType === 'hiking' && <HikingSvg />}
                 {sportType === 'cycling' && <CyclingSvg />}
@@ -782,28 +923,10 @@ const ActivityList: React.FC = () => {
               <ActivityCard
                 key={dataList[0].period}
                 period={dataList[0].period}
-                summary={{
-                  totalDistance: dataList[0].summary.totalDistance,
-                  averageSpeed: dataList[0].summary.totalTime
-                    ? dataList[0].summary.totalDistance /
-                      (dataList[0].summary.totalTime / 3600)
-                    : 0,
-                  totalTime: dataList[0].summary.totalTime,
-                  count: dataList[0].summary.count,
-                  maxDistance: dataList[0].summary.maxDistance,
-                  maxSpeed: dataList[0].summary.maxSpeed,
-                  location: dataList[0].summary.location,
-                  totalElevationGain: SHOW_ELEVATION_GAIN
-                    ? dataList[0].summary.totalElevationGain
-                    : undefined,
-                  averageHeartRate:
-                    dataList[0].summary.heartRateCount > 0
-                      ? dataList[0].summary.totalHeartRate /
-                        dataList[0].summary.heartRateCount
-                      : undefined,
-                }}
+                summary={toDisplaySummary(dataList[0].summary)}
                 dailyDistances={dataList[0].summary.dailyDistances}
                 interval={interval}
+                sportType={sportType}
                 activities={
                   interval === 'day'
                     ? dataList[0].summary.activities
@@ -858,28 +981,10 @@ const ActivityList: React.FC = () => {
                           <ActivityCard
                             key={cardData.period}
                             period={cardData.period}
-                            summary={{
-                              totalDistance: cardData.summary.totalDistance,
-                              averageSpeed: cardData.summary.totalTime
-                                ? cardData.summary.totalDistance /
-                                  (cardData.summary.totalTime / 3600)
-                                : 0,
-                              totalTime: cardData.summary.totalTime,
-                              count: cardData.summary.count,
-                              maxDistance: cardData.summary.maxDistance,
-                              maxSpeed: cardData.summary.maxSpeed,
-                              location: cardData.summary.location,
-                              totalElevationGain: SHOW_ELEVATION_GAIN
-                                ? cardData.summary.totalElevationGain
-                                : undefined,
-                              averageHeartRate:
-                                cardData.summary.heartRateCount > 0
-                                  ? cardData.summary.totalHeartRate /
-                                    cardData.summary.heartRateCount
-                                  : undefined,
-                            }}
+                            summary={toDisplaySummary(cardData.summary)}
                             dailyDistances={cardData.summary.dailyDistances}
                             interval={interval}
+                            sportType={sportType}
                             activities={
                               interval === 'day'
                                 ? cardData.summary.activities
