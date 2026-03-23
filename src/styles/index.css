@@ -1,11 +1,11 @@
-/* Modern Clean Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700\u0026display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600\u0026display=swap');
+/* IBM Plex Sans and IBM Plex Mono fonts */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
 
 @import 'tailwindcss';
 @import './mobile.css';
 
-@theme inline {
+:root {
   /* global */
   --color-primary: var(--color-brand);
   --color-secondary: var(--color-secondary);
@@ -19,88 +19,102 @@
   --color-run-row-hover-background: var(--color-run-row-hover-background);
   /* activity-card */
   --color-activity-card: var(--color-activity-card);
+  /* svg */
+  --svg-color-active-cell: var(--svg-color-inactive-cell);
   /* fonts */
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 }
 
-/* Clean modern light theme */
-:root:not([data-theme]) {
-  --color-brand: #2563eb;
-  --color-secondary: #64748b;
-  --color-bg: #ffffff;
-  --color-tx: #0f172a;
-  --color-hr: #e2e8f0;
-  --color-selected: #3b82f6;
-  --color-run-date: #64748b;
-  --color-run-table-thead: #0f172a;
-  --color-run-row-hover-background: #f8fafc;
-  --color-activity-card: #ffffff;
-  --color-border: #e2e8f0;
-  --color-shadow: rgba(15, 23, 42, 0.08);
-  --font-sans:
-    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    --color-brand: #60a5fa;
-    --color-secondary: #94a3b8;
-    --color-bg: #0f172a;
-    --color-tx: #f1f5f9;
-    --color-hr: #334155;
-    --color-selected: #3b82f6;
-    --color-run-date: #94a3b8;
-    --color-run-table-thead: #f1f5f9;
-    --color-run-row-hover-background: #1e293b;
-    --color-activity-card: #1e293b;
-    --color-border: #334155;
-    --color-shadow: rgba(0, 0, 0, 0.3);
+/* 1. System Theme (Base) */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-brand: var(--color-sky-900);
+    --color-secondary: var(--color-sky-800);
+    --color-bg: var(--color-neutral-100);
+    --color-tx: var(--color-sky-900);
+    --color-hr: var(--color-neutral-300);
+    --color-selected: var(--color-sky-900);
+    --color-run-date: var(--color-neutral-800);
+    --color-run-table-thead: var(--color-neutral-800);
+    --color-run-row-hover-background: var(--color-neutral-200);
+    --color-activity-card: var(--color-neutral-300);
+    --svg-color-active-cell: var(--color-neutral-400);
+    --svg-special-color: #d4a574;
+    --svg-special-color2: #c5756b;
+    --font-sans: 'IBM Plex Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
   }
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* const nike = 'rgb(224,237,94)'; */
+    --color-brand: #e0ed5e;
+    --color-secondary: #ccd94a;
+    --color-bg: var(--color-neutral-900);
+    --color-tx: var(--color-brand);
+    --color-hr: var(--color-red-500);
+    --color-selected: var(--color-brand);
+    --color-run-date: var(--color-neutral-300);
+    --color-run-table-thead: var(--color-zinc-300);
+    --color-run-row-hover-background: var(--color-neutral-800);
+    --color-activity-card: var(--color-neutral-700);
+    --svg-color-active-cell: #4dd2ff;
+    --svg-special-color: #f7d02c;
+    --svg-special-color2: #f56c6c;
+    --font-sans: 'IBM Plex Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+}
+
+/* 2. Manual Override (Higher Priority) */
 [data-theme='light'] {
-  --color-brand: #2563eb;
-  --color-secondary: #64748b;
-  --color-bg: #ffffff;
-  --color-tx: #0f172a;
-  --color-hr: #e2e8f0;
-  --color-selected: #3b82f6;
-  --color-run-date: #64748b;
-  --color-run-table-thead: #0f172a;
-  --color-run-row-hover-background: #f8fafc;
-  --color-activity-card: #ffffff;
-  --color-border: #e2e8f0;
-  --color-shadow: rgba(15, 23, 42, 0.08);
-  --font-sans:
-    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --color-brand: var(--color-sky-900);
+  --color-secondary: var(--color-sky-800);
+  --color-bg: var(--color-neutral-100);
+  --color-tx: var(--color-sky-900);
+  --color-hr: var(--color-neutral-300);
+  --color-selected: var(--color-sky-900);
+  --color-run-date: var(--color-neutral-800);
+  --color-run-table-thead: var(--color-neutral-800);
+  --color-run-row-hover-background: var(--color-neutral-200);
+  --color-activity-card: var(--color-neutral-300);
+  --svg-color-inactive-cell: var(--color-neutral-600);
+  --svg-color-active-cell: var(--color-neutral-400);
+  --svg-special-color: #d4a574;
+  --svg-special-color2: #c5756b;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
 }
 
 [data-theme='dark'] {
-  --color-brand: #60a5fa;
-  --color-secondary: #94a3b8;
-  --color-bg: #0f172a;
-  --color-tx: #f1f5f9;
-  --color-hr: #334155;
-  --color-selected: #3b82f6;
-  --color-run-date: #94a3b8;
-  --color-run-table-thead: #f1f5f9;
-  --color-run-row-hover-background: #1e293b;
-  --color-activity-card: #1e293b;
-  --color-border: #334155;
-  --color-shadow: rgba(0, 0, 0, 0.3);
+  /* const nike = 'rgb(224,237,94)'; */
+  --color-brand: #e0ed5e;
+  --color-secondary: #ccd94a;
+  --color-bg: var(--color-neutral-900);
+  --color-tx: var(--color-brand);
+  --color-hr: var(--color-red-500);
+  --color-selected: var(--color-brand);
+  --color-run-date: var(--color-neutral-300);
+  --color-run-table-thead: var(--color-zinc-300);
+  --color-run-row-hover-background: var(--color-neutral-800);
+  --color-activity-card: var(--color-neutral-700);
+  --svg-color-active-cell: #4dd2ff;
+  --svg-special-color: #f7d02c;
+  --svg-special-color2: #f56c6c;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
 }
 
 @layer base {
   html,
   body {
     background-color: var(--color-background);
-    color: var(--color-tx);
+    color: var(--color-brand);
     transition:
-      background-color 0.2s ease,
-      color 0.2s ease;
+      background-color 0.1s ease,
+      color 0.1s ease;
     font-family: var(--font-sans);
   }
 }
@@ -117,28 +131,6 @@ body {
   text-rendering: optimizeLegibility;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
-  background: var(--color-bg);
-  min-height: 100vh;
-  position: relative;
-}
-
-/* Clean, subtle background pattern */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: radial-gradient(
-    circle at 1px 1px,
-    var(--color-border) 1px,
-    transparent 1px
-  );
-  background-size: 40px 40px;
-  opacity: 0.3;
-  pointer-events: none;
-  z-index: -1;
 }
 
 iframe {
@@ -147,38 +139,50 @@ iframe {
 
 hr {
   border-top: none;
-  border-bottom: 1px solid var(--color-hr);
+  border-bottom: 1px solid;
+  border-color: var(--color-hr-primary);
   margin: 2rem 0;
 }
 
-/* Clean scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.github-svg text,
+.grid-svg text,
+.year-svg text {
+  fill: var(--color-run-date);
 }
 
-::-webkit-scrollbar-track {
-  background: var(--color-bg);
+.svg-color-bg {
+  fill: var(--color-run-row-hover-background);
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 4px;
+.svg-color-inactive-cell {
+  fill: var(--color-activity-card);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-secondary);
+.svg-color-active-cell {
+  fill: var(--svg-color-active-cell);
 }
 
-/* Selection styling */
-::selection {
-  background: rgba(37, 99, 235, 0.2);
-  color: var(--color-tx);
+.svg-special-color {
+  fill: var(--svg-special-color);
 }
 
-::-moz-selection {
-  background: rgba(37, 99, 235, 0.2);
-  color: var(--color-tx);
+.svg-special-color2 {
+  fill: var(--svg-special-color2);
+}
+
+.grid-svg .svg-color-active-cell {
+  fill: none;
+  stroke: var(--svg-color-active-cell);
+}
+
+.grid-svg .svg-special-color {
+  fill: none;
+  stroke: var(--svg-special-color);
+}
+
+.grid-svg .svg-special-color2 {
+  fill: none;
+  stroke: var(--svg-special-color2);
 }
 
 /* Mobile-specific improvements */
@@ -187,195 +191,8 @@ hr {
     margin-bottom: 1rem;
   }
 
+  /* Ensure mobile layout doesn't require min-width */
   body {
     overflow-x: hidden;
-  }
-}
-
-/* ===== ELEGANT MODERN ANIMATIONS ===== */
-
-/* Smooth fade-in animation for page load */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Subtle scale animation for interactive elements */
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Smooth slide-up animation */
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Gentle pulse for attention */
-@keyframes gentlePulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.02);
-  }
-}
-
-/* Utility classes for animations */
-.fade-in {
-  animation: fadeIn 0.4s ease-out;
-}
-
-.fade-in-delay-1 {
-  animation: fadeIn 0.4s ease-out 0.1s backwards;
-}
-
-.fade-in-delay-2 {
-  animation: fadeIn 0.4s ease-out 0.2s backwards;
-}
-
-.fade-in-delay-3 {
-  animation: fadeIn 0.4s ease-out 0.3s backwards;
-}
-
-.scale-in {
-  animation: scaleIn 0.3s ease-out;
-}
-
-.slide-up {
-  animation: slideUp 0.5s ease-out;
-}
-
-/* Smooth transitions for interactive elements */
-.smooth-transition {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Hover lift effect for cards */
-.hover-lift {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
-}
-
-/* Subtle border highlight on hover */
-.hover-border {
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.hover-border::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: var(--color-brand);
-  transition: width 0.3s ease;
-}
-
-.hover-border:hover::after {
-  width: 100%;
-}
-
-/* Smooth focus ring for accessibility */
-*:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-/* Loading skeleton shimmer effect */
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-
-  100% {
-    background-position: 1000px 0;
-  }
-}
-
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--color-border) 25%,
-    var(--color-bg) 50%,
-    var(--color-border) 75%
-  );
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite;
-}
-
-/* Smooth page transitions */
-.page-transition {
-  animation: fadeIn 0.5s ease-out;
-}
-
-/* Stagger animation for lists */
-.stagger-fade-in > * {
-  animation: fadeIn 0.4s ease-out backwards;
-}
-
-.stagger-fade-in > *:nth-child(1) {
-  animation-delay: 0.05s;
-}
-
-.stagger-fade-in > *:nth-child(2) {
-  animation-delay: 0.1s;
-}
-
-.stagger-fade-in > *:nth-child(3) {
-  animation-delay: 0.15s;
-}
-
-.stagger-fade-in > *:nth-child(4) {
-  animation-delay: 0.2s;
-}
-
-.stagger-fade-in > *:nth-child(5) {
-  animation-delay: 0.25s;
-}
-
-.stagger-fade-in > *:nth-child(n + 6) {
-  animation-delay: 0.3s;
-}
-
-/* Reduce motion for accessibility */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
   }
 }

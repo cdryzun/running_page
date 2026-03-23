@@ -14,9 +14,10 @@ import {
   HIKING_COLOR,
   WALKING_COLOR,
   SWIMMING_COLOR,
-  RUN_COLOR,
+  getRuntimeRunColor,
   RUN_TRAIL_COLOR,
   MAP_TILE_STYLES,
+  MAP_TILE_STYLE_DARK,
 } from './const';
 import {
   FeatureCollection,
@@ -24,10 +25,18 @@ import {
   Feature,
   GeoJsonProperties,
 } from 'geojson';
+import { getMapThemeFromCurrentTheme } from '@/hooks/useTheme';
 
 export type Coordinate = [number, number];
 
 export type RunIds = Array<number> | [];
+
+// Check for units environment variable
+const IS_IMPERIAL = import.meta.env.VITE_USE_IMPERIAL === 'true';
+export const M_TO_DIST = IS_IMPERIAL ? 1609.344 : 1000; // Meters to Mi or Km
+export const M_TO_ELEV = IS_IMPERIAL ? 3.28084 : 1; // Meters to Feet or Meters
+export const DIST_UNIT = IS_IMPERIAL ? 'mi' : 'km'; // Label
+export const ELEV_UNIT = IS_IMPERIAL ? 'ft' : 'm'; // Label
 
 export interface Activity {
   run_id: number;
@@ -46,85 +55,9 @@ export interface Activity {
   streak: number;
 }
 
-// 智能识别运动类型，根据活动名称纠正可能错误的类型标记
-export const getCorrectActivityType = (activity: Activity): string => {
-  const name = activity.name.toLowerCase();
-
-  // 如果名称包含明确的运动类型关键词，优先使用名称判断
-  if (
-    name.includes('骑行') ||
-    name.includes('cycling') ||
-    name.includes('bike')
-  ) {
-    return 'Ride';
-  }
-  if (
-    name.includes('跑步') ||
-    name.includes('running') ||
-    name.includes('run')
-  ) {
-    return 'Run';
-  }
-  if (
-    name.includes('徒步') ||
-    name.includes('hiking') ||
-    name.includes('hike')
-  ) {
-    return 'hiking';
-  }
-  if (
-    name.includes('步行') ||
-    name.includes('walking') ||
-    name.includes('walk')
-  ) {
-    return 'Walk';
-  }
-  if (
-    name.includes('游泳') ||
-    name.includes('swimming') ||
-    name.includes('swim')
-  ) {
-    return 'swimming';
-  }
-
-  // 如果名称没有明确指示，使用原始类型
-  return activity.type;
-};
-
-// 将运动类型转换为英文显示
-const getEnglishActivityType = (activity: Activity): string => {
-  const correctedType = getCorrectActivityType(activity);
-
-  // 标准化运动类型映射
-  const typeMapping: { [key: string]: string } = {
-    Run: 'RUNNING',
-    running: 'RUNNING',
-    Ride: 'CYCLING',
-    cycling: 'CYCLING',
-    Walk: 'WALKING',
-    walking: 'WALKING',
-    hiking: 'HIKING',
-    Hiking: 'HIKING',
-    swimming: 'SWIMMING',
-    Swimming: 'SWIMMING',
-    skiing: 'SKIING',
-    Skiing: 'SKIING',
-    VirtualRun: 'TREADMILL',
-    treadmill: 'TREADMILL',
-  };
-
-  // 检查子类型
-  if (correctedType === 'Run' && activity.subtype) {
-    if (activity.subtype === 'trail') return 'TRAIL RUN';
-    if (activity.subtype === 'treadmill') return 'TREADMILL';
-  }
-
-  return typeMapping[correctedType] || correctedType.toUpperCase();
-};
-
 const titleForShow = (run: Activity): string => {
   const date = run.start_date_local.slice(0, 11);
-  const distance = (run.distance / 1000.0).toFixed(2);
+  const distance = (run.distance / M_TO_DIST).toFixed(2);
   let name = 'Run';
   if (run.name.slice(0, 7) === 'Running') {
     name = 'run';
@@ -132,22 +65,14 @@ const titleForShow = (run: Activity): string => {
   if (run.name) {
     name = run.name;
   }
-  return `${name} ${date} ${distance} KM ${
+  return `${name} ${date} ${distance} ${DIST_UNIT} ${
     !run.summary_polyline ? '(No map data for this run)' : ''
   }`;
 };
 
-const formatPace = (d: number, sportType: string = 'Run'): string => {
-  if (Number.isNaN(d) || d === 0) return '0';
-
-  // For cycling, show speed in km/h instead of pace
-  if (['Ride', 'cycling', 'VirtualRide', 'Bike'].includes(sportType)) {
-    const speed = d * 3.6; // convert m/s to km/h
-    return `${speed.toFixed(1)} km/h`;
-  }
-
-  // For running, hiking, walking - show pace in min/km
-  const pace = (1000.0 / 60.0) * (1.0 / d);
+const formatPace = (d: number): string => {
+  if (Number.isNaN(d)) return '0';
+  const pace = (M_TO_DIST / 60.0) * (1.0 / d);
   const minutes = Math.floor(pace);
   const seconds = Math.floor((pace - minutes) * 60.0);
   return `${minutes}'${seconds.toFixed(0).toString().padStart(2, '0')}"`;
@@ -314,28 +239,31 @@ const pathForRun = (run: Activity): Coordinate[] => {
 };
 
 const colorForRun = (run: Activity): string => {
-  const correctedType = getCorrectActivityType(run);
-  switch (correctedType) {
+  const dynamicRunColor = getRuntimeRunColor();
+
+  switch (run.type) {
     case 'Run': {
       if (run.subtype === 'trail') {
         return RUN_TRAIL_COLOR;
       } else if (run.subtype === 'generic') {
-        return RUN_COLOR;
+        return dynamicRunColor;
       }
-      return RUN_COLOR;
+      return dynamicRunColor;
     }
-    case 'Ride':
     case 'cycling':
+    case 'Ride': // For Strava
       return CYCLING_COLOR;
     case 'hiking':
+    case 'Hike': // For Strava
       return HIKING_COLOR;
     case 'walking':
-    case 'Walk':
+    case 'Walk': // For Strava
       return WALKING_COLOR;
     case 'swimming':
+    case 'Swim': // For Strava
       return SWIMMING_COLOR;
     default:
-      return RUN_COLOR; // 默认使用跑步颜色而不是骑行颜色
+      return MAIN_COLOR;
   }
 };
 
@@ -373,8 +301,7 @@ const geoJsonForMap = async (): Promise<FeatureCollection<RPGeometry>> => {
 };
 
 const getActivitySport = (act: Activity): string => {
-  const correctedType = getCorrectActivityType(act);
-  if (correctedType === 'Run') {
+  if (act.type === 'Run') {
     if (act.subtype === 'generic') {
       const runDistance = act.distance / 1000;
       if (runDistance > 20 && runDistance < 40) {
@@ -387,23 +314,55 @@ const getActivitySport = (act: Activity): string => {
     else if (act.subtype === 'treadmill')
       return ACTIVITY_TYPES.RUN_TREADMILL_TITLE;
     else return ACTIVITY_TYPES.RUN_GENERIC_TITLE;
-  } else if (correctedType === 'Ride' || correctedType === 'cycling') {
-    return ACTIVITY_TYPES.CYCLING_TITLE;
-  } else if (correctedType === 'hiking') {
+  } else if (act.type === 'hiking') {
     return ACTIVITY_TYPES.HIKING_TITLE;
-  } else if (correctedType === 'walking' || correctedType === 'Walk') {
+  } else if (act.type === 'cycling') {
+    return ACTIVITY_TYPES.CYCLING_TITLE;
+  } else if (act.type === 'walking') {
     return ACTIVITY_TYPES.WALKING_TITLE;
   }
-  // if correctedType contains 'skiing'
-  else if (correctedType.includes('skiing')) {
+  // if act.type contains 'skiing'
+  else if (act.type.includes('skiing')) {
     return ACTIVITY_TYPES.SKIING_TITLE;
   }
   return '';
 };
 
 const titleForRun = (run: Activity): string => {
-  // 直接使用英文运动类型显示
-  return getEnglishActivityType(run);
+  if (RICH_TITLE) {
+    // 1. try to use user defined name
+    if (run.name != '') {
+      return run.name;
+    }
+    // 2. try to use location+type if the location is available, eg. 'Shanghai Run'
+    const { city } = locationForRun(run);
+    const activity_sport = getActivitySport(run);
+    if (city && city.length > 0 && activity_sport.length > 0) {
+      return `${city} ${activity_sport}`;
+    }
+  }
+  // 3. use time+length if location or type is not available
+  const runDistance = run.distance / 1000;
+  const runHour = +run.start_date_local.slice(11, 13);
+  if (runDistance > 20 && runDistance < 40) {
+    return RUN_TITLES.HALF_MARATHON_RUN_TITLE;
+  }
+  if (runDistance >= 40) {
+    return RUN_TITLES.FULL_MARATHON_RUN_TITLE;
+  }
+  if (runHour >= 0 && runHour <= 10) {
+    return RUN_TITLES.MORNING_RUN_TITLE;
+  }
+  if (runHour > 10 && runHour <= 14) {
+    return RUN_TITLES.MIDDAY_RUN_TITLE;
+  }
+  if (runHour > 14 && runHour <= 18) {
+    return RUN_TITLES.AFTERNOON_RUN_TITLE;
+  }
+  if (runHour > 18 && runHour <= 21) {
+    return RUN_TITLES.EVENING_RUN_TITLE;
+  }
+  return RUN_TITLES.NIGHT_RUN_TITLE;
 };
 
 export interface IViewState {
@@ -505,6 +464,35 @@ const isTouchDevice = () => {
   ); // Consider small screens as touch devices
 };
 
+/**
+ * Determines the appropriate map theme based on current settings
+ * @returns The map theme style to use
+ */
+const getMapTheme = (): string => {
+  if (typeof window === 'undefined') return MAP_TILE_STYLE_DARK;
+
+  // Check for explicit theme in DOM
+  const dataTheme = document.documentElement.getAttribute('data-theme') as
+    | 'light'
+    | 'dark'
+    | null;
+
+  // Check for saved theme in localStorage
+  const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+
+  // Determine theme based on priority:
+  // 1. DOM attribute
+  // 2. localStorage
+  // 3. Default to dark theme
+  if (dataTheme) {
+    return getMapThemeFromCurrentTheme(dataTheme);
+  } else if (savedTheme) {
+    return getMapThemeFromCurrentTheme(savedTheme);
+  } else {
+    return getMapThemeFromCurrentTheme('dark');
+  }
+};
+
 export {
   titleForShow,
   formatPace,
@@ -526,4 +514,5 @@ export {
   convertMovingTime2Sec,
   getMapStyle,
   isTouchDevice,
+  getMapTheme,
 };

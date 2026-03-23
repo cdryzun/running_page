@@ -1,135 +1,100 @@
-/* Clean modern table styles */
+@media only screen and (max-width: 768px) {
+  .tableContainer {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 
-/* Table container */
+  .runTable {
+    min-width: 650px;
+    font-size: 0.8rem;
+  }
+
+  .runTable th,
+  .runTable td {
+    padding: 0.25rem !important;
+    white-space: nowrap;
+    min-width: 60px;
+  }
+
+  .runTable th:first-child,
+  .runTable td:first-child {
+    min-width: 100px;
+  }
+
+  .runTable th:last-child,
+  .runTable td:last-child {
+    min-width: 80px;
+  }
+}
+
+.runTable {
+  width: 100%;
+  margin: 2rem 0 5rem 0;
+  color: var(--color-run-table-thead);
+  background-color: var(--color-background);
+  font-family: var(--font-mono);
+  table-layout: auto;
+  :is(thead) {
+    color: var(--color-run-table-thead);
+
+    :is(th) {
+      padding: 0.5rem;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    :is(th):first-child {
+      text-align: left;
+    }
+
+    :is(th):last-child {
+      text-align: right;
+    }
+  }
+  :is(th, td) {
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  :is(th, td):first-child {
+    text-align: left;
+  }
+
+  :is(th, td):last-child {
+    text-align: right;
+  }
+}
+
+.runRow {
+  cursor: pointer;
+  :is(td) {
+    padding: 0.5rem;
+    border: 0;
+    text-align: center; /* 默认居中 */
+  }
+
+  :is(td):first-child {
+    text-align: left;
+  }
+
+  :is(td):last-child {
+    text-align: right;
+  }
+
+  &:hover {
+    background-color: var(--color-run-row-hover-background);
+  }
+}
+
+.selected {
+  color: var(--color-primary);
+}
+
 .tableContainer {
   width: 100%;
   overflow-x: auto;
-  margin: 2rem 0;
-  border-radius: 8px;
-  background: var(--color-activity-card);
-  box-shadow: 0 1px 3px var(--color-shadow);
 }
 
-/* Table base styles */
-.runTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.runTable thead {
-  background: var(--color-bg);
-  border-bottom: 2px solid var(--color-border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.runTable th {
-  padding: 0.75rem 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: var(--color-run-table-thead);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.runTable th:hover {
-  color: var(--color-brand);
-}
-
-.runTable td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-tx);
-}
-
-/* Row styles */
-.runRow {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  cursor: pointer;
-}
-
-.runRow:hover {
-  background: var(--color-run-row-hover-background);
-  transform: translateX(2px);
-}
-
-.runRow:last-child td {
-  border-bottom: none;
-}
-
-/* Selected row style */
-.selected {
-  background: var(--color-run-row-hover-background) !important;
-  border-left: 3px solid var(--color-brand);
-}
-
-.selected td {
-  color: var(--color-brand);
-  font-weight: 500;
-}
-
-/* Activity type badge */
-.activityTypeBadge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  background: var(--color-brand);
-  color: white;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Data display containers */
-.dataDisplayContainer,
-.paceDisplayContainer,
-.heartrateDisplayContainer,
-.timeDisplayContainer,
-.dateDisplayContainer {
-  display: flex;
-  align-items: baseline;
-  gap: 0.25rem;
-}
-
-.dataValue,
-.paceValue,
-.heartrateValue,
-.timeValue {
-  font-weight: 600;
-  color: var(--color-tx);
-  font-family: var(--font-mono);
-}
-
-.dataUnit,
-.heartrateUnit {
-  font-size: 0.75rem;
-  color: var(--color-secondary);
-  text-transform: uppercase;
-}
-
-/* Date column */
 .runDate {
   color: var(--color-run-date);
-  font-family: var(--font-mono);
-}
-
-/* Responsive adjustments */
-@media only screen and (max-width: 768px) {
-  .runTable th,
-  .runTable td {
-    padding: 0.5rem;
-    font-size: 0.75rem;
-  }
-
-  .activityTypeBadge {
-    font-size: 0.625rem;
-    padding: 0.2rem 0.5rem;
-  }
 }

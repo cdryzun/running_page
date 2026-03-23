@@ -16,8 +16,6 @@ from io import BytesIO
 from lxml import etree
 
 import aiofiles
-# Disable garth telemetry by default to avoid Logfire auth requirements in CI/process pools.
-os.environ.setdefault("GARTH_TELEMETRY_ENABLED", "false")
 import garth
 import httpx
 from config import FOLDER_DICT, JSON_FILE, SQL_FILE
@@ -274,7 +272,7 @@ async def download_garmin_data(
     folder = FOLDER_DICT.get(file_type, "gpx")
     try:
         file_data = await client.download_activity(activity_id, file_type=file_type)
-        if summary_infos is not None:
+        if summary_infos is not None and file_type == "gpx":
             file_data = add_summary_info(file_data, summary_infos.get(activity_id))
         file_path = os.path.join(folder, f"{activity_id}.{file_type}")
         need_unzip = False

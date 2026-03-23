@@ -1,8 +1,5 @@
 import argparse
-import os
 
-# Disable garth telemetry by default to avoid Logfire auth requirements in CI/process pools.
-os.environ.setdefault("GARTH_TELEMETRY_ENABLED", "false")
 import garth
 
 if __name__ == "__main__":

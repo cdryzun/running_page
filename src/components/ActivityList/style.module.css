@@ -1,253 +1,83 @@
 .activityList {
-  padding: 0;
-  background-color: transparent;
+  padding: 20px 20px 0 20px;
+  background-color: var(--color-background);
   color: var(--color-primary);
-  width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
+}
+
+/* Default scrollbar color variables for this component. You can override these in a higher-level CSS or :root. */
+:root {
+  --color-scrollbar-thumb: var(--color-primary, rgba(0, 0, 0, 0.4));
+  --color-scrollbar-thumb-hover: var(--color-primary, rgba(0, 0, 0, 0.6));
+}
+
+/* rc-virtual-list renders its scrollbar elements with classnames we can target globally. */
+:global(.rc-virtual-list-scrollbar) {
+  background: transparent;
+}
+
+:global(.rc-virtual-list-scrollbar-thumb) {
+  background: var(--color-scrollbar-thumb) !important;
+  border-radius: 4px;
+}
+
+:global(.rc-virtual-list-scrollbar-thumb:hover) {
+  background: var(--color-scrollbar-thumb-hover) !important;
 }
 
 .filterContainer {
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: 2rem;
-  margin-bottom: 4rem;
+  gap: 10px;
+  margin-bottom: 20px;
   overflow: visible;
-  padding: 2rem 3rem;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.9) 0%,
-    rgba(42, 42, 42, 0.8) 50%,
-    rgba(0, 0, 0, 0.9) 100%
-  );
-  border: 1px solid var(--color-glow, #00ff88);
-  border-radius: 16px;
-  backdrop-filter: blur(20px);
-  box-shadow:
-    0 0 30px rgba(0, 255, 136, 0.15),
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(0, 255, 136, 0.2);
-  position: relative;
-  overflow: hidden;
-}
-
-.filterContainer::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image:
-    radial-gradient(
-      circle at 2px 2px,
-      rgba(0, 255, 136, 0.06) 1px,
-      transparent 0
-    ),
-    linear-gradient(
-      45deg,
-      transparent 48%,
-      rgba(0, 255, 136, 0.02) 49%,
-      rgba(0, 255, 136, 0.04) 50%,
-      rgba(0, 255, 136, 0.02) 51%,
-      transparent 52%
-    ),
-    linear-gradient(
-      -45deg,
-      transparent 48%,
-      rgba(0, 212, 255, 0.02) 49%,
-      rgba(0, 212, 255, 0.03) 50%,
-      rgba(0, 212, 255, 0.02) 51%,
-      transparent 52%
-    );
-  background-size:
-    25px 25px,
-    50px 50px,
-    75px 75px;
-  animation:
-    filterGrid 20s linear infinite,
-    gridShimmer 4s ease-in-out infinite alternate;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.filterContainer::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(0, 255, 136, 0.1),
-    transparent
-  );
-  animation: scan 3s infinite;
-  z-index: 1;
-}
-
-@keyframes scan {
-  0% {
-    left: -100%;
-  }
-  50% {
-    left: 100%;
-  }
-  100% {
-    left: 100%;
-  }
 }
 
 .filterContainer select {
   appearance: none;
-  min-width: 140px;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  border: 1px solid var(--color-glow, #00ff88);
-  background: linear-gradient(
-    135deg,
-    var(--color-charcoal, #2a2a2a) 0%,
-    var(--color-bg, #0a0a0a) 100%
-  );
-  color: var(--color-glow, #00ff88);
+  width: 90px;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid var(--color-run-table-thead);
+  background-color: var(--color-run-row-hover-background);
+  color: var(--color-run-table-thead);
   cursor: pointer;
   text-align: center;
-  text-transform: uppercase;
+  text-transform: capitalize;
   box-sizing: border-box;
-  font-size: 0.9rem;
-  font-family: var(--font-display, 'Orbitron', sans-serif);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  line-height: 1.2;
-  position: relative;
-  z-index: 2;
-  backdrop-filter: blur(10px);
-}
-
-.filterContainer select:hover {
-  border-color: var(--color-glow, #00ff88);
-  box-shadow:
-    0 0 15px rgba(0, 255, 136, 0.3),
-    inset 0 0 15px rgba(0, 255, 136, 0.1);
-  transform: translateY(-2px);
-}
-
-.filterContainer select:focus {
-  outline: none;
-  border-color: var(--color-glow, #00ff88);
-  box-shadow:
-    0 0 20px rgba(0, 255, 136, 0.4),
-    inset 0 0 20px rgba(0, 255, 136, 0.1);
-  text-shadow: 0 0 10px var(--color-glow, #00ff88);
 }
 
 .summaryContainer {
-  display: grid;
+  /* display: grid;
   justify-content: center;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 2rem;
-  padding: 2rem 1rem;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-@media (max-width: 768px) {
-  .summaryContainer {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    padding: 1rem 0.5rem;
-  }
+  grid-template-columns: repeat(auto-fit, minmax(280px, auto));
+  gap: 20px; */
+  /* position: relative; */
+  width: 100%;
+  height: 100%;
+  /* overflow: auto;
+  will-change: transform; */
 }
 
 .activityCard {
-  background: linear-gradient(
-    135deg,
-    var(--color-activity-card, #151515) 0%,
-    var(--color-charcoal, #2a2a2a) 50%,
-    var(--color-activity-card, #151515) 100%
-  );
-  border: 1px solid var(--color-glow, #00ff88);
-  border-radius: 16px;
-  padding: 2rem;
-  width: 100%;
-  max-width: 400px;
-  min-height: 320px;
-  box-shadow:
-    0 0 25px rgba(0, 255, 136, 0.12),
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(0, 255, 136, 0.15);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: var(--color-run-row-hover-background);
+  border: 1px solid var(--color-activity-card);
+  border-radius: 8px;
+  padding: 16px;
+  width: 280px;
+  box-shadow: 0 4px 8px var(--color-run-row-hover-background);
+  transition: transform 0.2s;
   position: relative;
-  overflow: hidden;
-  backdrop-filter: blur(15px);
-  margin: 0 auto;
-}
-
-.activityCard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image:
-    radial-gradient(
-      circle at 2px 2px,
-      rgba(0, 255, 136, 0.08) 1px,
-      transparent 0
-    ),
-    linear-gradient(90deg, transparent 98%, rgba(0, 255, 136, 0.05) 100%),
-    linear-gradient(0deg, transparent 98%, rgba(0, 255, 136, 0.05) 100%);
-  background-size:
-    20px 20px,
-    40px 40px,
-    40px 40px;
-  animation:
-    cardGrid 15s linear infinite,
-    gridPulse 3s ease-in-out infinite alternate;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.activityCard::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    45deg,
-    transparent 30%,
-    rgba(0, 255, 136, 0.05) 50%,
-    transparent 70%
-  );
-  transform: translateX(-100%);
-  transition: transform 0.6s;
-  z-index: 1;
 }
 
 .activityCard:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 0 30px rgba(0, 255, 136, 0.2),
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(0, 255, 136, 0.2);
-  border-color: var(--color-glow, #00ff88);
-}
-
-.activityCard:hover::after {
-  transform: translateX(100%);
+  transform: translateY(-5px);
 }
 
 /* Flip card styles */
 .activityCardFlippable {
   perspective: 1000px;
-  padding: 0; /* Remove padding for flippable cards */
+  padding: 0;
+  /* Remove padding for flippable cards */
 }
 
 .cardInner {
@@ -296,272 +126,120 @@
 }
 
 .activityName {
-  font-size: 1.4rem;
-  margin-bottom: 18px;
-  color: var(--color-glow, #00ff88);
-  font-family: var(--font-display, 'Orbitron', sans-serif);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-shadow: 0 0 12px var(--color-glow, #00ff88);
-  position: relative;
-  z-index: 2;
-  line-height: 1.3;
-}
-
-.activityDetails {
-  position: relative;
-  z-index: 2;
+  font-size: 1.5em;
+  margin-bottom: 10px;
+  color: var(--color-primary);
 }
 
 .activityDetails p {
-  margin: 14px 0;
-  color: var(--color-tx, #e8e8e8);
-  font-family: var(--font-mono, 'JetBrains Mono', monospace);
-  font-size: 1rem;
-  line-height: 1.7;
-  font-weight: 400;
+  margin: 8px 0;
+  color: var(--color-run-table-thead);
 }
 
 .activityDetails strong {
-  color: var(--color-glow, #00ff88);
-  font-weight: 600;
-  text-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
-  font-size: 1.05rem;
+  color: var(--color-primary);
 }
 
 .chart {
-  height: 280px;
+  height: 250px;
   width: 100%;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.5) 0%,
-    rgba(42, 42, 42, 0.3) 100%
-  );
-  border: 1px solid rgba(0, 255, 136, 0.2);
-  border-radius: 8px;
+  background-color: var(--color-activity-card);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 16px;
-  position: relative;
-  z-index: 2;
-  backdrop-filter: blur(5px);
-}
-
-.chart::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image:
-    radial-gradient(
-      circle at 1px 1px,
-      rgba(0, 255, 136, 0.05) 1px,
-      transparent 0
-    ),
-    linear-gradient(
-      90deg,
-      transparent 95%,
-      rgba(0, 255, 136, 0.03) 96%,
-      transparent 97%
-    ),
-    linear-gradient(
-      0deg,
-      transparent 95%,
-      rgba(0, 212, 255, 0.02) 96%,
-      transparent 97%
-    );
-  background-size:
-    16px 16px,
-    32px 32px,
-    32px 32px;
-  border-radius: 8px;
-  animation:
-    chartGrid 12s linear infinite,
-    chartPulse 2s ease-in-out infinite alternate;
-  pointer-events: none;
+  margin-top: 10px;
 }
 
 .smallHomeButton {
-  width: auto;
-  min-width: 120px;
-  padding: 1rem 1.5rem;
-  background: linear-gradient(
-    135deg,
-    var(--color-charcoal, #2a2a2a) 0%,
-    var(--color-bg, #0a0a0a) 50%,
-    var(--color-charcoal, #2a2a2a) 100%
-  );
-  color: var(--color-glow, #00ff88);
-  border: 1px solid var(--color-glow, #00ff88);
-  border-radius: 12px;
+  width: 90px;
+  padding: 4px 12px;
+  background-color: var(--color-primary);
+  color: var(--color-background);
+  border: none;
+  border-radius: 5px;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  font-family: var(--font-display, 'Orbitron', sans-serif);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-  z-index: 2;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
-}
-
-.smallHomeButton::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(0, 255, 136, 0.2),
-    transparent
-  );
-  transition: left 0.5s;
+  margin-right: 20px;
 }
 
 .smallHomeButton:hover {
-  box-shadow:
-    0 0 20px rgba(0, 255, 136, 0.3),
-    inset 0 0 20px rgba(0, 255, 136, 0.1);
-  transform: translateY(-2px);
-}
-
-.smallHomeButton:hover::before {
-  left: 100%;
-}
-
-.smallHomeButton:active {
-  transform: translateY(0);
+  background-color: var(--color-secondary);
 }
 
 .lifeContainer {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  padding: 3rem 2rem;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.8) 0%,
-    rgba(42, 42, 42, 0.6) 50%,
-    rgba(0, 0, 0, 0.8) 100%
-  );
-  border: 1px solid var(--color-glow, #00ff88);
-  border-radius: 20px;
-  backdrop-filter: blur(20px);
-  box-shadow:
-    0 0 30px rgba(0, 255, 136, 0.15),
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(0, 255, 136, 0.2);
-  margin: 2rem auto;
-  max-width: 1200px;
-  position: relative;
-  overflow: hidden;
+  justify-content: center;
 }
 
-.lifeContainer::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: radial-gradient(
-    circle at 3px 3px,
-    rgba(0, 255, 136, 0.05) 2px,
-    transparent 0
-  );
-  background-size: 30px 30px;
-  pointer-events: none;
-  z-index: 1;
+.yearSelector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 20px;
+  padding: 10px;
 }
 
-.lifeContainer > * {
-  position: relative;
-  z-index: 2;
+.yearButton {
+  padding: 8px 16px;
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
 }
 
-/* Dynamic Grid Animations */
-@keyframes cardGrid {
-  0% {
-    transform: translate(0, 0);
-  }
-  100% {
-    transform: translate(20px, 20px);
-  }
+.yearButton:hover {
+  background-color: var(--color-primary);
+  color: var(--color-background);
 }
 
-@keyframes gridPulse {
-  0% {
-    opacity: 0.3;
-  }
-  100% {
-    opacity: 0.7;
-  }
+.yearButtonActive {
+  background-color: var(--color-primary);
+  color: var(--color-background);
 }
 
-/* Enhanced Scan Animation for Filter Container */
-@keyframes scan {
-  0% {
-    left: -100%;
-  }
-  50% {
-    left: 100%;
-  }
-  100% {
-    left: 100%;
-  }
+.yearSummarySvg {
+  max-width: 100%;
+  height: auto;
+  max-height: 80vh;
 }
 
-@keyframes filterGrid {
-  0% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  25% {
-    transform: translate(10px, 5px) rotate(0.5deg);
-  }
-  50% {
-    transform: translate(5px, 10px) rotate(0deg);
-  }
-  75% {
-    transform: translate(-5px, 5px) rotate(-0.5deg);
-  }
-  100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
+/* Inner wrapper to center the virtual list rows and constrain width */
+.summaryInner {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 10px;
 }
 
-@keyframes gridShimmer {
-  0% {
-    opacity: 0.4;
-  }
-  100% {
-    opacity: 0.8;
-  }
+/* Prevent content from sitting flush against the custom scrollbar. The inner wrapper (direct child) gets right padding. */
+.summaryInner > div {
+  padding-right: 16px;
+  box-sizing: content-box;
 }
 
-@keyframes chartGrid {
-  0% {
-    transform: translate(0, 0);
-  }
-  100% {
-    transform: translate(16px, 16px);
-  }
+/* Row container used by VirtualList rows */
+.rowContainer {
+  display: flex;
+  padding: 10px 0;
+  justify-content: flex-start;
+  padding-right: 12px;
+  box-sizing: border-box;
 }
 
-@keyframes chartPulse {
-  0% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 0.9;
-  }
+/* rc-virtual-list view and body panes: ensure there's a little inner spacing so content doesn't overlap scrollbar */
+:global(.rc-virtual-list-holder-inner),
+:global(.rc-virtual-list-holder) {
+  padding-right: 4px;
+}
+
+.lifeContainer > svg,
+.lifeContainer :global(svg) {
+  max-width: 100%;
+  height: auto;
 }
