@@ -148,9 +148,17 @@ def fetch_streams_with_retry(generator: Generator, run_id: int, max_retry: int =
     last_error = None
     for retry in range(max_retry + 1):
         try:
-            return generator.client.get_activity_streams(
-                run_id, types=["altitude"], key_by_type=True
-            )
+            try:
+                return generator.client.get_activity_streams(
+                    run_id, types=["altitude"], key_by_type=True
+                )
+            except TypeError:
+                try:
+                    return generator.client.get_activity_streams(
+                        run_id, types=["altitude"]
+                    )
+                except TypeError:
+                    return generator.client.get_activity_streams(run_id, ["altitude"])
         except RateLimitExceeded as err:
             last_error = err
             sleep_seconds = max(int(getattr(err, "timeout", 0)), 1) + 1
