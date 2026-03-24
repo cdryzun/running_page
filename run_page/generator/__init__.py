@@ -87,7 +87,9 @@ class Generator:
                 failed += 1
                 self.session.rollback()
                 sys.stdout.write("x")
-                print(f"\nfailed sync activity {getattr(activity, 'id', 'unknown')}: {e}")
+                print(
+                    f"\nfailed sync activity {getattr(activity, 'id', 'unknown')}: {e}"
+                )
             finally:
                 sys.stdout.flush()
         self.session.commit()
@@ -157,9 +159,7 @@ class Generator:
                 failed += 1
                 self.session.rollback()
                 sys.stdout.write("x")
-                print(
-                    f"\nfailed sync app track {getattr(t, 'id', 'unknown')}: {e}"
-                )
+                print(f"\nfailed sync app track {getattr(t, 'id', 'unknown')}: {e}")
             finally:
                 sys.stdout.flush()
 

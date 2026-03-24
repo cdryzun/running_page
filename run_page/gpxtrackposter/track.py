@@ -149,7 +149,9 @@ class Track:
         else:
             summary_polyline = activity.summary_polyline
         try:
-            polyline_data = polyline.decode(summary_polyline) if summary_polyline else []
+            polyline_data = (
+                polyline.decode(summary_polyline) if summary_polyline else []
+            )
         except Exception:
             polyline_data = []
         self.polylines = [[s2.LatLng.from_degrees(p[0], p[1]) for p in polyline_data]]

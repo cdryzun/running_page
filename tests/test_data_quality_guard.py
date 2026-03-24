@@ -4,7 +4,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 RUN_PAGE_PATH = ROOT / "run_page"
 
@@ -19,8 +18,7 @@ from data_quality_guard import run_guard  # noqa: E402
 def _create_minimal_db(db_path: Path, rows: list[tuple]) -> None:
     conn = sqlite3.connect(str(db_path))
     try:
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE activities (
                 run_id INTEGER PRIMARY KEY,
                 distance FLOAT,
@@ -30,8 +28,7 @@ def _create_minimal_db(db_path: Path, rows: list[tuple]) -> None:
                 elevation_gain FLOAT,
                 elevation_loss FLOAT
             )
-            """
-        )
+            """)
         conn.executemany(
             """
             INSERT INTO activities (
