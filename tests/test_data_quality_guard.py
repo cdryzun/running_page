@@ -1,13 +1,12 @@
 import json
 import sqlite3
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_PAGE_PATH = ROOT / "run_page"
-
-import sys
 
 if str(RUN_PAGE_PATH) not in sys.path:
     sys.path.insert(0, str(RUN_PAGE_PATH))
