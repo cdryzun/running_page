@@ -11,7 +11,10 @@ import {
   type SportTypeFilter,
 } from '@/utils/const';
 import { ELEV_UNIT, M_TO_DIST, M_TO_ELEV } from '@/utils/utils';
-import { getActivityPrimaryMetric } from '@/utils/sportMetrics';
+import {
+  getActivityPrimaryMetric,
+  getCadenceUnitForNormalizedSport,
+} from '@/utils/sportMetrics';
 import styles from './style.module.css';
 
 interface IRunRowProperties {
@@ -54,9 +57,13 @@ const RunRow = ({
   const hasPositiveGain = hasGainValue && (run.elevation_gain as number) > 0;
   const hasPositiveLoss = hasLossValue && (run.elevation_loss as number) > 0;
   const hasPower =
-    run.average_watts !== null && run.average_watts !== undefined;
+    run.average_watts !== null &&
+    run.average_watts !== undefined &&
+    run.average_watts > 0;
   const hasCadence =
-    run.average_cadence !== null && run.average_cadence !== undefined;
+    run.average_cadence !== null &&
+    run.average_cadence !== undefined &&
+    run.average_cadence > 0;
   const canEstimateElevation =
     normalizedType === 'cycling' || normalizedType === 'hiking';
   const gainEstimated = !hasGainValue && hasLossValue && canEstimateElevation;
@@ -75,14 +82,7 @@ const RunRow = ({
   const powerText = hasPower
     ? `${(run.average_watts as number).toFixed(0)}W`
     : '--';
-  const cadenceUnit =
-    normalizedType === 'cycling'
-      ? 'rpm'
-      : normalizedType === 'running' ||
-          normalizedType === 'walking' ||
-          normalizedType === 'hiking'
-        ? 'spm'
-        : 'rpm';
+  const cadenceUnit = getCadenceUnitForNormalizedSport(normalizedType);
   const cadenceText = hasCadence
     ? `${(run.average_cadence as number).toFixed(0)}${cadenceUnit}`
     : '--';

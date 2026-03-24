@@ -46,6 +46,7 @@ import {
   formatAveragePrimaryMetric,
   formatPaceMetric,
   formatSpeedMetric,
+  getCadenceUnitForSportType,
   getAveragePrimaryMetricLabel,
   isPacePrimaryForSportType,
 } from '@/utils/sportMetrics';
@@ -97,6 +98,8 @@ const getYearSummarySvg = (year: string) => {
 interface ActivitySummary {
   totalDistance: number;
   totalTime: number;
+  totalSpeedDistanceMeters: number;
+  totalSpeedDurationSeconds: number;
   totalElevationGain: number;
   totalElevationLoss: number;
   count: number;
@@ -202,6 +205,14 @@ const METRIC_LABELS = {
 
 const speedDistPerHourToMps = (speed: number): number =>
   (speed * M_TO_DIST) / 3600;
+const speedMpsToDistPerHour = (speed: number): number =>
+  (speed * 3600) / M_TO_DIST;
+
+const formatDayKey = (date: Date): string =>
+  `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date
+    .getDate()
+    .toString()
+    .padStart(2, '0')}`;
 
 const ActivityCardInner: React.FC<ActivityCardProps> = ({
   period,
@@ -244,6 +255,7 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
 
   const avgSpeedMps = speedDistPerHourToMps(summary.averageSpeed);
   const maxSpeedMps = speedDistPerHourToMps(summary.maxSpeed);
+  const cadenceUnit = getCadenceUnitForSportType(sportType);
   const avgPrimaryMetricLabel = getAveragePrimaryMetricLabel(sportType);
   const avgPrimaryMetricValue = formatAveragePrimaryMetric(
     avgSpeedMps,
@@ -364,7 +376,7 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
             {summary.averageCadence !== undefined && (
               <p>
                 <strong>{METRIC_LABELS.avgCadence}:</strong>{' '}
-                {summary.averageCadence.toFixed(0)} rpm
+                {summary.averageCadence.toFixed(0)} {cadenceUnit}
               </p>
             )}
             {showElevationMetrics &&
@@ -450,7 +462,7 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
                 {summary.maxCadence !== undefined && (
                   <p>
                     <strong>{METRIC_LABELS.maxCadence}:</strong>{' '}
-                    {summary.maxCadence.toFixed(0)} rpm
+                    {summary.maxCadence.toFixed(0)} {cadenceUnit}
                   </p>
                 )}
                 <p>
@@ -698,7 +710,7 @@ const ActivityList: React.FC = () => {
           break;
         }
         case 'day':
-          key = date.toLocaleDateString('zh').replaceAll('/', '-');
+          key = formatDayKey(date);
           index = 0;
           break;
         default:
@@ -710,6 +722,8 @@ const ActivityList: React.FC = () => {
         acc[key] = {
           totalDistance: 0,
           totalTime: 0,
+          totalSpeedDistanceMeters: 0,
+          totalSpeedDurationSeconds: 0,
           totalElevationGain: 0,
           totalElevationLoss: 0,
           count: 0,
@@ -740,10 +754,20 @@ const ActivityList: React.FC = () => {
 
       const distance = activity.distance / M_TO_DIST;
       const timeInSeconds = convertMovingTime2Sec(activity.moving_time);
-      const speed = timeInSeconds > 0 ? distance / (timeInSeconds / 3600) : 0;
+      const hasAverageSpeed =
+        typeof activity.average_speed === 'number' && activity.average_speed > 0;
+      const speed = hasAverageSpeed
+        ? speedMpsToDistPerHour(activity.average_speed)
+        : timeInSeconds > 0
+          ? distance / (timeInSeconds / 3600)
+          : 0;
 
       acc[key].totalDistance += distance;
       acc[key].totalTime += timeInSeconds;
+      if (hasAverageSpeed && activity.distance > 0) {
+        acc[key].totalSpeedDistanceMeters += activity.distance;
+        acc[key].totalSpeedDurationSeconds += activity.distance / activity.average_speed;
+      }
       if (timeInSeconds > acc[key].maxDuration) {
         acc[key].maxDuration = timeInSeconds;
       }
@@ -863,9 +887,13 @@ const ActivityList: React.FC = () => {
   }
 
   const toDisplaySummary = (summary: ActivitySummary): DisplaySummary => {
-    const averageSpeed = summary.totalTime
-      ? summary.totalDistance / (summary.totalTime / 3600)
-      : 0;
+    const averageSpeedMps =
+      summary.totalSpeedDistanceMeters > 0 && summary.totalSpeedDurationSeconds > 0
+        ? summary.totalSpeedDistanceMeters / summary.totalSpeedDurationSeconds
+        : summary.totalTime > 0
+          ? speedDistPerHourToMps(summary.totalDistance / (summary.totalTime / 3600))
+          : 0;
+    const averageSpeed = speedMpsToDistPerHour(averageSpeedMps);
     return {
       totalDistance: summary.totalDistance,
       averageSpeed,

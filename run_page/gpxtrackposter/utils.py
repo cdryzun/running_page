@@ -14,14 +14,16 @@ import pytz
 import s2sphere as s2
 
 try:
-    from tzfpy import get_tz
-
-    tf = None
+    from tzfpy import get_tz as tzfpy_get_tz
 except ImportError:
-    # tzfpy is not available, fallback to timezonefinder
+    tzfpy_get_tz = None
+
+try:
     from timezonefinder import TimezoneFinder
 
     tf = TimezoneFinder()
+except ImportError:
+    tf = None
 
 
 from .xy import XY
@@ -119,18 +121,22 @@ def format_float(f):
 
 
 def parse_datetime_to_local(start_time, end_time, point):
-    timezone = "Asia/Shanghai"
+    timezone = None
     if point:
         lat, lng = point
-        try:
-            timezone = get_tz(lng=lng, lat=lat)
-        except Exception as e:
-            # just a little trick when tzfpy support windows will delete this
-            print(f"tzfpy error: {e} fallback to timezonefinder")
-            timezone = tf.timezone_at(lng=lng, lat=lat)
+        if tzfpy_get_tz is not None:
+            try:
+                timezone = tzfpy_get_tz(lng=lng, lat=lat)
+            except Exception as e:
+                print(f"tzfpy error: {e}")
+        if not timezone and tf is not None:
+            try:
+                timezone = tf.timezone_at(lng=lng, lat=lat)
+            except Exception as e:
+                print(f"timezonefinder error: {e}")
 
     if not timezone:
-        timezone = "Asia/Shanghai"
+        timezone = "UTC"
 
     target_tz = pytz.timezone(timezone)
 

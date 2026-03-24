@@ -35,6 +35,7 @@ IGNORE_BEFORE_SAVING = os.getenv("IGNORE_BEFORE_SAVING", False)
 # And to represent values up to 360° (or -180° to 180°), each 'degree' represents 2^32 / 360 = 11930465.
 # So dividing latitude and longitude (int32) value by 11930465 will give the decimal value.
 SEMICIRCLE = 11930465
+ELEVATION_NOISE_THRESHOLD_M = 0.5
 
 
 class Track:
@@ -241,7 +242,9 @@ class Track:
             return 0
 
     @staticmethod
-    def _calc_elevation_gain_loss(elevations):
+    def _calc_elevation_gain_loss(
+        elevations, min_delta_m: float = ELEVATION_NOISE_THRESHOLD_M
+    ):
         if not elevations or len(elevations) < 2:
             return 0.0, 0.0
         gain = 0.0
@@ -251,6 +254,9 @@ class Track:
             if current is None:
                 continue
             delta = current - prev
+            if abs(delta) < min_delta_m:
+                prev = current
+                continue
             if delta > 0:
                 gain += delta
             elif delta < 0:
@@ -329,12 +335,12 @@ class Track:
                 self.start_time_local, self.end_time_local = parse_datetime_to_local(
                     self.start_time, self.end_time, None
                 )
-        # use timestamp as id
-        self.run_id = self.__make_run_id(self.start_time)
         if self.start_time is None:
             raise TrackLoadError("Track has no start time.")
         if self.end_time is None:
             raise TrackLoadError("Track has no end time.")
+        # use timestamp as id
+        self.run_id = self.__make_run_id(self.start_time)
         self.length = gpx.length_2d()
         moving_time = 0
         full_elevations = []
@@ -472,38 +478,47 @@ class Track:
                     continue
             return None
 
-        self.length = (
-            self.length
-            if gpx_extensions.get("distance") is None
-            else float(gpx_extensions.get("distance"))
-        )
+        extension_distance = _ext_float("distance")
+        extension_average_speed = _ext_float("average_speed", "avg_speed")
+        extension_moving_time = _ext_float("moving_time")
+        extension_elapsed_time = _ext_float("elapsed_time")
+
+        if extension_distance is not None:
+            self.length = extension_distance
         self.average_heartrate = (
             self.average_heartrate
             if gpx_extensions.get("average_hr") is None
             else float(gpx_extensions.get("average_hr"))
         )
-        self.moving_dict["average_speed"] = (
-            self.moving_dict["average_speed"]
-            if gpx_extensions.get("average_speed") is None
-            else float(gpx_extensions.get("average_speed"))
-        )
-        self.moving_dict["distance"] = (
-            self.moving_dict["distance"]
-            if gpx_extensions.get("distance") is None
-            else float(gpx_extensions.get("distance"))
-        )
+        if extension_distance is not None:
+            self.moving_dict["distance"] = extension_distance
 
-        self.moving_dict["moving_time"] = (
-            self.moving_dict["moving_time"]
-            if gpx_extensions.get("moving_time") is None
-            else datetime.timedelta(seconds=float(gpx_extensions.get("moving_time")))
-        )
+        if extension_moving_time is not None:
+            self.moving_dict["moving_time"] = datetime.timedelta(
+                seconds=extension_moving_time
+            )
 
-        self.moving_dict["elapsed_time"] = (
-            self.moving_dict["elapsed_time"]
-            if gpx_extensions.get("elapsed_time") is None
-            else datetime.timedelta(seconds=float(gpx_extensions.get("elapsed_time")))
+        if extension_elapsed_time is not None:
+            self.moving_dict["elapsed_time"] = datetime.timedelta(
+                seconds=extension_elapsed_time
+            )
+
+        moving_time = self.moving_dict.get("moving_time")
+        moving_seconds = (
+            moving_time.total_seconds()
+            if isinstance(moving_time, datetime.timedelta)
+            else 0
         )
+        moving_distance = float(
+            self.moving_dict.get("distance")
+            if self.moving_dict.get("distance") is not None
+            else self.length
+        )
+        if moving_seconds > 0 and moving_distance > 0:
+            self.moving_dict["average_speed"] = moving_distance / moving_seconds
+        elif extension_average_speed is not None:
+            # Fallback to extension speed only when distance/time cannot derive speed.
+            self.moving_dict["average_speed"] = extension_average_speed
 
         # Garmin summary fields appended in garmin_sync.py
         extension_gain = _ext_float(

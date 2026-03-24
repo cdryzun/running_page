@@ -49,6 +49,23 @@ const kindForNormalizedSport = (normalizedSport: string): PrimaryMetricKind => {
   return 'speed';
 };
 
+const getCadenceUnitForNormalizedSport = (normalizedSport: string): string => {
+  if (normalizedSport === 'cycling') {
+    return 'rpm';
+  }
+  if (['running', 'walking', 'hiking'].includes(normalizedSport)) {
+    return 'spm';
+  }
+  return 'rpm';
+};
+
+const getCadenceUnitForSportType = (sportType: SportTypeFilter): string => {
+  if (sportType === 'all') {
+    return 'rpm/spm';
+  }
+  return getCadenceUnitForNormalizedSport(sportType);
+};
+
 const getPrimaryMetricKindForFilter = (
   sportType: SportTypeFilter
 ): PrimaryMetricKind | null => {
@@ -160,6 +177,8 @@ export {
   formatAveragePrimaryMetric,
   formatPaceMetric,
   formatSpeedMetric,
+  getCadenceUnitForNormalizedSport,
+  getCadenceUnitForSportType,
   getActivityPrimaryMetric,
   getAveragePrimaryMetricLabel,
   getPrimaryMetricLabel,

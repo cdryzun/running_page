@@ -13,6 +13,7 @@ import {
   formatAveragePrimaryMetric,
   formatPaceMetric,
   formatSpeedMetric,
+  getCadenceUnitForSportType,
   getAveragePrimaryMetricLabel,
   isPacePrimaryForSportType,
 } from '@/utils/sportMetrics';
@@ -161,14 +162,7 @@ const YearStat = ({
     : '0';
   const hasCadence = cadenceCount > 0;
   const avgCadence = hasCadence ? (cadence / cadenceCount).toFixed(0) : '0';
-  const cadenceUnit =
-    sportType === 'cycling'
-      ? 'rpm'
-      : sportType === 'running' ||
-          sportType === 'walking' ||
-          sportType === 'hiking'
-        ? 'spm'
-        : 'rpm/spm';
+  const cadenceUnit = getCadenceUnitForSportType(sportType);
   const hasMaxPower = maxPower > 0;
   const hasMaxCadence = maxCadence > 0;
   const hasHighestElevation = highestElevationCount > 0;

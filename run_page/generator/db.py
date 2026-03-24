@@ -185,7 +185,7 @@ def _normalize_loop_cycling_loss(
     return max(0.0, float(elevation_gain) - LOOP_ELEVATION_BALANCE_TOLERANCE_M)
 
 
-def update_or_create_activity(session, run_activity):
+def update_or_create_activity(session, run_activity, *, raise_on_error=False):
     def _pick_attr(obj, names):
         for name in names:
             if hasattr(obj, name):
@@ -211,10 +211,13 @@ def update_or_create_activity(session, run_activity):
             return ""
         return getattr(map_obj, "summary_polyline", "") or ""
 
+    run_activity_id = getattr(run_activity, "id", getattr(run_activity, "run_id", None))
     created = False
     try:
+        if run_activity_id is None:
+            raise ValueError("run activity id is missing")
         activity = (
-            session.query(Activity).filter_by(run_id=int(run_activity.id)).first()
+            session.query(Activity).filter_by(run_id=int(run_activity_id)).first()
         )
 
         current_elevation_gain = _to_float_or_none(
@@ -334,7 +337,7 @@ def update_or_create_activity(session, run_activity):
             start_point = run_activity.start_latlng
             location_country = getattr(run_activity, "location_country", "")
             # or China for #176 to fix
-            if not location_country and start_point or location_country == "China":
+            if start_point and (not location_country or location_country == "China"):
                 try:
                     location_country = str(
                         g.reverse(
@@ -354,7 +357,7 @@ def update_or_create_activity(session, run_activity):
                         pass
 
             activity = Activity(
-                run_id=run_activity.id,
+                run_id=run_activity_id,
                 name=run_activity.name,
                 distance=run_activity.distance,
                 moving_time=run_activity.moving_time,
@@ -437,8 +440,10 @@ def update_or_create_activity(session, run_activity):
                 activity.summary_polyline,
             )
     except Exception as e:
-        print(f"something wrong with {run_activity.id}")
+        print(f"something wrong with {run_activity_id}")
         print(str(e))
+        if raise_on_error:
+            raise
 
     return created
 

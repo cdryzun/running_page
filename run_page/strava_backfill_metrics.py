@@ -51,9 +51,11 @@ def should_backfill_activity(activity: Activity, types: set[str]) -> bool:
     if "all" in types:
         return True
     normalized = (activity.type or "").lower()
-    if "cycling" in types:
-        return is_cycling_type(normalized)
-    return normalized in types
+    if normalized in types:
+        return True
+    if "cycling" in types and is_cycling_type(normalized):
+        return True
+    return False
 
 
 def snapshot_metrics(activity: Activity) -> tuple:
@@ -214,7 +216,13 @@ def build_candidates(
 
 def parse_types(raw_types: str) -> set[str]:
     values = {item.strip().lower() for item in raw_types.split(",") if item.strip()}
-    return values or {"cycling"}
+    normalized_values = set()
+    for value in values:
+        if value in {"bike", "biking", "ride"}:
+            normalized_values.add("cycling")
+        else:
+            normalized_values.add(value)
+    return normalized_values or {"cycling"}
 
 
 def run_backfill(
@@ -293,7 +301,7 @@ def run_backfill(
                 except Exception as stream_err:
                     print(f"stream enrichment skipped for {run_id}: {stream_err}")
             detail.subtype = getattr(detail, "type", activity.subtype or activity.type)
-            update_or_create_activity(generator.session, detail)
+            update_or_create_activity(generator.session, detail, raise_on_error=True)
             generator.session.flush()
 
             current = generator.session.query(Activity).filter_by(run_id=run_id).first()

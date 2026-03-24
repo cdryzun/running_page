@@ -88,7 +88,7 @@ const RunTable = ({
         : bTotalSeconds - aTotalSeconds;
     };
     const sortDateFuncClick =
-      sortFuncInfo === 'Date' ? sortDateFunc : sortDateFuncReverse;
+      sortFuncInfo === 'Date' ? sortDateFuncReverse : sortDateFunc;
 
     const sortFuncMap = new Map([
       [DIST_UNIT, sortKMFunc],
@@ -110,10 +110,11 @@ const RunTable = ({
     (e) => {
       const funcName = (e.currentTarget as HTMLElement).dataset.sortKey || '';
       const f = sortFunctions.get(funcName);
+      if (!f) return;
 
       setRunIndex(-1);
       setSortFuncInfo(sortFuncInfo === funcName ? '' : funcName);
-      setActivity(runs.sort(f));
+      setActivity([...runs].sort(f));
     },
     [sortFunctions, sortFuncInfo, runs, setRunIndex, setActivity]
   );
