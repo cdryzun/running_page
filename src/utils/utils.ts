@@ -496,9 +496,9 @@ const filterAndSortRuns = (
   filterFunc: (_run: Activity, _bvalue: string) => boolean,
   sortFunc: (_a: Activity, _b: Activity) => number
 ) => {
-  let s = activities;
+  let s = [...activities];
   if (item !== 'Total') {
-    s = activities.filter((run) => filterFunc(run, item));
+    s = s.filter((run) => filterFunc(run, item));
   }
   return s.sort(sortFunc);
 };

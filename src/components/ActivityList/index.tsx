@@ -373,7 +373,7 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
                 {summary.weightedAveragePower.toFixed(0)} W
               </p>
             )}
-            {summary.averageCadence !== undefined && (
+            {sportType !== 'all' && summary.averageCadence !== undefined && (
               <p>
                 <strong>{METRIC_LABELS.avgCadence}:</strong>{' '}
                 {summary.averageCadence.toFixed(0)} {cadenceUnit}
@@ -459,7 +459,7 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
                     {summary.maxPower.toFixed(0)} W
                   </p>
                 )}
-                {summary.maxCadence !== undefined && (
+                {sportType !== 'all' && summary.maxCadence !== undefined && (
                   <p>
                     <strong>{METRIC_LABELS.maxCadence}:</strong>{' '}
                     {summary.maxCadence.toFixed(0)} {cadenceUnit}
@@ -831,7 +831,8 @@ const ActivityList: React.FC = () => {
 
       if (
         activity.average_heartrate !== null &&
-        activity.average_heartrate !== undefined
+        activity.average_heartrate !== undefined &&
+        activity.average_heartrate > 0
       ) {
         acc[key].totalHeartRate += activity.average_heartrate;
         acc[key].heartRateCount += 1;

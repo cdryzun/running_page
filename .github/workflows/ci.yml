@@ -6,6 +6,7 @@ jobs:
   python_lint_and_test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       max-parallel: 4
       matrix:
         python-version: ['3.12', '3.13', '3.14']
@@ -27,10 +28,15 @@ jobs:
         run: |
           pip install -r requirements-dev.txt
 
-      - name: Run GPX sync test
+      - name: Run GPX sync smoke check
         run: |
-          # make sure the gpx_sync.py script is executable
           python run_page/gpx_sync.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          records = json.loads(Path("src/static/activities.json").read_text(encoding="utf-8"))
+          assert isinstance(records, list) and len(records) > 0, "gpx_sync produced no activities"
+          PY
 
       - name: Run metrics regression tests
         run: |
@@ -39,19 +45,26 @@ jobs:
       - name: Run data quality guard
         if: matrix.python-version == '3.13'
         run: |
-          python run_page/data_quality_guard.py
+          python run_page/data_quality_guard.py \
+            --max-db-only 5 \
+            --max-json-only 1 \
+            --max-speed-mismatch-count 5 \
+            --speed-mismatch-tolerance 0.01 \
+            --max-invalid-speed-without-moving 0 \
+            --max-extreme-speed-count 2 \
+            --extreme-speed-threshold 20.0 \
+            --max-elevation-loss-null-ratio 0.8
 
       - name: Check formatting (black)
         run: black . --diff --color && black . --check
 
       - name: Lint with Ruff
-        run: |
-          pip install ruff
-          ruff check .
+        run: ruff check .
 
   node_lint_and_test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node: [20, 22, 24]
     steps:

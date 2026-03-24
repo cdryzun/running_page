@@ -5,12 +5,14 @@ import unittest
 from pathlib import Path
 
 import gpxpy
+import pytz
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_PAGE_PATH = ROOT / "run_page"
 if str(RUN_PAGE_PATH) not in sys.path:
     sys.path.insert(0, str(RUN_PAGE_PATH))
 
+from config import BASE_TIMEZONE  # noqa: E402
 from generator.db import update_or_create_activity  # noqa: E402
 from gpxtrackposter.exceptions import TrackLoadError  # noqa: E402
 from gpxtrackposter.track import Track  # noqa: E402
@@ -47,8 +49,11 @@ class MetricsRegressionTest(unittest.TestCase):
         start = datetime.datetime(2026, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc)
         end = datetime.datetime(2026, 1, 1, 13, 0, 0, tzinfo=datetime.timezone.utc)
         local_start, local_end = parse_datetime_to_local(start, end, ("bad", "bad"))
-        self.assertEqual(local_start, datetime.datetime(2026, 1, 1, 12, 0, 0))
-        self.assertEqual(local_end, datetime.datetime(2026, 1, 1, 13, 0, 0))
+        target_tz = pytz.timezone(BASE_TIMEZONE)
+        expected_start = start.astimezone(target_tz).replace(tzinfo=None)
+        expected_end = end.astimezone(target_tz).replace(tzinfo=None)
+        self.assertEqual(local_start, expected_start)
+        self.assertEqual(local_end, expected_end)
 
     def test_load_gpx_with_no_start_time_raises_track_error(self):
         empty_segment_gpx = """<?xml version="1.0" encoding="UTF-8"?>

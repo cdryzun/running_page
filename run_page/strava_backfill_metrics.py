@@ -47,6 +47,24 @@ def parse_since(since: str | None) -> datetime | None:
     return datetime.strptime(since, "%Y-%m-%d")
 
 
+def parse_activity_datetime(value: str) -> datetime | None:
+    raw = (value or "").strip()
+    if not raw:
+        return None
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S.%f"):
+        try:
+            return datetime.strptime(raw, fmt)
+        except ValueError:
+            continue
+    try:
+        dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if dt.tzinfo is not None:
+            return dt.astimezone().replace(tzinfo=None)
+        return dt
+    except Exception:
+        return None
+
+
 def should_backfill_activity(activity: Activity, types: set[str]) -> bool:
     if "all" in types:
         return True
@@ -198,13 +216,8 @@ def build_candidates(
         if not should_backfill_activity(activity, allowed_types):
             continue
         if since_dt is not None:
-            try:
-                activity_dt = datetime.strptime(
-                    str(activity.start_date_local), "%Y-%m-%d %H:%M:%S"
-                )
-                if activity_dt < since_dt:
-                    continue
-            except Exception:
+            activity_dt = parse_activity_datetime(str(activity.start_date_local))
+            if activity_dt is not None and activity_dt < since_dt:
                 continue
         if not has_missing_metrics(activity):
             continue
@@ -314,6 +327,7 @@ def run_backfill(
                 print(f"[{processed}/{len(candidates)}] unchanged: {run_id}")
         except Exception as err:  # pragma: no cover - avoid stopping batch
             failed += 1
+            generator.session.rollback()
             print(f"[{processed}/{len(candidates)}] failed: {run_id} ({err})")
 
         if commit_every > 0 and processed % commit_every == 0:

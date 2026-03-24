@@ -85,7 +85,7 @@ class Track:
                 f"Something went wrong when loading GPX. for file {self.file_names[0]}, we just ignore this file and continue"
             )
             print(str(e))
-            pass
+            raise TrackLoadError(str(e))
 
     def load_tcx(self, file_name):
         try:
@@ -101,6 +101,7 @@ class Track:
                 f"Something went wrong when loading TCX. for file {self.file_names[0]}, we just ignore this file and continue"
             )
             print(str(e))
+            raise TrackLoadError(str(e))
 
     def load_fit(self, file_name):
         try:
@@ -132,6 +133,7 @@ class Track:
                 f"Something went wrong when loading FIT. for file {self.file_names[0]}, we just ignore this file and continue"
             )
             print(str(e))
+            raise TrackLoadError(str(e))
 
     def load_from_db(self, activity):
         # use strava as file name
@@ -146,7 +148,10 @@ class Track:
             summary_polyline = filter_out(activity.summary_polyline)
         else:
             summary_polyline = activity.summary_polyline
-        polyline_data = polyline.decode(summary_polyline) if summary_polyline else []
+        try:
+            polyline_data = polyline.decode(summary_polyline) if summary_polyline else []
+        except Exception:
+            polyline_data = []
         self.polylines = [[s2.LatLng.from_degrees(p[0], p[1]) for p in polyline_data]]
         self.run_id = activity.run_id
         self.type = get_normalized_sport_type(activity.type)
@@ -168,7 +173,11 @@ class Track:
 
     @staticmethod
     def __make_run_id(time_stamp):
-        return int(datetime.datetime.timestamp(time_stamp) * 1000)
+        if time_stamp.tzinfo is None:
+            time_stamp = time_stamp.replace(tzinfo=timezone.utc)
+        else:
+            time_stamp = time_stamp.astimezone(timezone.utc)
+        return int(time_stamp.timestamp() * 1000)
 
     def _load_tcx_data(self, tcx, file_name):
         self.length = float(tcx.distance)

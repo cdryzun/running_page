@@ -63,24 +63,36 @@ class Generator:
             else:
                 filters = {"before": datetime.datetime.now(datetime.timezone.utc)}
 
+        failed = 0
         for activity in self.client.get_activities(**filters):
-            if self.only_run and activity.type != "Run":
-                continue
-            if IGNORE_BEFORE_SAVING:
-                if activity.map and activity.map.summary_polyline:
-                    activity.map.summary_polyline = filter_out(
-                        activity.map.summary_polyline
-                    )
-            #  strava use total_elevation_gain as elevation_gain
-            activity.elevation_gain = activity.total_elevation_gain
-            activity.subtype = activity.type
-            created = update_or_create_activity(self.session, activity)
-            if created:
-                sys.stdout.write("+")
-            else:
-                sys.stdout.write(".")
-            sys.stdout.flush()
+            try:
+                if self.only_run and activity.type != "Run":
+                    continue
+                if IGNORE_BEFORE_SAVING:
+                    if activity.map and activity.map.summary_polyline:
+                        activity.map.summary_polyline = filter_out(
+                            activity.map.summary_polyline
+                        )
+                # strava use total_elevation_gain as elevation_gain
+                activity.elevation_gain = activity.total_elevation_gain
+                activity.subtype = activity.type
+                created = update_or_create_activity(
+                    self.session, activity, raise_on_error=True
+                )
+                if created:
+                    sys.stdout.write("+")
+                else:
+                    sys.stdout.write(".")
+            except Exception as e:
+                failed += 1
+                self.session.rollback()
+                sys.stdout.write("x")
+                print(f"\nfailed sync activity {getattr(activity, 'id', 'unknown')}: {e}")
+            finally:
+                sys.stdout.flush()
         self.session.commit()
+        if failed > 0:
+            print(f"\nSync finished with {failed} failed activities")
 
     def sync_from_data_dir(self, data_dir, file_suffix="gpx", activity_title_dict={}):
         loader = track_loader.TrackLoader()
@@ -93,21 +105,35 @@ class Generator:
             return
 
         synced_files = []
+        failed = 0
 
         for t in tracks:
-            created = update_or_create_activity(
-                self.session, t.to_namedtuple(run_from=file_suffix)
-            )
-            if created:
-                sys.stdout.write("+")
-            else:
-                sys.stdout.write(".")
-            synced_files.extend(t.file_names)
-            sys.stdout.flush()
+            try:
+                created = update_or_create_activity(
+                    self.session,
+                    t.to_namedtuple(run_from=file_suffix),
+                    raise_on_error=True,
+                )
+                if created:
+                    sys.stdout.write("+")
+                else:
+                    sys.stdout.write(".")
+                synced_files.extend(t.file_names)
+            except Exception as e:
+                failed += 1
+                self.session.rollback()
+                sys.stdout.write("x")
+                print(
+                    f"\nfailed sync data track {t.file_names[0] if t.file_names else 'unknown'}: {e}"
+                )
+            finally:
+                sys.stdout.flush()
 
         save_synced_data_file_list(synced_files)
 
         self.session.commit()
+        if failed > 0:
+            print(f"\nData-dir sync finished with {failed} failed tracks")
 
     def sync_from_app(self, app_tracks):
         if not app_tracks:
@@ -115,17 +141,31 @@ class Generator:
             return
         print("Syncing tracks '+' means new track '.' means update tracks")
         synced_files = []
+        failed = 0
         for t in app_tracks:
-            created = update_or_create_activity(self.session, t)
-            if created:
-                sys.stdout.write("+")
-            else:
-                sys.stdout.write(".")
-            if "file_names" in t:
-                synced_files.extend(t.file_names)
-            sys.stdout.flush()
+            try:
+                created = update_or_create_activity(
+                    self.session, t, raise_on_error=True
+                )
+                if created:
+                    sys.stdout.write("+")
+                else:
+                    sys.stdout.write(".")
+                if "file_names" in t:
+                    synced_files.extend(t.file_names)
+            except Exception as e:
+                failed += 1
+                self.session.rollback()
+                sys.stdout.write("x")
+                print(
+                    f"\nfailed sync app track {getattr(t, 'id', 'unknown')}: {e}"
+                )
+            finally:
+                sys.stdout.flush()
 
         self.session.commit()
+        if failed > 0:
+            print(f"\nApp sync finished with {failed} failed tracks")
 
     def load(self):
         # if sub_type is not in the db, just add an empty string to it

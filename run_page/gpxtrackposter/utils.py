@@ -14,6 +14,11 @@ import pytz
 import s2sphere as s2
 
 try:
+    from config import BASE_TIMEZONE
+except Exception:
+    BASE_TIMEZONE = "Asia/Shanghai"
+
+try:
     from tzfpy import get_tz as tzfpy_get_tz
 except ImportError:
     tzfpy_get_tz = None
@@ -136,7 +141,7 @@ def parse_datetime_to_local(start_time, end_time, point):
                 print(f"timezonefinder error: {e}")
 
     if not timezone:
-        timezone = "UTC"
+        timezone = BASE_TIMEZONE
 
     target_tz = pytz.timezone(timezone)
 

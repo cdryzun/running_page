@@ -31,6 +31,7 @@ def run_guard(
     max_json_only: int,
     max_speed_mismatch_count: int,
     speed_mismatch_tolerance: float,
+    max_invalid_speed_without_moving: int,
     max_extreme_speed_count: int,
     extreme_speed_threshold: float,
     max_elevation_loss_null_ratio: float,
@@ -103,6 +104,24 @@ def run_guard(
             )
         )
 
+        invalid_speed_without_moving = int(
+            _query_one(
+                conn,
+                """
+                WITH t AS (
+                  SELECT
+                    average_speed,
+                    (strftime('%s', moving_time) - strftime('%s', '1970-01-01 00:00:00')) AS moving_s
+                  FROM activities
+                )
+                SELECT count(*) FROM t
+                WHERE average_speed IS NOT NULL
+                  AND average_speed > 0
+                  AND (moving_s IS NULL OR moving_s <= 0)
+                """,
+            )
+        )
+
         extreme_speed_count = int(
             _query_one(
                 conn,
@@ -148,7 +167,9 @@ def run_guard(
     )
     print(
         "  timing_speed="
-        f"elapsed_lt_moving:{elapsed_lt_moving}, speed_mismatch:{speed_mismatch_count}, "
+        f"elapsed_lt_moving:{elapsed_lt_moving}, "
+        f"invalid_speed_without_moving:{invalid_speed_without_moving}, "
+        f"speed_mismatch:{speed_mismatch_count}, "
         f"extreme_speed:{extreme_speed_count}"
     )
     print(
@@ -183,6 +204,11 @@ def run_guard(
             "speed_mismatch_count "
             f"{speed_mismatch_count} > max_speed_mismatch_count {max_speed_mismatch_count}"
         )
+    if invalid_speed_without_moving > max_invalid_speed_without_moving:
+        violations.append(
+            "invalid_speed_without_moving "
+            f"{invalid_speed_without_moving} > max_invalid_speed_without_moving {max_invalid_speed_without_moving}"
+        )
     if extreme_speed_count > max_extreme_speed_count:
         violations.append(
             "extreme_speed_count "
@@ -212,6 +238,7 @@ def main() -> int:
     parser.add_argument("--max-json-only", type=int, default=1)
     parser.add_argument("--max-speed-mismatch-count", type=int, default=5)
     parser.add_argument("--speed-mismatch-tolerance", type=float, default=0.01)
+    parser.add_argument("--max-invalid-speed-without-moving", type=int, default=0)
     parser.add_argument("--max-extreme-speed-count", type=int, default=2)
     parser.add_argument("--extreme-speed-threshold", type=float, default=20.0)
     parser.add_argument("--max-elevation-loss-null-ratio", type=float, default=0.8)
@@ -224,6 +251,7 @@ def main() -> int:
         max_json_only=args.max_json_only,
         max_speed_mismatch_count=args.max_speed_mismatch_count,
         speed_mismatch_tolerance=args.speed_mismatch_tolerance,
+        max_invalid_speed_without_moving=args.max_invalid_speed_without_moving,
         max_extreme_speed_count=args.max_extreme_speed_count,
         extreme_speed_threshold=args.extreme_speed_threshold,
         max_elevation_loss_null_ratio=args.max_elevation_loss_null_ratio,

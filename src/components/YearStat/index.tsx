@@ -91,7 +91,11 @@ const YearStat = ({
       totalMetersAvail += run.distance || 0;
       totalSecondsAvail += (run.distance || 0) / run.average_speed;
     }
-    if (run.average_heartrate !== null && run.average_heartrate !== undefined) {
+    if (
+      run.average_heartrate !== null &&
+      run.average_heartrate !== undefined &&
+      run.average_heartrate > 0
+    ) {
       heartRate += run.average_heartrate;
       heartRateCount++;
     }
@@ -247,7 +251,7 @@ const YearStat = ({
             description={IS_CHINESE ? ' 最大功率 (W)' : ' Max Power (W)'}
           />
         )}
-        {hasCadence && (
+        {sportType !== 'all' && hasCadence && (
           <Stat
             value={avgCadence}
             description={
@@ -257,7 +261,7 @@ const YearStat = ({
             }
           />
         )}
-        {hasMaxCadence && (
+        {sportType !== 'all' && hasMaxCadence && (
           <Stat
             value={maxCadence.toFixed(0)}
             description={

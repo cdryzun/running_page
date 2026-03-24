@@ -44,7 +44,8 @@ const RunRow = ({
   const distance = (run.distance / M_TO_DIST).toFixed(2);
   const primaryMetric = getActivityPrimaryMetric(run, sportType);
   const heartRate = run.average_heartrate;
-  const hasHeartRate = heartRate !== null && heartRate !== undefined;
+  const hasHeartRate =
+    heartRate !== null && heartRate !== undefined && heartRate > 0;
   const runTime = formatRunTime(run.moving_time);
   const normalizedType = normalizeActivityType(run.type);
   const rowMetaItems: RowMetaItem[] = [];
