@@ -755,7 +755,8 @@ const ActivityList: React.FC = () => {
       const distance = activity.distance / M_TO_DIST;
       const timeInSeconds = convertMovingTime2Sec(activity.moving_time);
       const hasAverageSpeed =
-        typeof activity.average_speed === 'number' && activity.average_speed > 0;
+        typeof activity.average_speed === 'number' &&
+        activity.average_speed > 0;
       const speed = hasAverageSpeed
         ? speedMpsToDistPerHour(activity.average_speed)
         : timeInSeconds > 0
@@ -766,7 +767,8 @@ const ActivityList: React.FC = () => {
       acc[key].totalTime += timeInSeconds;
       if (hasAverageSpeed && activity.distance > 0) {
         acc[key].totalSpeedDistanceMeters += activity.distance;
-        acc[key].totalSpeedDurationSeconds += activity.distance / activity.average_speed;
+        acc[key].totalSpeedDurationSeconds +=
+          activity.distance / activity.average_speed;
       }
       if (timeInSeconds > acc[key].maxDuration) {
         acc[key].maxDuration = timeInSeconds;
@@ -888,10 +890,13 @@ const ActivityList: React.FC = () => {
 
   const toDisplaySummary = (summary: ActivitySummary): DisplaySummary => {
     const averageSpeedMps =
-      summary.totalSpeedDistanceMeters > 0 && summary.totalSpeedDurationSeconds > 0
+      summary.totalSpeedDistanceMeters > 0 &&
+      summary.totalSpeedDurationSeconds > 0
         ? summary.totalSpeedDistanceMeters / summary.totalSpeedDurationSeconds
         : summary.totalTime > 0
-          ? speedDistPerHourToMps(summary.totalDistance / (summary.totalTime / 3600))
+          ? speedDistPerHourToMps(
+              summary.totalDistance / (summary.totalTime / 3600)
+            )
           : 0;
     const averageSpeed = speedMpsToDistPerHour(averageSpeedMps);
     return {
