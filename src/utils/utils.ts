@@ -14,6 +14,7 @@ import {
   HIKING_COLOR,
   WALKING_COLOR,
   SWIMMING_COLOR,
+  INDOOR_COLOR,
   getRuntimeRunColor,
   RUN_TRAIL_COLOR,
   MAP_TILE_STYLES,
@@ -306,11 +307,19 @@ const colorForRun = (run: Activity): string => {
   switch (normalizeActivityType(run.type)) {
     case 'running': {
       const subtype = (run.subtype || '').toLowerCase();
+      if (subtype === 'indoor' || subtype === 'treadmill') {
+        return INDOOR_COLOR;
+      }
       if (subtype === 'trail') return RUN_TRAIL_COLOR;
       return dynamicRunColor;
     }
-    case 'cycling':
+    case 'cycling': {
+      const subtype = (run.subtype || '').toLowerCase();
+      if (subtype === 'indoor' || subtype === 'treadmill') {
+        return INDOOR_COLOR;
+      }
       return CYCLING_COLOR;
+    }
     case 'hiking':
       return HIKING_COLOR;
     case 'walking':
@@ -331,6 +340,7 @@ const geoJsonForRuns = (runs: Activity[]): FeatureCollection<LineString> => ({
       type: 'Feature',
       properties: {
         color: color,
+        indoor: run.subtype === 'indoor' || run.subtype === 'treadmill',
       },
       geometry: {
         type: 'LineString',
