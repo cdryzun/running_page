@@ -21,13 +21,15 @@ on:
       - run_page/garmin_to_strava_sync.py
       - run_page/keep_to_strava_sync.py
       - run_page/oppo_sync.py
+      - run_page/igpsport_sync.py
+      - run_page/dedup_activities.py
       - requirements.txt
 
 env:
   # please change to your own config.
   # garth>=0.7 enables telemetry by default and may fail in ProcessPool without logfire auth
   GARTH_TELEMETRY_ENABLED: false
-  RUN_TYPE: dual_sync # changing from garmin_cn to a new type for dual sync
+  RUN_TYPE: garmin_cn_igpsport # Garmin CN (徒步/跑步) + iGPSPORT (骑行), 由去重脚本处理跨源重复
   ATHLETE: Zayn
   TITLE: Zayn Running
   MIN_GRID_DISTANCE: 10 # change min distance here
@@ -136,12 +138,22 @@ jobs:
         # python run_page/garmin_sync.py ${{ secrets.GARMIN_SECRET_STRING }} --only-run
 
       - name: Run sync Garmin CN script
-        if: env.RUN_TYPE == 'garmin_cn' || env.RUN_TYPE == 'dual_sync'
+        if: env.RUN_TYPE == 'garmin_cn' || env.RUN_TYPE == 'dual_sync' || env.RUN_TYPE == 'garmin_cn_igpsport'
         run: |
           python run_page/garmin_sync.py ${{ secrets.GARMIN_SECRET_STRING_CN }} --is-cn
         # make garmin secret string 'python run_page/get_garmin_secret.py ${email} ${password} --is-cn'
         # If you only want to sync 'type running' add args --only-run, default script is to sync all data (rides and runs).
         # python run_page/garmin_sync.py ${{ secrets.GARMIN_SECRET_STRING_CN }}  --only-run --is-cn
+
+      - name: Run sync iGPSPORT script
+        if: env.RUN_TYPE == 'igpsport' || env.RUN_TYPE == 'garmin_cn_igpsport'
+        continue-on-error: true
+        run: |
+          python run_page/igpsport_sync.py ${{ secrets.IGPSPORT_MOBILE }} ${{ secrets.IGPSPORT_PASSWORD }} --with-fit
+          python run_page/fit_sync.py
+        # iGPSPORT 走网页端私有 API (账号密码), 无需官方开放平台申请
+        # 下载 fit 后立即入库; 与 Garmin 的跨源重复由后续去重步骤处理
+        # continue-on-error: 私有 API 偶发风控不应阻断整条流水线
 
       - name: Run sync Garmin CN to Garmin script
         if: env.RUN_TYPE == 'garmin_sync_cn_global'
@@ -202,6 +214,13 @@ jobs:
         if: env.RUN_TYPE == 'db_updater'
         run: |
           python run_page/db_updater.py
+
+      - name: Dedup cross-source activities
+        if: env.RUN_TYPE == 'garmin_cn_igpsport' || env.RUN_TYPE == 'igpsport'
+        run: |
+          python run_page/dedup_activities.py --apply
+        # 多数据源 (Garmin + iGPSPORT) 对同一活动生成不同 run_id, upsert 无法去重
+        # 用"开始时间+距离"双维度匹配, iGPSPORT (cycling) 优先于 Garmin (Ride)
 
       - name: Make svg GitHub profile
         if: env.RUN_TYPE != 'pass'
