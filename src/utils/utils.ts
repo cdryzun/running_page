@@ -98,6 +98,23 @@ const normalizeActivityType = (activityType = ''): NormalizedSportType => {
   return 'other';
 };
 
+// Indoor subtypes from various data sources (case-insensitive).
+// Centralized here so color, geojson, and route preview stay consistent.
+const INDOOR_SUBTYPES = new Set([
+  'indoor',
+  'treadmill',
+  'indoor_cycling',
+  'virtualrun',
+  'virtual_run',
+]);
+
+const isIndoorActivity = (run: Activity): boolean => {
+  const subtype = (run.subtype || '').toLowerCase();
+  return INDOOR_SUBTYPES.has(subtype);
+};
+
+export { isIndoorActivity };
+
 const titleForShow = (run: Activity): string => {
   const date = run.start_date_local.slice(0, 11);
   const distance = (run.distance / M_TO_DIST).toFixed(2);
@@ -306,16 +323,15 @@ const colorForRun = (run: Activity): string => {
 
   switch (normalizeActivityType(run.type)) {
     case 'running': {
-      const subtype = (run.subtype || '').toLowerCase();
-      if (subtype === 'indoor' || subtype === 'treadmill') {
+      if (isIndoorActivity(run)) {
         return INDOOR_COLOR;
       }
+      const subtype = (run.subtype || '').toLowerCase();
       if (subtype === 'trail') return RUN_TRAIL_COLOR;
       return dynamicRunColor;
     }
     case 'cycling': {
-      const subtype = (run.subtype || '').toLowerCase();
-      if (subtype === 'indoor' || subtype === 'treadmill') {
+      if (isIndoorActivity(run)) {
         return INDOOR_COLOR;
       }
       return CYCLING_COLOR;
@@ -340,7 +356,7 @@ const geoJsonForRuns = (runs: Activity[]): FeatureCollection<LineString> => ({
       type: 'Feature',
       properties: {
         color: color,
-        indoor: run.subtype === 'indoor' || run.subtype === 'treadmill',
+        indoor: isIndoorActivity(run),
       },
       geometry: {
         type: 'LineString',

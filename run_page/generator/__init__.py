@@ -342,6 +342,7 @@ class Generator:
         INDOOR_SUBTYPES = {
             "treadmill",  # Garmin FIT sub_sport
             "indoor",  # generic indoor marker
+            "indoor_cycling",  # iGPSPORT BiNavi indoor cycling
             "virtualrun",  # Strava / Keep indoor running
             "virtual_run",  # alternate form
         }
@@ -349,6 +350,11 @@ class Generator:
         TINY_SPREAD_THRESHOLD = 0.0001
 
         # Classify each activity as indoor or outdoor and cache decoded coords
+        # Note: only explicit indoor subtypes and tiny-GPS-spread are trusted.
+        # "no polyline + distance > 100m" is NOT treated as indoor — outdoor
+        # activities frequently lack polyline (e.g. Garmin sometimes omits it),
+        # and treating them as indoor would corrupt real data by copying a
+        # virtual route and overwriting subtype.
         classified = []  # (dict, is_indoor, decoded_coords_or_None)
         for a in activity_list:
             subtype = (a.get("subtype") or "").lower()
@@ -364,11 +370,7 @@ class Generator:
                 except Exception:
                     coords = None
 
-            # Strategy 2: no GPS data but has distance → indoor
-            if not is_indoor and coords is None and a.get("distance", 0) > 100:
-                is_indoor = True
-
-            # Strategy 3: tiny GPS spread → noisy indoor GPS
+            # Strategy 2: tiny GPS spread → noisy indoor GPS (stationary point cluster)
             if not is_indoor and coords and len(coords) >= 2:
                 lats = [c[0] for c in coords]
                 lngs = [c[1] for c in coords]
