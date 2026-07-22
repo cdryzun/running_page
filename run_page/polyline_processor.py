@@ -1,11 +1,13 @@
-from typing import List, Tuple
-import polyline
 import os
 import warnings
+
+import polyline
 from haversine import haversine
 
+Coordinate = tuple[float, float]
+
 # Initialize IGNORE_POLYLINE with graceful error handling
-IGNORE_POLYLINE = []
+IGNORE_POLYLINE: list[Coordinate] = []
 ignore_polyline_env = os.getenv("IGNORE_POLYLINE")
 if ignore_polyline_env:
     try:
@@ -47,21 +49,21 @@ except ValueError:
 
 
 def point_distance_in_range(
-    point: Tuple[float], center_point: Tuple[float], distance: int
+    point: Coordinate, center_point: Coordinate, distance: float
 ) -> bool:
     return haversine(point, center_point) < distance
 
 
 def point_in_list_points_range(
-    point: Tuple[float], points: List[Tuple[float]], distance: int
+    point: Coordinate, points: list[Coordinate], distance: float
 ) -> bool:
     # Use generator expression instead of list comprehension for better performance
     return any(point_distance_in_range(point, p, distance) for p in points)
 
 
 def range_hiding(
-    polyline: List[Tuple[float]], points: List[Tuple[float]], distance: int
-) -> List[Tuple[float]]:
+    polyline: list[Coordinate], points: list[Coordinate], distance: float
+) -> list[Coordinate]:
     return [
         point
         for point in polyline
@@ -69,7 +71,10 @@ def range_hiding(
     ]
 
 
-def start_end_hiding(polyline: List[Tuple[float]], distance: int) -> List[Tuple[float]]:
+def start_end_hiding(polyline: list[Coordinate], distance: float) -> list[Coordinate]:
+    if distance <= 0:
+        return polyline
+
     start_index, end_index = 0, len(polyline) - 1
 
     starting_distance = 0
@@ -92,7 +97,7 @@ def start_end_hiding(polyline: List[Tuple[float]], distance: int) -> List[Tuple[
     return polyline[start_index : end_index + 1]
 
 
-def filter_out(polyline_str):
+def filter_out(polyline_str: str | None) -> str | None:
     if not polyline_str:
         return
     pl = polyline.decode(polyline_str)

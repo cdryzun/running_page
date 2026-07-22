@@ -10,6 +10,7 @@ from gpxtrackposter import track_loader
 from sqlalchemy import func
 
 from polyline_processor import filter_out
+from synced_data_file_logger import save_synced_data_file_list
 
 from .db import Activity, init_db, update_or_create_activity
 
@@ -116,8 +117,6 @@ def _build_route_for_distance(ref_coords, target_m):
 
     return result
 
-
-from synced_data_file_logger import save_synced_data_file_list
 
 IGNORE_BEFORE_SAVING = os.getenv("IGNORE_BEFORE_SAVING", False)
 
@@ -273,7 +272,7 @@ class Generator:
         if failed > 0:
             print(f"\nApp sync finished with {failed} failed tracks")
 
-    def load(self):
+    def load(self, *, persist_indoor_updates: bool = True) -> list[dict[str, object]]:
         # if sub_type is not in the db, just add an empty string to it
         query = self.session.query(Activity).filter(Activity.distance > 0.1)
         if self.only_run:
@@ -300,23 +299,28 @@ class Generator:
                 streak = 1
             activity.streak = streak  # type: ignore
             last_date = date
+            activity_data = activity.to_dict()
             if not IGNORE_BEFORE_SAVING:
-                activity.summary_polyline = filter_out(activity.summary_polyline)  # type: ignore
-            activity_list.append(activity.to_dict())
+                activity_data["summary_polyline"] = filter_out(
+                    activity.summary_polyline
+                )
+            activity_list.append(activity_data)
 
         activity_list = self._fix_indoor_locations(activity_list)
 
-        # Persist indoor subtype and virtual polyline back to DB so SVG generation can pick it up
-        for a in activity_list:
-            if a.get("subtype") == "indoor":
-                db_activity = self.session.query(Activity).get(a["run_id"])
-                if db_activity:
-                    if db_activity.subtype != "indoor":
-                        db_activity.subtype = "indoor"
-                    poly = a.get("summary_polyline", "")
-                    if poly and not db_activity.summary_polyline:
-                        db_activity.summary_polyline = poly
-        self.session.commit()
+        if persist_indoor_updates:
+            # SVG generation reads the database, so normal syncs retain derived
+            # indoor routes. Recovery disables this to keep its write set exact.
+            for a in activity_list:
+                if a.get("subtype") == "indoor":
+                    db_activity = self.session.get(Activity, a["run_id"])
+                    if db_activity:
+                        if db_activity.subtype != "indoor":
+                            db_activity.subtype = "indoor"
+                        poly = a.get("summary_polyline", "")
+                        if poly and not db_activity.summary_polyline:
+                            db_activity.summary_polyline = poly
+            self.session.commit()
 
         return activity_list
 
