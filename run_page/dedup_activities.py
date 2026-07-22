@@ -22,6 +22,8 @@ import math
 import sqlite3
 from datetime import datetime
 
+from dataset_lock import DatasetWriteLock
+
 # 匹配阈值
 TIME_TOLERANCE_SECONDS = 120
 DISTANCE_TOLERANCE_RATIO = 0.05
@@ -123,7 +125,6 @@ def _find_internal_duplicates(rows):
                 continue
             if _is_same_activity(a, b):
                 # 保留 run_id 较小者, 删除较大者
-                keeper = a["run_id"] if a["run_id"] <= b["run_id"] else b["run_id"]
                 victim = b["run_id"] if a["run_id"] <= b["run_id"] else a["run_id"]
                 if victim not in to_delete:
                     to_delete.append(victim)
@@ -136,13 +137,21 @@ def _regenerate_activities_json(db_path, json_path):
     from generator import Generator
 
     generator = Generator(db_path)
-    activities = generator.load()
-    with open(json_path, "w") as f:
-        json.dump(activities, f)
+    try:
+        activities = generator.load()
+        with open(json_path, "w") as f:
+            json.dump(activities, f)
+    finally:
+        generator.session.close()
     return len(activities)
 
 
 def dedup(db_path, json_path=None, dry_run=False):
+    with DatasetWriteLock(db_path):
+        return _dedup_locked(db_path, json_path=json_path, dry_run=dry_run)
+
+
+def _dedup_locked(db_path, json_path=None, dry_run=False):
     """执行去重, 返回 (跨源删除数, 内部删除数, json 记录数或 None)。"""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
@@ -184,8 +193,10 @@ def dedup(db_path, json_path=None, dry_run=False):
             ).fetchall()
             print("待删样本 (前 10):")
             for s in samples[:10]:
-                print(f"  run_id={s['run_id']} type={s['type']} "
-                      f"start={s['start_date_local']} dist={s['distance']:.0f}m")
+                print(
+                    f"  run_id={s['run_id']} type={s['type']} "
+                    f"start={s['start_date_local']} dist={s['distance']:.0f}m"
+                )
     else:
         if all_delete:
             placeholders = ",".join("?" * len(all_delete))
@@ -244,6 +255,7 @@ if __name__ == "__main__":
     json_path = args.json
     if db_path is None or json_path is None:
         from config import SQL_FILE, JSON_FILE
+
         if db_path is None:
             db_path = SQL_FILE
         if json_path is None:

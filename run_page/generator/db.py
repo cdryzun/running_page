@@ -2,6 +2,7 @@ import datetime
 import math
 import random
 import string
+import weakref
 
 from geopy.geocoders import options, Nominatim
 from sqlalchemy import (
@@ -14,10 +15,25 @@ from sqlalchemy import (
     inspect,
     text,
 )
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
+
+from dataset_lock import DatasetWriteLock
 
 Base = declarative_base()
+
+
+class DatasetSession(Session):
+    def __init__(self, *args, dataset_lock: DatasetWriteLock, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._dataset_lock_finalizer = weakref.finalize(self, dataset_lock.release)
+        self._dataset_lock_finalizer.atexit = False
+
+    def close(self) -> None:
+        try:
+            super().close()
+        finally:
+            if self._dataset_lock_finalizer.alive:
+                self._dataset_lock_finalizer()
 
 
 # random user name 8 letters
@@ -469,16 +485,26 @@ def add_missing_columns(engine, model):
 
 
 def init_db(db_path):
-    engine = create_engine(
-        f"sqlite:///{db_path}", connect_args={"check_same_thread": False}
-    )
-    Base.metadata.create_all(engine)
+    dataset_lock = DatasetWriteLock(db_path)
+    dataset_lock.acquire()
+    session = None
+    try:
+        engine = create_engine(
+            f"sqlite:///{db_path}", connect_args={"check_same_thread": False}
+        )
+        Base.metadata.create_all(engine)
 
-    # check missing columns
-    add_missing_columns(engine, Activity)
+        # check missing columns
+        add_missing_columns(engine, Activity)
 
-    sm = sessionmaker(bind=engine)
-    session = sm()
-    # apply the changes
-    session.commit()
-    return session
+        sm = sessionmaker(bind=engine, class_=DatasetSession)
+        session = sm(dataset_lock=dataset_lock)
+        # apply the changes
+        session.commit()
+        return session
+    except BaseException:
+        if session is None:
+            dataset_lock.release()
+        else:
+            session.close()
+        raise

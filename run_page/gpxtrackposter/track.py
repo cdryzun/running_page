@@ -144,10 +144,11 @@ class Track:
         self.start_time_local = start_time
         self.end_time = start_time + activity.elapsed_time
         self.length = float(activity.distance)
-        if IGNORE_BEFORE_SAVING:
-            summary_polyline = filter_out(activity.summary_polyline)
-        else:
-            summary_polyline = activity.summary_polyline
+        summary_polyline = activity.summary_polyline
+        if not IGNORE_BEFORE_SAVING:
+            # Raw routes stay in the database, so every rendering path must
+            # enforce the privacy boundary before coordinates reach an SVG.
+            summary_polyline = filter_out(summary_polyline)
         try:
             polyline_data = (
                 polyline.decode(summary_polyline) if summary_polyline else []
