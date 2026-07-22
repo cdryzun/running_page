@@ -14,6 +14,7 @@ if str(RUN_PAGE_PATH) not in sys.path:
 import polyline_processor  # noqa: E402
 from generator import Generator  # noqa: E402
 from generator.db import Activity  # noqa: E402
+from gpxtrackposter import track as track_module  # noqa: E402
 
 
 class PolylinePersistenceTest(unittest.TestCase):
@@ -136,6 +137,53 @@ class StartEndHidingTest(unittest.TestCase):
         ]
 
         self.assertEqual(polyline_processor.start_end_hiding(points, 0), points)
+
+
+class DbBackedTrackPrivacyTest(unittest.TestCase):
+    def test_load_from_db_filters_rendered_route_without_mutating_activity(self):
+        points = [
+            (24.4500, 111.4700),
+            (24.4510, 111.4690),
+            (24.4520, 111.4680),
+            (24.4530, 111.4670),
+            (24.4540, 111.4660),
+            (24.4550, 111.4650),
+        ]
+        original_polyline = polyline.encode(points)
+        previous_ignore_before_saving = track_module.IGNORE_BEFORE_SAVING
+        previous_start_end_range = polyline_processor.IGNORE_START_END_RANGE
+        previous_ignore_polyline = polyline_processor.IGNORE_POLYLINE
+        previous_ignore_range = polyline_processor.IGNORE_RANGE
+
+        try:
+            track_module.IGNORE_BEFORE_SAVING = False
+            polyline_processor.IGNORE_START_END_RANGE = 0.01
+            polyline_processor.IGNORE_POLYLINE = []
+            polyline_processor.IGNORE_RANGE = 0.0
+            activity = Activity(
+                run_id=1,
+                name="Morning Ride",
+                distance=1000.0,
+                moving_time=datetime.timedelta(minutes=5),
+                elapsed_time=datetime.timedelta(minutes=5),
+                type="Ride",
+                subtype="Ride",
+                start_date="2025-10-01 01:00:00",
+                start_date_local="2025-10-01 09:00:00",
+                summary_polyline=original_polyline,
+                average_speed=3.333,
+            )
+
+            track = track_module.Track()
+            track.load_from_db(activity)
+
+            self.assertEqual(len(track.polylines[0]), len(points) - 2)
+            self.assertEqual(activity.summary_polyline, original_polyline)
+        finally:
+            track_module.IGNORE_BEFORE_SAVING = previous_ignore_before_saving
+            polyline_processor.IGNORE_START_END_RANGE = previous_start_end_range
+            polyline_processor.IGNORE_POLYLINE = previous_ignore_polyline
+            polyline_processor.IGNORE_RANGE = previous_ignore_range
 
 
 if __name__ == "__main__":
