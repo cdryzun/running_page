@@ -121,8 +121,22 @@ jobs:
       - name: Install ESA CLI
         run: npm install -g esa-cli@latest
 
-      - name: Login to ESA
-        run: esa-cli login
+      # GitHub-hosted runners (US) occasionally fail to reach Alibaba Cloud's
+      # ESA API on the first attempt. Retry login a few times since esa-cli
+      # has no built-in retry.
+      - name: Login to ESA (with retry)
+        run: |
+          for attempt in 1 2 3 4 5; do
+            echo "::group::Login attempt $attempt"
+            if esa-cli login; then
+              echo "Login succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "Login attempt $attempt failed, retrying in $((attempt * 5))s..."
+            sleep $((attempt * 5))
+          done
+          echo "::error::ESA login failed after 5 attempts"
+          exit 1
 
       - name: Deploy to ESA Pages
         run: |
