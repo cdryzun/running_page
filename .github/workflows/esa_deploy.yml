@@ -139,9 +139,13 @@ jobs:
           exit 1
 
       - name: Deploy to ESA Pages
+        env:
+          # ESA API rejects descriptions longer than ~32 chars, so use the
+          # short SHA (7 chars) instead of the full 40-char github.sha.
+          SHORT_SHA: ${{ github.sha }}
         run: |
           esa-cli deploy \
             --name running-page \
             --assets ./dist \
             --environment production \
-            --description "CI build from commit ${{ github.sha }}"
+            --description "CI build ${SHORT_SHA:0:7}"
