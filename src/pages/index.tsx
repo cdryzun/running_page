@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { Analytics } from '@vercel/analytics/react';
 import { Helmet } from 'react-helmet-async';
 import Layout from '@/components/Layout';
 import LocationStat from '@/components/LocationStat';
@@ -434,8 +433,6 @@ const Index = () => {
           />
         )}
       </div>
-      {/* Enable Audiences in Vercel Analytics: https://vercel.com/docs/concepts/analytics/audiences/quickstart */}
-      {import.meta.env.VERCEL && <Analytics />}
     </Layout>
   );
 };

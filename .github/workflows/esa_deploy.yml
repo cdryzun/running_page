@@ -1,0 +1,88 @@
+name: Deploy to ESA Pages
+
+# Deploys the built SPA to Alibaba Cloud ESA (Edge Security Acceleration)
+# Pages, replacing the former Vercel deployment. Triggered automatically
+# after run_data_sync.yml commits new run data to master.
+on:
+  push:
+    branches:
+      - master
+    paths:
+      # Only deploy when frontend source or synced data changes.
+      - 'src/**'
+      - 'assets/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'vite.config.ts'
+      - 'esa.jsonc'
+  workflow_dispatch:
+
+# Prevent overlapping deployments for the same ref.
+concurrency:
+  group: esa-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and deploy to ESA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Enable corepack (pnpm)
+        run: npm install -g corepack@latest && corepack enable pnpm
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SPA (root domain, no PATH_PREFIX)
+        run: pnpm build
+
+      - name: Verify build output
+        shell: bash
+        run: |
+          test -f dist/index.html || { echo "dist/index.html missing"; exit 1; }
+          echo "dist contents:"; ls -la dist/
+
+      - name: Install ESA CLI
+        run: npm install -g esa-cli@latest
+
+      - name: Login to ESA
+        env:
+          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
+          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
+        run: esa-cli login
+
+      - name: Deploy to ESA Pages
+        env:
+          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
+          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
+        run: |
+          esa-cli deploy \
+            --name running-page \
+            --assets ./dist \
+            --environment production \
+            --description "CI build from commit ${{ github.sha }}"
