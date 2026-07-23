@@ -1,0 +1,13 @@
+{
+  // ESA Functions & Pages project configuration.
+  // Docs: https://help.aliyun.com/zh/edge-security-acceleration/esa/user-guide/build-pages
+  "name": "running-page",
+  "assets": {
+    // Vite build output directory.
+    "directory": "./dist",
+    // SPA fallback: serve index.html (200) for unmatched paths so that
+    // client-side routes like /summary survive a hard refresh.
+    // Replaces the former vercel.json rewrite rule.
+    "notFoundStrategy": "singlePageApplication"
+  }
+}

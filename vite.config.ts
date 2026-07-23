@@ -86,12 +86,9 @@ export default defineConfig({
     }),
   ],
   base: process.env.PATH_PREFIX || '/',
-  define: {
-    'import.meta.env.VERCEL': JSON.stringify(process.env.VERCEL),
-  },
   build: {
     manifest: true,
-    outDir: './dist', // for user easy to use, vercel use default dir -> dist
+    outDir: './dist',
     rollupOptions: {
       output: {
         manualChunks: (id: string) => {

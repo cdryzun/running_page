@@ -23,9 +23,6 @@ dependencies:
   '@svgr/plugin-svgo':
     specifier: ^8.1.0
     version: 8.1.0(@svgr/core@8.1.0)
-  '@vercel/analytics':
-    specifier: ^0.1.11
-    version: 0.1.11(react@18.2.0)
   '@vitejs/plugin-react':
     specifier: ^5.0.0
     version: 5.0.0(vite@7.1.2)
@@ -1660,14 +1657,6 @@ packages:
       '@typescript-eslint/types': 8.37.0
       eslint-visitor-keys: 4.2.1
     dev: true
-
-  /@vercel/analytics@0.1.11(react@18.2.0):
-    resolution: {integrity: sha512-mj5CPR02y0BRs1tN3oZcBNAX9a8NxsIUl9vElDPcqxnMfP0RbRc9fI9Ud7+QDg/1Izvt5uMumsr+6YsmVHcyuw==}
-    peerDependencies:
-      react: ^16.8||^17||^18
-    dependencies:
-      react: 18.2.0
-    dev: false
 
   /@vitejs/plugin-react@5.0.0(vite@7.1.2):
     resolution: {integrity: sha512-Jx9JfsTa05bYkS9xo0hkofp2dCmp1blrKjw9JONs5BTHOvJCgLbaPSuZLGSVJW6u2qe0tc4eevY0+gSNNi0YCw==}
@@ -4918,7 +4907,7 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
-      '@types/node': ^24.2.1
+      '@types/node': ^20.19.0 || >=22.12.0
       jiti: '>=1.21.0'
       less: ^4.0.0
       lightningcss: ^1.21.0

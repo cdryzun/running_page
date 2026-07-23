@@ -16,7 +16,7 @@ const getBasePath = () => {
 
 const data: ISiteMetadataResult = {
   siteTitle: 'Activity Page',
-  siteUrl: 'https://zaynrun.vercel.app',
+  siteUrl: 'https://run.treesir.pub',
   logo: 'https://avatars.githubusercontent.com/u/45552084?s=256&v=4',
   description: 'Personal activity records and blog',
   navLinks: [
