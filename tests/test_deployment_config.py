@@ -47,32 +47,33 @@ def _strip_jsonc_comments(text: str) -> str:
 class EsaConfigTest(unittest.TestCase):
     """Validate esa.jsonc: the single source of truth for ESA deployment."""
 
+    @classmethod
+    def setUpClass(cls):
+        # Parse once for all tests in this class; avoids repeated long-line
+        # json.loads(...) calls that black would reformat.
+        raw = ESA_JSONC.read_text(encoding="utf-8")
+        cls.parsed = json.loads(_strip_jsonc_comments(raw))
+
     def test_esa_jsonc_exists(self):
         self.assertTrue(
             ESA_JSONC.is_file(), f"{ESA_JSONC} must exist for ESA deployment"
         )
 
     def test_esa_jsonc_is_valid_json_after_stripping_comments(self):
-        raw = ESA_JSONC.read_text(encoding="utf-8")
-        stripped = _strip_jsonc_comments(raw)
-        # Must parse without error; a bare parse() raises ValueError subclass.
-        parsed = json.loads(stripped)
-        self.assertIsInstance(parsed, dict)
+        # setUpClass already parsed successfully; confirm it is a dict.
+        self.assertIsInstance(self.parsed, dict)
 
     def test_esa_jsonc_has_project_name(self):
-        parsed = json.loads(_strip_jsonc_comments(ESA_JSONC.read_text(encoding="utf-8")))
-        self.assertEqual(parsed.get("name"), "running-page")
+        self.assertEqual(self.parsed.get("name"), "running-page")
 
     def test_esa_jsonc_dist_directory(self):
-        parsed = json.loads(_strip_jsonc_comments(ESA_JSONC.read_text(encoding="utf-8")))
-        assets = parsed.get("assets", {})
+        assets = self.parsed.get("assets", {})
         self.assertEqual(assets.get("directory"), "./dist")
 
     def test_esa_jsonc_spa_fallback(self):
         """SPA fallback must be singlePageApplication so client-side routes
         like /summary survive a hard refresh on ESA's static edge."""
-        parsed = json.loads(_strip_jsonc_comments(ESA_JSONC.read_text(encoding="utf-8")))
-        assets = parsed.get("assets", {})
+        assets = self.parsed.get("assets", {})
         self.assertEqual(
             assets.get("notFoundStrategy"),
             "singlePageApplication",
