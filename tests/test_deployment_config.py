@@ -103,7 +103,6 @@ class SecretLeakageTest(unittest.TestCase):
         """Credentials must flow through GitHub Encrypted Secrets, never
         hardcoded. The deploy/login steps must reference secrets.* placeholders."""
         content = ESA_WORKFLOW.read_text(encoding="utf-8")
-        refs = _SECRET_REF_PATTERN.findall(content)
         self.assertIn(
             "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}",
             content,
