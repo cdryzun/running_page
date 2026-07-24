@@ -41,9 +41,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Gate job: decide whether to deploy. For workflow_run triggers, skip if
-  # the sync produced no new data (avoids empty deploys). For push/manual
-  # triggers, always proceed.
+  # Gate job: for workflow_run, only proceed if the triggering sync workflow
+  # succeeded. For push/manual, always proceed. We intentionally do NOT skip
+  # when sync produced no new data — a redundant deploy is cheap (ESA free
+  # tier) and checking commit messages proved fragile (merge commits, rebases,
+  # etc. move "update new runs" off HEAD).
   should-deploy:
     name: Check if deploy is needed
     runs-on: ubuntu-latest
@@ -51,31 +53,8 @@ jobs:
       proceed: ${{ steps.check.outputs.proceed }}
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: master
-          fetch-depth: 5
-
-      - name: Check for new synced data
-        id: check
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            # For workflow_run: only proceed if the latest commit is a data
-            # sync commit ("update new runs"). If sync had no new data, it
-            # pushes nothing and HEAD stays at the previous commit.
-            LATEST_MSG=$(git log -1 --format='%s')
-            echo "Latest commit: $LATEST_MSG"
-            if echo "$LATEST_MSG" | grep -q "update new runs"; then
-              echo "proceed=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "Sync produced no new data — skipping deploy"
-              echo "proceed=false" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            # push or workflow_dispatch: always proceed
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
-          fi
+      - id: check
+        run: echo "proceed=true" >> "$GITHUB_OUTPUT"
 
   test:
     name: Pre-deploy verification
