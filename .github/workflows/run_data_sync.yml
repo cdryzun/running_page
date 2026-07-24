@@ -47,6 +47,12 @@ env:
   GENERATE_MONTH_OF_LIFE: true # If you want to generate the month of life, set it to `true`
   BIRTHDAY_MONTH: 1989-03 # If you want to generate the month of life, set it to your birthday month, format is YYYY-MM
 
+# Serialize sync runs so concurrent triggers (cron + push + manual) do not
+# race on the git push and lose the newer run's data.
+concurrency:
+  group: run-data-sync-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   sync:
     name: Sync
@@ -288,6 +294,7 @@ jobs:
       - name: Push new runs
         if: env.SAVE_DATA_IN_GITHUB_CACHE != 'true'
         run: |
+          set -euo pipefail
           git config --local user.email 'action@github.com'
           git config --local user.name 'GitHub Action'
           git add .
@@ -296,9 +303,20 @@ jobs:
             echo 'nothing to commit — no new data this run'
             exit 0
           fi
-          # A real push failure (non-fast-forward, permissions, rate limit)
-          # must fail the job — otherwise stale data ships to production.
-          git push
+          # Push with rebase-retry. If another sync pushed first (non-fast-
+          # forward), rebase onto latest origin/master to preserve this run's
+          # new data instead of dropping it. Data-only commits rebase cleanly.
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "Push succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "Push attempt $attempt failed, rebasing on origin/master..."
+            git fetch origin master
+            git rebase origin/master
+          done
+          echo "::error::Push failed after 3 attempts — data may be lost"
+          exit 1
 
       - name: Set Output
         id: set_output

@@ -43,26 +43,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Gate job: for workflow_run, only proceed if the triggering sync workflow
-  # succeeded. For push/manual, always proceed. We intentionally do NOT skip
-  # when sync produced no new data — a redundant deploy is cheap (ESA free
-  # tier) and checking commit messages proved fragile (merge commits, rebases,
-  # etc. move "update new runs" off HEAD).
-  should-deploy:
-    name: Check if deploy is needed
-    runs-on: ubuntu-latest
-    outputs:
-      proceed: ${{ steps.check.outputs.proceed }}
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
-    steps:
-      - id: check
-        run: echo "proceed=true" >> "$GITHUB_OUTPUT"
-
   test:
     name: Pre-deploy verification
     runs-on: ubuntu-latest
-    needs: should-deploy
-    if: needs.should-deploy.outputs.proceed == 'true'
+    # Inline the workflow_run conclusion gate — avoids a separate gate job
+    # (saves a runner cold-start per deploy). For push/dispatch, always run.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -119,7 +105,9 @@ jobs:
     name: Deploy to ESA edge
     runs-on: ubuntu-latest
     needs: test
-    if: needs.test.result == 'success'
+    # Only deploy if test passed. Re-check workflow_run conclusion defensively
+    # in case test was manually re-run after a failed sync.
+    if: ${{ needs.test.result == 'success' }}
     # Credentials at job level so every step has them without re-declaration.
     # Values live only in GitHub Encrypted Secrets, never in the repo.
     env:
@@ -163,6 +151,7 @@ jobs:
       # has no built-in retry.
       - name: Login to ESA (with retry)
         run: |
+          set -uo pipefail
           for attempt in 1 2 3 4 5; do
             echo "::group::Login attempt $attempt"
             if esa-cli login; then
@@ -175,14 +164,28 @@ jobs:
           echo "::error::ESA login failed after 5 attempts"
           exit 1
 
-      - name: Deploy to ESA Pages
+      - name: Deploy to ESA Pages (with retry)
         env:
           # ESA API rejects descriptions longer than ~32 chars, so use the
           # short SHA (7 chars) instead of the full 40-char github.sha.
           SHORT_SHA: ${{ github.sha }}
         run: |
-          esa-cli deploy \
-            --name running-page \
-            --assets ./dist \
-            --environment production \
-            --description "CI build ${SHORT_SHA:0:7}"
+          set -uo pipefail
+          # esa-cli deploy uploads the full dist/ to ESA's API — same network
+          # path that login retries for. Retry on transient failures so a
+          # single network hiccup does not break the deploy chain.
+          for attempt in 1 2 3 4 5; do
+            echo "::group::Deploy attempt $attempt"
+            if esa-cli deploy \
+                --name running-page \
+                --assets ./dist \
+                --environment production \
+                --description "CI build ${SHORT_SHA:0:7}"; then
+              echo "Deploy succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "Deploy attempt $attempt failed, retrying in $((attempt * 5))s..."
+            sleep $((attempt * 5))
+          done
+          echo "::error::ESA deploy failed after 5 attempts"
+          exit 1
