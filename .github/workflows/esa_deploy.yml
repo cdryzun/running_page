@@ -35,10 +35,12 @@ on:
     branches: [master]
   workflow_dispatch:
 
-# Prevent overlapping runs for the same ref.
+# Queue (do not cancel) deploys so an in-flight build+deploy is never
+# aborted mid-way by a newer trigger. For deploy pipelines, cancelling
+# can starve the queue under burst triggers.
 concurrency:
   group: esa-deploy-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   # Gate job: for workflow_run, only proceed if the triggering sync workflow
@@ -65,7 +67,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: master
+          # Pin to the trigger commit so test and deploy build the exact
+          # same code — avoids shipping a commit that test never validated
+          # when master advances between jobs.
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       # --- Python data + config tests ---
@@ -124,7 +129,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: master
+          # Pin to the same commit the test job validated.
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Setup pnpm
@@ -147,7 +153,10 @@ jobs:
         run: test -f dist/index.html || { echo "dist/index.html missing"; exit 1; }
 
       - name: Install ESA CLI
-        run: npm install -g esa-cli@latest
+        # Pin to a verified version — @latest risks silent breakage if a
+        # future release changes flag semantics (e.g. --assets/--environment).
+        # Bump explicitly after testing a new version locally.
+        run: npm install -g esa-cli@1.0.11
 
       # GitHub-hosted runners (US) occasionally fail to reach Alibaba Cloud's
       # ESA API on the first attempt. Retry login a few times since esa-cli
