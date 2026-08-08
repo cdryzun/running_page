@@ -2,7 +2,12 @@ import { lazy, Suspense, useEffect, useMemo } from 'react';
 import { totalStat } from '@assets/index';
 import { loadSvgComponent } from '@/utils/svgUtils';
 import { initSvgColorAdjustments } from '@/utils/colorUtils';
-import { SPORT_TYPE_OPTIONS, type SportTypeFilter } from '@/utils/const';
+import {
+  IS_CHINESE,
+  LOADING_TEXT,
+  SPORT_TYPE_OPTIONS,
+  type SportTypeFilter,
+} from '@/utils/const';
 
 const SVGStat = ({
   sportType = 'all',
@@ -34,6 +39,7 @@ const SVGStat = ({
       {onSportTypeChange && (
         <div className="mb-2 mt-4 flex justify-end">
           <select
+            aria-label={IS_CHINESE ? '运动类型' : 'Sport type'}
             className="rounded border border-gray-600 bg-transparent px-2 py-1 text-sm"
             value={sportType}
             onChange={(e) =>
@@ -48,7 +54,7 @@ const SVGStat = ({
           </select>
         </div>
       )}
-      <Suspense fallback={<div className="text-center">Loading...</div>}>
+      <Suspense fallback={<div className="text-center">{LOADING_TEXT}</div>}>
         <GithubSvg className="github-svg mt-4 h-auto w-full" />
         <GridSvg className="grid-svg mt-4 h-auto w-full" />
       </Suspense>

@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { Helmet } from 'react-helmet-async';
 import Layout from '@/components/Layout';
 import LocationStat from '@/components/LocationStat';
 import RunMap from '@/components/RunMap';
@@ -25,7 +24,7 @@ import {
   titleForShow,
   RunIds,
 } from '@/utils/utils';
-import { useTheme, useThemeChangeCounter } from '@/hooks/useTheme';
+import { useThemeChangeCounter } from '@/hooks/useTheme';
 
 const Index = () => {
   const { siteTitle, siteUrl } = useSiteMetadata();
@@ -165,7 +164,9 @@ const Index = () => {
       }
       setCurrentFilter({ item, func });
       setRunIndex(-1);
-      setTitle(`${item} ${name} Activity Heatmap`);
+      setTitle(
+        IS_CHINESE ? `${item}活动轨迹` : `${item} ${name} Activity Heatmap`
+      );
       // Reset single run state when changing filters
       setSingleRunId(null);
       if (window.location.hash) {
@@ -389,18 +390,13 @@ const Index = () => {
     };
   }, [year, runs, locateActivity, thisYear]);
 
-  const { theme } = useTheme();
-
   return (
     <Layout>
-      <Helmet>
-        <html lang="en" data-theme={theme} />
-      </Helmet>
       <div className="w-full lg:w-1/3">
         <h1 className="my-12 mt-6 text-5xl font-extrabold italic">
           <a href={siteUrl}>{siteTitle}</a>
         </h1>
-        {(viewState.zoom ?? 0) <= 3 && IS_CHINESE ? (
+        {(viewState.zoom ?? 0) <= 3 ? (
           <LocationStat
             changeYear={changeYear}
             changeCity={changeCity}

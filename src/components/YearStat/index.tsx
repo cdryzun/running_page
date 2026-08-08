@@ -6,6 +6,7 @@ import { yearStats, githubYearStats } from '@assets/index';
 import { loadSvgComponent } from '@/utils/svgUtils';
 import {
   IS_CHINESE,
+  LOADING_TEXT,
   SHOW_ELEVATION_GAIN,
   type SportTypeFilter,
 } from '@/utils/const';
@@ -179,14 +180,25 @@ const YearStat = ({
     hasLowestElevation;
   return (
     <div className="cursor-pointer" onClick={() => onClick(year)}>
-      <section {...eventHandlers}>
-        <Stat value={year} description=" Journey" />
-        <Stat value={runs.length} description=" Activities" />
+      <section className="grid grid-cols-2 gap-x-4 lg:block" {...eventHandlers}>
+        <Stat
+          value={year === 'Total' && IS_CHINESE ? '全部' : year}
+          description={IS_CHINESE ? ' 概览' : ' Journey'}
+          className="col-span-2 w-full pb-2"
+        />
+        <Stat
+          value={runs.length}
+          description={IS_CHINESE ? ' 次活动' : ' Activities'}
+        />
         <Stat value={sumDistance} description={` ${DIST_UNIT}`} />
         {showElevationMetrics && (
           <Stat
             value={sumElevationGainStr}
-            description={` Elevation Gain (${ELEV_UNIT})`}
+            description={
+              IS_CHINESE
+                ? ` 海拔爬升 (${ELEV_UNIT})`
+                : ` Elevation Gain (${ELEV_UNIT})`
+            }
           />
         )}
         {showElevationMetrics && elevationLossCount > 0 && (
@@ -229,9 +241,15 @@ const YearStat = ({
             description={` ${avgSecondaryMetricLabel}`}
           />
         )}
-        <Stat value={`${streak} day`} description=" Streak" />
+        <Stat
+          value={IS_CHINESE ? `${streak} 天` : `${streak} day`}
+          description={IS_CHINESE ? ' 连续记录' : ' Streak'}
+        />
         {hasHeartRate && (
-          <Stat value={avgHeartRate} description=" Avg Heart Rate" />
+          <Stat
+            value={avgHeartRate}
+            description={IS_CHINESE ? ' 平均心率' : ' Avg Heart Rate'}
+          />
         )}
         {hasPower && (
           <Stat
@@ -273,12 +291,12 @@ const YearStat = ({
         )}
       </section>
       {year !== 'Total' && hovered && (
-        <Suspense fallback="loading...">
+        <Suspense fallback={LOADING_TEXT}>
           <YearSVG className="year-svg my-4 h-4/6 w-4/6 border-0 p-0" />
           <GithubYearSVG className="github-year-svg my-4 h-auto w-full border-0 p-0" />
         </Suspense>
       )}
-      <hr />
+      <hr className="my-4 lg:my-8" />
     </div>
   );
 };

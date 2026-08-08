@@ -39,9 +39,10 @@
     "dev": "vite dev",
     "serve": "vite serve",
     "lint": "eslint src --ext .ts,.tsx --fix",
-    "check": "prettier --check \"src/main.tsx\" \"src/**/*.{css,module.css,json,ts,tsx}\" \"*.{yaml,json,ts}\"",
-    "format": "prettier --write \"src/main.tsx\" \"src/**/*.{css,module.css,json,ts,tsx}\" \"*.{yaml,json,ts}\"",
-    "ci": "pnpm run format && pnpm run lint && pnpm run build"
+    "check": "prettier --check \"src/main.tsx\" \"src/**/*.{css,module.css,json,ts,tsx}\" \"tests/*.test.mjs\" \"*.{yaml,json,ts}\"",
+    "format": "prettier --write \"src/main.tsx\" \"src/**/*.{css,module.css,json,ts,tsx}\" \"tests/*.test.mjs\" \"*.{yaml,json,ts}\"",
+    "test:unit": "node --test tests/*.test.mjs",
+    "ci": "pnpm run format && pnpm run lint && pnpm run test:unit && pnpm run build"
   },
   "engineStrict": true,
   "browserslist": "defaults, not ie 11",

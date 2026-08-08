@@ -1,3 +1,5 @@
+import { IS_CHINESE } from '@/utils/const';
+
 interface ISiteMetadataResult {
   siteTitle: string;
   siteUrl: string;
@@ -15,21 +17,23 @@ const getBasePath = () => {
 };
 
 const data: ISiteMetadataResult = {
-  siteTitle: 'Activity Page',
+  siteTitle: IS_CHINESE ? '运动记录' : 'Activity Page',
   siteUrl: 'https://run.treesir.pub',
   logo: 'https://avatars.githubusercontent.com/u/45552084?s=256&v=4',
-  description: 'Personal activity records and blog',
+  description: IS_CHINESE
+    ? '个人运动记录与博客'
+    : 'Personal activity records and blog',
   navLinks: [
     {
-      name: 'Summary',
+      name: IS_CHINESE ? '汇总' : 'Summary',
       url: `${getBasePath()}/summary`,
     },
     {
-      name: 'Blog',
+      name: IS_CHINESE ? '博客' : 'Blog',
       url: 'https://www.treesir.pub',
     },
     {
-      name: 'About',
+      name: IS_CHINESE ? '关于' : 'About',
       url: 'https://github.com/cdryzun',
     },
   ],

@@ -18,6 +18,7 @@ import {
 } from 'recharts';
 import VirtualList from 'rc-virtual-list';
 import { useNavigate } from 'react-router-dom';
+import LanguageToggle from '@/components/LanguageToggle';
 import activities from '@/static/activities.json';
 import styles from './style.module.css';
 import {
@@ -250,7 +251,7 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
-    return `${h}h ${m}m ${s}s`;
+    return IS_CHINESE ? `${h}小时${m}分${s}秒` : `${h}h ${m}m ${s}s`;
   };
 
   const avgSpeedMps = speedDistPerHourToMps(summary.averageSpeed);
@@ -1132,10 +1133,16 @@ const ActivityList: React.FC = () => {
   return (
     <div className={styles.activityList}>
       <div className={styles.filterContainer} ref={filterRef}>
-        <button className={styles.smallHomeButton} onClick={handleHomeClick}>
+        <button
+          type="button"
+          className={styles.smallHomeButton}
+          onClick={handleHomeClick}
+        >
           {HOME_PAGE_TITLE}
         </button>
+        <LanguageToggle className={styles.languageButton} />
         <select
+          aria-label={IS_CHINESE ? '运动类型' : 'Sport type'}
           onChange={(e) => setSportType(e.target.value as SportTypeFilter)}
           value={sportType}
         >
@@ -1150,6 +1157,7 @@ const ActivityList: React.FC = () => {
           ))}
         </select>
         <select
+          aria-label={IS_CHINESE ? '统计周期' : 'Summary interval'}
           onChange={(e) => toggleInterval(e.target.value as IntervalType)}
           value={interval}
         >
@@ -1157,7 +1165,7 @@ const ActivityList: React.FC = () => {
           <option value="month">{ACTIVITY_TOTAL.MONTHLY_TITLE}</option>
           <option value="week">{ACTIVITY_TOTAL.WEEKLY_TITLE}</option>
           <option value="day">{ACTIVITY_TOTAL.DAILY_TITLE}</option>
-          <option value="life">Life</option>
+          <option value="life">{IS_CHINESE ? '生涯' : 'Life'}</option>
         </select>
       </div>
 
@@ -1177,7 +1185,7 @@ const ActivityList: React.FC = () => {
               </button>
             ))}
           </div>
-          <Suspense fallback={<div>Loading SVG...</div>}>
+          <Suspense fallback={<div>{LOADING_TEXT}</div>}>
             {selectedYear ? (
               // Show Year Summary SVG when a year is selected
               (() => {
