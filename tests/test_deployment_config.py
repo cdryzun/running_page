@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 # Files read by multiple test cases, resolved once.
 ESA_JSONC = ROOT / "esa.jsonc"
 ESA_WORKFLOW = ROOT / ".github" / "workflows" / "esa_deploy.yml"
+DATA_SYNC_WORKFLOW = ROOT / ".github" / "workflows" / "run_data_sync.yml"
+DOCKERFILE = ROOT / "Dockerfile"
 VITE_CONFIG = ROOT / "vite.config.ts"
 PACKAGE_JSON = ROOT / "package.json"
 PNPM_LOCK = ROOT / "pnpm-lock.yaml"
@@ -78,6 +80,31 @@ class EsaConfigTest(unittest.TestCase):
             assets.get("notFoundStrategy"),
             "singlePageApplication",
             "Removing notFoundStrategy breaks SPA deep-link refresh",
+        )
+
+
+class DataSyncConfigTest(unittest.TestCase):
+    """Guard personal data-generation settings used by the sync workflow."""
+
+    def test_month_of_life_birth_month(self):
+        content = DATA_SYNC_WORKFLOW.read_text(encoding="utf-8")
+        self.assertRegex(
+            content,
+            r"(?m)^\s*BIRTHDAY_MONTH:\s*1999-10\s*(?:#.*)?$",
+            "Month-of-life posters must use the configured 1999-10 birth month",
+        )
+
+    def test_docker_month_of_life_birth_month(self):
+        content = DOCKERFILE.read_text(encoding="utf-8")
+        self.assertNotIn(
+            "--birth 1989-03",
+            content,
+            "Docker image generation must not use the previous birth month",
+        )
+        self.assertEqual(
+            content.count("--birth 1999-10"),
+            2,
+            "Both Docker month-of-life commands must use 1999-10",
         )
 
 

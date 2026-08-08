@@ -5,6 +5,7 @@ import { RPGeometry } from '@/static/run_countries';
 import { chinaCities } from '@/static/city';
 import {
   MAIN_COLOR,
+  IS_CHINESE,
   MUNICIPALITY_CITIES_ARR,
   NEED_FIX_MAP,
   RUN_TITLES,
@@ -118,13 +119,14 @@ export { isIndoorActivity };
 const titleForShow = (run: Activity): string => {
   const date = run.start_date_local.slice(0, 11);
   const distance = (run.distance / M_TO_DIST).toFixed(2);
-  let name = run.name || getActivitySport(run) || 'Activity';
-  if (!run.name) {
-    name = getActivitySport(run) || 'Activity';
-  }
-  return `${name} ${date} ${distance} ${DIST_UNIT} ${
-    !run.summary_polyline ? '(No map data for this activity)' : ''
-  }`;
+  const fallbackName = IS_CHINESE ? '运动' : 'Activity';
+  const name = run.name || getActivitySport(run) || fallbackName;
+  const noMapText = !run.summary_polyline
+    ? IS_CHINESE
+      ? '（此活动无轨迹数据）'
+      : '(No map data for this activity)'
+    : '';
+  return `${name} ${date} ${distance} ${DIST_UNIT} ${noMapText}`.trim();
 };
 
 const formatPace = (d: number): string => {

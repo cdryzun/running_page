@@ -1,3 +1,5 @@
+import { getStoredLanguage } from '@/utils/language';
+
 // Constants
 const MAPBOX_TOKEN =
   // For security reasons, please avoid using the default public token provided by Mapbox as much as possible.
@@ -50,20 +52,24 @@ const SHOW_ELEVATION_GAIN = false;
 // richer title for the activity types (like garmin style)
 const RICH_TITLE = false;
 
-// IF you are outside China please make sure IS_CHINESE = false
-const IS_CHINESE = true;
+// Chinese is the default; the header language switch persists the preference.
+const IS_CHINESE = getStoredLanguage() === 'zh-CN';
 const USE_ANIMATION_FOR_GRID = false;
 const CHINESE_INFO_MESSAGE = (yearLength: number, year: string): string => {
-  const yearStr = year === 'Total' ? '所有' : ` ${year} `;
-  return `我用 App 记录自己运动 ${yearLength} 年了，下面列表展示的是${yearStr}的数据`;
+  const period = year === 'Total' ? '全部年份' : `${year} 年`;
+  return `我已用 App 记录运动 ${yearLength} 年，以下是${period}的运动数据。`;
 };
-const ENGLISH_INFO_MESSAGE = (yearLength: number, year: string): string =>
-  `Activity Journey with ${yearLength} Years, the table shows year ${year} data`;
+const ENGLISH_INFO_MESSAGE = (yearLength: number, year: string): string => {
+  const period = year === 'Total' ? 'all years' : year;
+  return `I have recorded activities for ${yearLength} years. The statistics below cover ${period}.`;
+};
 
-// English is not supported for location info messages yet
-const CHINESE_LOCATION_INFO_MESSAGE_FIRST =
-  '我运动过了一些地方，希望随着时间推移，地图点亮的地方越来越多';
-const CHINESE_LOCATION_INFO_MESSAGE_SECOND = '不要停下来，不要停下运动的脚步';
+const LOCATION_INFO_MESSAGE_FIRST = IS_CHINESE
+  ? '我的运动足迹分布在以下地区，点击城市或运动类型可筛选地图。'
+  : 'My activity footprint spans the regions below. Select a city or activity type to filter the map.';
+const LOCATION_INFO_MESSAGE_SECOND = IS_CHINESE
+  ? '继续记录，看看下一次会点亮哪里。'
+  : 'Keep logging activities to see where the next one takes you.';
 
 const INFO_MESSAGE = IS_CHINESE ? CHINESE_INFO_MESSAGE : ENGLISH_INFO_MESSAGE;
 const FULL_MARATHON_RUN_TITLE = IS_CHINESE ? '全程马拉松' : 'Full Marathon';
@@ -93,11 +99,11 @@ const TOTAL_ELEVATION_GAIN_TITLE = IS_CHINESE
   ? '总海拔爬升'
   : 'Total Elevation Gain';
 const AVERAGE_HEART_RATE_TITLE = IS_CHINESE ? '平均心率' : 'Average Heart Rate';
-const YEARLY_TITLE = IS_CHINESE ? 'Year' : 'Yearly';
-const MONTHLY_TITLE = IS_CHINESE ? 'Month' : 'Monthly';
-const WEEKLY_TITLE = IS_CHINESE ? 'Week' : 'Weekly';
-const DAILY_TITLE = IS_CHINESE ? 'Day' : 'Daily';
-const LOCATION_TITLE = IS_CHINESE ? 'Location' : 'Location';
+const YEARLY_TITLE = IS_CHINESE ? '按年' : 'Yearly';
+const MONTHLY_TITLE = IS_CHINESE ? '按月' : 'Monthly';
+const WEEKLY_TITLE = IS_CHINESE ? '按周' : 'Weekly';
+const DAILY_TITLE = IS_CHINESE ? '按日' : 'Daily';
+const LOCATION_TITLE = IS_CHINESE ? '地点' : 'Location';
 const HOME_PAGE_TITLE = IS_CHINESE ? '首页' : 'Home';
 
 const LOADING_TEXT = IS_CHINESE ? '加载中...' : 'Loading...';
@@ -157,8 +163,8 @@ const ACTIVITY_TOTAL = {
 export {
   USE_GOOGLE_ANALYTICS,
   GOOGLE_ANALYTICS_TRACKING_ID,
-  CHINESE_LOCATION_INFO_MESSAGE_FIRST,
-  CHINESE_LOCATION_INFO_MESSAGE_SECOND,
+  LOCATION_INFO_MESSAGE_FIRST,
+  LOCATION_INFO_MESSAGE_SECOND,
   MAPBOX_TOKEN,
   MUNICIPALITY_CITIES_ARR,
   MAP_LAYER_LIST,

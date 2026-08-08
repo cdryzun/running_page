@@ -6,7 +6,11 @@ import {
   Activity,
   RunIds,
 } from '@/utils/utils';
-import { SHOW_ELEVATION_GAIN, type SportTypeFilter } from '@/utils/const';
+import {
+  IS_CHINESE,
+  SHOW_ELEVATION_GAIN,
+  type SportTypeFilter,
+} from '@/utils/const';
 import { DIST_UNIT } from '@/utils/utils';
 import {
   getPrimaryMetricLabel,
@@ -26,6 +30,11 @@ interface IRunTableProperties {
 }
 
 type SortFunc = (_a: Activity, _b: Activity) => number;
+
+const ELEVATION_COLUMN_TITLE = IS_CHINESE ? '爬升' : 'Elev';
+const HEART_RATE_COLUMN_TITLE = IS_CHINESE ? '心率' : 'BPM';
+const TIME_COLUMN_TITLE = IS_CHINESE ? '时长' : 'Time';
+const DATE_COLUMN_TITLE = IS_CHINESE ? '日期' : 'Date';
 
 const RunTable = ({
   runs,
@@ -61,7 +70,7 @@ const RunTable = ({
       compareNullableNumber(
         a.elevation_gain,
         b.elevation_gain,
-        sortFuncInfo === 'Elev'
+        sortFuncInfo === ELEVATION_COLUMN_TITLE
       );
     const sortPrimaryMetricFunc: SortFunc = (a, b) => {
       const aValue = getPrimaryMetricSortValue(a, sportType);
@@ -77,30 +86,30 @@ const RunTable = ({
       return compareNullableNumber(
         a.average_heartrate,
         b.average_heartrate,
-        sortFuncInfo === 'BPM'
+        sortFuncInfo === HEART_RATE_COLUMN_TITLE
       );
     };
     const sortRunTimeFunc: SortFunc = (a, b) => {
       const aTotalSeconds = convertMovingTime2Sec(a.moving_time);
       const bTotalSeconds = convertMovingTime2Sec(b.moving_time);
-      return sortFuncInfo === 'Time'
+      return sortFuncInfo === TIME_COLUMN_TITLE
         ? aTotalSeconds - bTotalSeconds
         : bTotalSeconds - aTotalSeconds;
     };
     const sortDateFuncClick =
-      sortFuncInfo === 'Date' ? sortDateFuncReverse : sortDateFunc;
+      sortFuncInfo === DATE_COLUMN_TITLE ? sortDateFuncReverse : sortDateFunc;
 
     const sortFuncMap = new Map([
       [DIST_UNIT, sortKMFunc],
-      ['Elev', sortElevationGainFunc],
+      [ELEVATION_COLUMN_TITLE, sortElevationGainFunc],
       [primaryMetricLabel, sortPrimaryMetricFunc],
-      ['BPM', sortBPMFunc],
-      ['Time', sortRunTimeFunc],
-      ['Date', sortDateFuncClick],
+      [HEART_RATE_COLUMN_TITLE, sortBPMFunc],
+      [TIME_COLUMN_TITLE, sortRunTimeFunc],
+      [DATE_COLUMN_TITLE, sortDateFuncClick],
     ]);
 
     if (!SHOW_ELEVATION_GAIN) {
-      sortFuncMap.delete('Elev');
+      sortFuncMap.delete(ELEVATION_COLUMN_TITLE);
     }
 
     return sortFuncMap;
@@ -124,7 +133,7 @@ const RunTable = ({
       <table className={styles.runTable} cellSpacing="0" cellPadding="0">
         <thead>
           <tr>
-            <th />
+            <th>{IS_CHINESE ? '活动' : 'Activity'}</th>
             {Array.from(sortFunctions.keys()).map((k) => (
               <th key={k} data-sort-key={k} onClick={handleClick}>
                 {k}

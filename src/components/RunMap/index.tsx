@@ -148,7 +148,9 @@ const RunMap = ({
       const handleStyleError = (e: any) => {
         console.error('❌ Map style failed to load:', e);
         setMapError(
-          'Map tiles failed to load. Please check your internet connection.'
+          IS_CHINESE
+            ? '地图加载失败，请检查网络连接。'
+            : 'Map tiles failed to load. Please check your internet connection.'
         );
 
         if (MAP_TILE_VENDOR === 'mapcn') {
@@ -443,13 +445,15 @@ const RunMap = ({
       {mapError && (
         <div className={styles.mapErrorNotification}>
           <span>⚠️ {mapError}</span>
-          <button onClick={() => window.location.reload()}>Reload Page</button>
+          <button onClick={() => window.location.reload()}>
+            {IS_CHINESE ? '重新加载' : 'Reload Page'}
+          </button>
           <a
             href="https://github.com/yihong0618/running_page#map-tiles-customization"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Troubleshooting Guide
+            {IS_CHINESE ? '排障指南' : 'Troubleshooting Guide'}
           </a>
         </div>
       )}

@@ -1,28 +1,18 @@
 import ActivityList from '@/components/ActivityList';
-import { Helmet } from 'react-helmet-async';
 import { useTheme } from '@/hooks/useTheme';
 import { useEffect } from 'react';
+import { IS_CHINESE } from '@/utils/const';
 
 const HomePage = () => {
-  // Use the theme hook to get the current theme
   const { theme } = useTheme();
 
-  // Apply theme changes to the document when theme changes
   useEffect(() => {
-    const htmlElement = document.documentElement;
-    // Set explicit theme attribute
-    htmlElement.setAttribute('data-theme', theme);
+    document.documentElement.lang = IS_CHINESE ? 'zh-CN' : 'en';
+    document.documentElement.setAttribute('data-theme', theme);
+    document.title = IS_CHINESE ? '运动汇总' : 'Activity Summary';
   }, [theme]);
 
-  return (
-    <>
-      <Helmet>
-        {/* Set HTML attributes including theme */}
-        <html lang="en" data-theme={theme} />
-      </Helmet>
-      <ActivityList />
-    </>
-  );
+  return <ActivityList />;
 };
 
 export default HomePage;

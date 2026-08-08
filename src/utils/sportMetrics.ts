@@ -23,10 +23,10 @@ const metricsMode: SportMetricsMode =
 const METRIC_LABELS = {
   pace: IS_CHINESE ? '配速' : 'Pace',
   speed: IS_CHINESE ? '速度' : 'Speed',
-  metric: IS_CHINESE ? '指标' : 'Metric',
+  metric: IS_CHINESE ? '速度' : 'Speed',
   avgPace: IS_CHINESE ? '平均配速' : 'Avg Pace',
   avgSpeed: IS_CHINESE ? '平均速度' : 'Avg Speed',
-  avgMetric: IS_CHINESE ? '平均指标' : 'Avg Metric',
+  avgMetric: IS_CHINESE ? '平均速度' : 'Avg Speed',
 };
 
 const isValidSpeed = (speed?: number | null): speed is number =>

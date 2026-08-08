@@ -10,6 +10,13 @@
   position: relative;
 }
 
+@media only screen and (max-width: 768px) {
+  .themeButton {
+    width: 36px;
+    height: 36px;
+  }
+}
+
 .themeButton:hover {
   background-color: var(--color-run-row-hover-background);
 }

@@ -3,6 +3,8 @@ import { useState } from 'react';
 import useSiteMetadata from '@/hooks/useSiteMetadata';
 import { useTheme, Theme } from '@/hooks/useTheme';
 import styles from './style.module.css';
+import { IS_CHINESE } from '@/utils/const';
+import LanguageToggle from '@/components/LanguageToggle';
 
 const Header = () => {
   const { logo, siteUrl, navLinks } = useSiteMetadata();
@@ -59,6 +61,15 @@ const Header = () => {
   };
 
   const currentIcon = icons[currentIconIndex];
+  const nextTheme = icons[(currentIconIndex + 1) % icons.length].id;
+  const themeLabel =
+    nextTheme === 'dark'
+      ? IS_CHINESE
+        ? '切换到深色主题'
+        : 'Switch to dark theme'
+      : IS_CHINESE
+        ? '切换到浅色主题'
+        : 'Switch to light theme';
 
   return (
     <>
@@ -82,18 +93,21 @@ const Header = () => {
             <a
               key={i}
               href={n.url}
-              className="mr-3 text-lg lg:mr-4 lg:text-base"
+              className="mr-2 text-sm lg:mr-4 lg:text-base"
             >
               {n.name}
             </a>
           ))}
-          <div className="ml-4 flex items-center space-x-2">
+          <div className="ml-2 flex items-center space-x-1 lg:ml-4 lg:space-x-2">
+            <LanguageToggle
+              className={`${styles.themeButton} ${styles.themeButtonActive}`}
+            />
             <button
               type="button"
               onClick={handleToggle}
               className={`${styles.themeButton} ${styles.themeButtonActive}`}
-              aria-label={`Switch to ${currentIcon.id} theme`}
-              title={`Switch to ${currentIcon.id} theme`}
+              aria-label={themeLabel}
+              title={themeLabel}
             >
               <div className={styles.iconWrapper}>{currentIcon.svg}</div>
             </button>

@@ -1,5 +1,6 @@
 import useActivities from '@/hooks/useActivities';
 import styles from './style.module.css';
+import { IS_CHINESE } from '@/utils/const';
 
 const RunMapButtons = ({
   changeYear,
@@ -24,7 +25,7 @@ const RunMapButtons = ({
             changeYear(year);
           }}
         >
-          {year}
+          {year === 'Total' && IS_CHINESE ? '全部' : year}
         </li>
       ))}
     </ul>

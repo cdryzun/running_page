@@ -1,5 +1,6 @@
 import Stat from '@/components/Stat';
 import useActivities from '@/hooks/useActivities';
+import { IS_CHINESE } from '@/utils/const';
 
 const PeriodStat = ({ onClick }: { onClick: (_period: string) => void }) => {
   const { runPeriod } = useActivities();
@@ -13,7 +14,9 @@ const PeriodStat = ({ onClick }: { onClick: (_period: string) => void }) => {
           <Stat
             key={period}
             value={period}
-            description={` ${times} Activities`}
+            description={
+              IS_CHINESE ? ` ${times} 次活动` : ` ${times} activities`
+            }
             citySize={3}
             onClick={() => onClick(period)}
           />
