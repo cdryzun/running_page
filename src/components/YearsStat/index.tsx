@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import YearStat from '@/components/YearStat';
+import YearCharts from '@/components/YearCharts';
 import useActivities from '@/hooks/useActivities';
 import { INFO_MESSAGE, type SportTypeFilter } from '@/utils/const';
 
@@ -31,6 +32,7 @@ const YearsStat = ({
   // for short solution need to refactor
   return (
     <div className="w-full pb-6 lg:pb-16 lg:pr-16">
+      <YearCharts year={year} />
       <section className="pb-0">
         <p className="leading-relaxed">
           {infoMessage}
@@ -44,7 +46,6 @@ const YearsStat = ({
           year={yearItem}
           onClick={onClick}
           sportType={sportType}
-          showCharts={yearItem === year && yearItem !== 'Total'}
         />
       ))}
     </div>

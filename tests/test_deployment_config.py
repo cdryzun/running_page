@@ -107,6 +107,24 @@ class DataSyncConfigTest(unittest.TestCase):
             "Both Docker month-of-life commands must use 1999-10",
         )
 
+    def test_year_charts_are_generated_in_both_languages(self):
+        content = DATA_SYNC_WORKFLOW.read_text(encoding="utf-8")
+        self.assertRegex(
+            content,
+            r"--type circular[^\n]*--language zh_CN[^\n]*--output-suffix _zh",
+            "Circular year charts must include a deterministic Chinese variant",
+        )
+        self.assertRegex(
+            content,
+            r"--type github[^\n]*--generate-all-years[^\n]*--language zh_CN[^\n]*--output-suffix _zh",
+            "GitHub-style year charts must include a deterministic Chinese variant",
+        )
+        self.assertGreaterEqual(
+            content.count("--generate-all-years"),
+            2,
+            "Both English and Chinese GitHub-style year charts must be regenerated",
+        )
+
 
 class SecretLeakageTest(unittest.TestCase):
     """Ensure no plaintext Alibaba Cloud credentials leak into the repo."""

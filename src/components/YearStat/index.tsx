@@ -1,11 +1,7 @@
-import { lazy, Suspense } from 'react';
 import Stat from '@/components/Stat';
 import useActivities from '@/hooks/useActivities';
-import { yearStats, githubYearStats } from '@assets/index';
-import { loadSvgComponent } from '@/utils/svgUtils';
 import {
   IS_CHINESE,
-  LOADING_TEXT,
   SHOW_ELEVATION_GAIN,
   type SportTypeFilter,
 } from '@/utils/const';
@@ -30,19 +26,12 @@ const YearStat = ({
   year,
   onClick,
   sportType = 'all',
-  showCharts = false,
 }: {
   year: string;
   onClick: (_year: string) => void;
   sportType?: SportTypeFilter;
-  showCharts?: boolean;
 }) => {
   let { activities: runs, years } = useActivities();
-  // lazy Component
-  const YearSVG = lazy(() => loadSvgComponent(yearStats, `./year_${year}.svg`));
-  const GithubYearSVG = lazy(() =>
-    loadSvgComponent(githubYearStats, `./github_${year}.svg`)
-  );
 
   if (years.includes(year)) {
     runs = runs.filter((run) => run.start_date_local.slice(0, 4) === year);
@@ -289,24 +278,6 @@ const YearStat = ({
           />
         )}
       </section>
-      {showCharts && year !== 'Total' && (
-        <div
-          className="h-72 overflow-hidden lg:h-[32rem]"
-          role="region"
-          aria-label={IS_CHINESE ? '年度图表' : 'Year charts'}
-        >
-          <Suspense
-            fallback={
-              <div className="flex h-full items-center justify-center">
-                {LOADING_TEXT}
-              </div>
-            }
-          >
-            <YearSVG className="year-svg block h-2/3 w-full border-0 p-0" />
-            <GithubYearSVG className="github-year-svg block h-1/3 w-full border-0 p-0" />
-          </Suspense>
-        </div>
-      )}
       <hr className="my-4 lg:my-8" />
     </div>
   );

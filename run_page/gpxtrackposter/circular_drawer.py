@@ -154,7 +154,9 @@ class CircularDrawer(TracksDrawer):
                 )
                 dr.add(path)
                 tpath = svgwrite.text.TextPath(
-                    path, date.strftime("%B"), startOffset=(0.5 * r3 * (a3 - a1))
+                    path,
+                    self.poster.month_name(date.month),
+                    startOffset=(0.5 * r3 * (a3 - a1)),
                 )
                 text = dr.text(
                     "",
