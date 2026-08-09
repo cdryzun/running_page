@@ -1,10 +1,10 @@
 export type Language = 'zh-CN' | 'en';
 
-export const DEFAULT_LANGUAGE: Language = 'zh-CN';
+export const DEFAULT_LANGUAGE: Language = 'en';
 export const LANGUAGE_STORAGE_KEY = 'language';
 
 export const resolveLanguage = (value: string | null): Language =>
-  value === 'en' ? 'en' : DEFAULT_LANGUAGE;
+  value === 'zh-CN' ? 'zh-CN' : DEFAULT_LANGUAGE;
 
 export const getStoredLanguage = (): Language => {
   if (typeof window === 'undefined') return DEFAULT_LANGUAGE;

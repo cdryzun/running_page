@@ -24,7 +24,7 @@ vi.mock('@/utils/svgUtils', () => ({
 
 describe('YearCharts', () => {
   beforeEach(() => {
-    window.localStorage.setItem('language', 'zh-CN');
+    window.localStorage.setItem('language', 'en');
     vi.clearAllMocks();
   });
 
@@ -42,7 +42,7 @@ describe('YearCharts', () => {
   it('keeps both charts left-aligned inside one fixed slot', async () => {
     render(<YearCharts year="2026" />);
 
-    const slot = screen.getByRole('region', { name: '年度图表' });
+    const slot = screen.getByRole('region', { name: 'Year charts' });
     expect(slot).toHaveClass(
       'flex',
       'flex-col',
@@ -78,7 +78,7 @@ describe('YearCharts', () => {
 
   it('does not change layout on pointer movement and omits Total', async () => {
     const { rerender } = render(<YearCharts year="2026" />);
-    const slot = screen.getByRole('region', { name: '年度图表' });
+    const slot = screen.getByRole('region', { name: 'Year charts' });
     await within(slot).findByTestId('year-chart');
     const yearChart = within(slot).getByTestId('year-chart');
 
@@ -90,9 +90,9 @@ describe('YearCharts', () => {
     fireEvent.mouseOver(slot);
     fireEvent.mouseOut(slot);
 
-    expect(screen.getByRole('region', { name: '年度图表' })).toBe(slot);
+    expect(screen.getByRole('region', { name: 'Year charts' })).toBe(slot);
 
     rerender(<YearCharts year="Total" />);
-    expect(screen.queryByRole('region', { name: '年度图表' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Year charts' })).toBeNull();
   });
 });

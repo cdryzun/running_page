@@ -28,9 +28,13 @@ import { useThemeChangeCounter } from '@/hooks/useTheme';
 
 const Index = () => {
   const { siteTitle, siteUrl } = useSiteMetadata();
-  const { activities, thisYear } = useActivities();
+  const { activities, years, thisYear } = useActivities();
   const themeChangeCounter = useThemeChangeCounter();
-  const [year, setYear] = useState('Total');
+  const currentYear = new Date().getFullYear().toString();
+  const initialYear = years.includes(currentYear)
+    ? currentYear
+    : thisYear || 'Total';
+  const [year, setYear] = useState(initialYear);
   const [sportType, setSportType] = useState<SportTypeFilter>('all');
   const [runIndex, setRunIndex] = useState(-1);
   const [title, setTitle] = useState('');
@@ -41,7 +45,7 @@ const Index = () => {
   const [currentFilter, setCurrentFilter] = useState<{
     item: string;
     func: (_run: Activity, _value: string) => boolean;
-  }>({ item: 'Total', func: filterYearRuns });
+  }>({ item: initialYear, func: filterYearRuns });
 
   // State to track if we're showing a single run from URL hash
   const [singleRunId, setSingleRunId] = useState<number | null>(null);
