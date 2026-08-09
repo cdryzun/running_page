@@ -159,16 +159,16 @@ def main():
         dest="special_distance",
         metavar="DISTANCE",
         type=float,
-        default=10.0,
-        help="Special Distance1 by km and color with the special_color",
+        default=None,
+        help="Override the yellow distance for every sport; requires --special-distance2.",
     )
     args_parser.add_argument(
         "--special-distance2",
         dest="special_distance2",
         metavar="DISTANCE",
         type=float,
-        default=20.0,
-        help="Special Distance2 by km and corlor with the special_color2",
+        default=None,
+        help="Override the red distance for every sport; requires --special-distance.",
     )
     args_parser.add_argument(
         "--min-distance",
@@ -223,6 +223,10 @@ def main():
     args = args_parser.parse_args()
     if not re.fullmatch(r"[A-Za-z0-9_-]*", args.output_suffix):
         raise ParameterError(f"Bad output suffix: {args.output_suffix}")
+    if (args.special_distance is None) != (args.special_distance2 is None):
+        raise ParameterError(
+            "--special-distance and --special-distance2 must be provided together"
+        )
 
     for _, drawer in drawers.items():
         drawer.fetch_args(args)
@@ -271,10 +275,12 @@ def main():
     else:
         p.title = p.trans("MY TRACKS")
 
-    p.special_distance = {
-        "special_distance": args.special_distance,
-        "special_distance2": args.special_distance2,
-    }
+    p.use_sport_specific_distances = args.special_distance is None
+    if not p.use_sport_specific_distances:
+        p.special_distance = {
+            "special_distance": args.special_distance,
+            "special_distance2": args.special_distance2,
+        }
 
     p.colors = {
         "background": args.background_color,

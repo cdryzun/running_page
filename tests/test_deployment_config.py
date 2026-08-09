@@ -125,6 +125,36 @@ class DataSyncConfigTest(unittest.TestCase):
             "Both English and Chinese GitHub-style year charts must be regenerated",
         )
 
+    def test_generated_charts_use_sport_specific_distance_defaults(self):
+        commands = [
+            line.strip()
+            for line in DATA_SYNC_WORKFLOW.read_text(encoding="utf-8").splitlines()
+            if line.strip().startswith("python run_page/gen_svg.py")
+        ]
+
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertNotIn(
+                    "--special-distance",
+                    command,
+                    "Active SVG generation commands must not force one threshold across sports",
+                )
+
+    def test_generated_charts_configure_both_special_colors(self):
+        commands = [
+            line.strip()
+            for line in DATA_SYNC_WORKFLOW.read_text(encoding="utf-8").splitlines()
+            if line.strip().startswith("python run_page/gen_svg.py")
+        ]
+
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertIn(
+                    "--special-color2",
+                    command,
+                    "Every generated chart must distinguish yellow and red grades",
+                )
+
 
 class SecretLeakageTest(unittest.TestCase):
     """Ensure no plaintext Alibaba Cloud credentials leak into the repo."""

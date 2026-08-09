@@ -8,7 +8,7 @@ from datetime import datetime
 import pytz
 import svgwrite
 
-from .utils import format_float
+from .utils import format_float, get_normalized_sport_type
 from .value_range import ValueRange
 from .xy import XY
 from .year_range import YearRange
@@ -73,6 +73,13 @@ _CHINESE_MONTH_NAMES = (
     "十二月",
 )
 
+_SPORT_SPECIAL_DISTANCES_KM = {
+    "cycling": (50.0, 100.0),
+    "running": (10.0, 20.0),
+    "hiking": (10.0, 20.0),
+}
+_DEFAULT_SPECIAL_DISTANCES_KM = (20.0, 50.0)
+
 
 class Poster:
     """Create a poster from track data.
@@ -112,7 +119,11 @@ class Poster:
             "special": "#FFFF00",
             "track": "#4DD2FF",
         }
-        self.special_distance = {"special_distance": 10, "special_distance2": 20}
+        self.special_distance = {
+            "special_distance": _DEFAULT_SPECIAL_DISTANCES_KM[0],
+            "special_distance2": _DEFAULT_SPECIAL_DISTANCES_KM[1],
+        }
+        self.use_sport_specific_distances = True
         self.width = 200
         self.height = 300
         self.years = None
@@ -159,6 +170,62 @@ class Poster:
 
     def year_title(self, year):
         return f"{year} {self.trans('Running')}"
+
+    def special_distance_thresholds(self, sport_type):
+        if not self.use_sport_specific_distances:
+            return (
+                self.special_distance["special_distance"],
+                self.special_distance["special_distance2"],
+            )
+
+        normalized_type = str(get_normalized_sport_type(sport_type) or "").lower()
+        if normalized_type == "walking":
+            normalized_type = "hiking"
+        return _SPORT_SPECIAL_DISTANCES_KM.get(
+            normalized_type, _DEFAULT_SPECIAL_DISTANCES_KM
+        )
+
+    def grade_distance(self, length_meters, sport_type):
+        distance = (
+            float(length_meters or 0) / 1000
+            if self.use_sport_specific_distances
+            else self.m2u(length_meters or 0)
+        )
+        yellow_distance, red_distance = self.special_distance_thresholds(sport_type)
+        if distance >= red_distance:
+            return 2
+        if distance >= yellow_distance:
+            return 1
+        return 0
+
+    def grade_track(self, track):
+        return self.grade_distance(track.length, track.type)
+
+    def day_grade(self, tracks):
+        if not self.use_sport_specific_distances:
+            return self.grade_distance(sum(track.length for track in tracks), None)
+        return max((self.grade_track(track) for track in tracks), default=0)
+
+    def special_distance_legend_labels(self):
+        if not self.use_sport_specific_distances:
+            yellow_distance, red_distance = self.special_distance_thresholds(None)
+            return (
+                f"{self.trans('Over')} {yellow_distance:g} {self.u()}",
+                f"{self.trans('Over')} {red_distance:g} {self.u()}",
+            )
+
+        cycling = _SPORT_SPECIAL_DISTANCES_KM["cycling"]
+        running = _SPORT_SPECIAL_DISTANCES_KM["running"]
+        default = _DEFAULT_SPECIAL_DISTANCES_KM
+        if self.is_chinese:
+            return (
+                f"骑{cycling[0]:g} 跑/徒{running[0]:g} 其他{default[0]:g} km",
+                f"骑{cycling[1]:g} 跑/徒{running[1]:g} 其他{default[1]:g} km",
+            )
+        return (
+            f"Bike{cycling[0]:g} Run/Hike{running[0]:g} Other{default[0]:g} km",
+            f"Bike{cycling[1]:g} Run/Hike{running[1]:g} Other{default[1]:g} km",
+        )
 
     def set_tracks(self, tracks):
         """Associate the set of tracks with this poster.
@@ -238,8 +305,7 @@ class Poster:
         value_style = "font-size:9px; font-family:Arial"
         small_value_style = "font-size:3px; font-family:Arial"
 
-        special_distance1 = self.special_distance["special_distance"]
-        special_distance2 = self.special_distance["special_distance2"]
+        special_label1, special_label2 = self.special_distance_legend_labels()
 
         (
             total_length,
@@ -281,7 +347,7 @@ class Poster:
 
             d.add(
                 d.text(
-                    f"{self.trans('Over')} {special_distance1:.1f} {self.u()}",
+                    special_label1,
                     insert=(70, self.height - 14.5),
                     fill=text_color,
                     style=small_value_style,
@@ -294,7 +360,7 @@ class Poster:
 
             d.add(
                 d.text(
-                    f"{self.trans('Over')} {special_distance2:.1f} {self.u()}",
+                    special_label2,
                     insert=(70, self.height - 10.5),
                     fill=text_color,
                     style=small_value_style,
