@@ -59,15 +59,15 @@ class MonthOfLifeDrawer(TracksDrawer):
         for idx in range(total_months):
             y = self.birth_year + (self.birth_month - 1 + idx) // 12
             m = (self.birth_month - 1 + idx) % 12 + 1
-            # sum distances for this month
-            dist = 0
-            for tr in self.poster.tracks:
-                dt = tr.start_time_local
-                if dt.year == y and dt.month == m:
-                    dist += tr.length
-            month_distances.append((y, m, dist))
+            month_tracks = []
+            for track in self.poster.tracks:
+                date = track.start_time_local
+                if date.year == y and date.month == m:
+                    month_tracks.append(track)
+            distance = sum(track.length for track in month_tracks)
+            month_distances.append((y, m, distance, month_tracks))
         # draw circles
-        for idx, (y, m, dist) in enumerate(month_distances):
+        for idx, (y, m, dist, month_tracks) in enumerate(month_distances):
             x_idx = idx % cols
             y_idx = idx // cols
             cx = offset.x + spacing_x * x_idx + spacing_x / 2
@@ -81,19 +81,16 @@ class MonthOfLifeDrawer(TracksDrawer):
             age = (y - self.birth_year) + ((m - self.birth_month) / 12)
             title = f"{y}-{m:02d} ({int(age)} years old)"
             if dist > 0:
-                # Set color based on special distance ranges and generate gradients or use special colors
-                sd1 = self.poster.special_distance["special_distance"]
-                sd2 = self.poster.special_distance["special_distance2"]
-                dist_units = self.poster.m2u(dist)
-                if sd1 < dist_units < sd2:
-                    color = self.color(self.poster.length_range_by_date, dist, True)
-                elif dist_units >= sd2:
+                grade = self.poster.day_grade(month_tracks)
+                if grade == 2:
                     color = self.poster.colors.get(
                         "special2"
                     ) or self.poster.colors.get("special")
+                elif grade == 1:
+                    color = self.poster.colors["special"]
                 else:
                     color = self.color(self.poster.length_range_by_date, dist, False)
-                val = format_float(dist_units)
+                val = format_float(self.poster.m2u(dist))
                 title = f"{title} {val} {self.poster.u()}"
             circle = dr.circle(center=(cx, cy), r=radius, fill=color)
             circle.set_desc(title=title)

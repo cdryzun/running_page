@@ -347,11 +347,11 @@ class YearSummaryDrawer(TracksDrawer):
     ):
         """Draw the monthly activity grid - 12 columns (months), 31 rows (days)"""
         # Group tracks by month and day
-        month_data = defaultdict(lambda: defaultdict(float))
-        for t in tracks:
-            month = t.start_time_local.month
-            day = t.start_time_local.day
-            month_data[month][day] += self.poster.m2u(t.length)
+        month_data = defaultdict(lambda: defaultdict(list))
+        for track in tracks:
+            month = track.start_time_local.month
+            day = track.start_time_local.day
+            month_data[month][day].append(track)
 
         # Grid parameters - 12 columns (months), 31 rows (days)
         cols = 12  # months
@@ -365,10 +365,9 @@ class YearSummaryDrawer(TracksDrawer):
         # Find max distance for color scaling
         max_dist = 1
         for month_days in month_data.values():
-            for dist in month_days.values():
-                max_dist = max(max_dist, dist)
-
-        special_distance = self.poster.special_distance.get("special_distance", 10)
+            for day_tracks in month_days.values():
+                distance = sum(self.poster.m2u(track.length) for track in day_tracks)
+                max_dist = max(max_dist, distance)
 
         # Draw dots - each column is a month, each row is a day
         for month in range(1, 13):
@@ -383,15 +382,19 @@ class YearSummaryDrawer(TracksDrawer):
                 cx = x_start + (month - 1) * spacing_x + spacing_x / 2
                 cy = y_start + (day - 1) * spacing_y + spacing_y / 2
 
-                dist = month_data[month].get(day, 0)
+                day_tracks = month_data[month].get(day, ())
+                dist = sum(self.poster.m2u(track.length) for track in day_tracks)
 
                 if dist > 0:
-                    # Activity day - color based on distance
-                    if dist >= special_distance:
+                    grade = self.poster.day_grade(day_tracks)
+                    if grade == 2:
+                        color = self.poster.colors.get(
+                            "special2"
+                        ) or self.poster.colors.get("special")
+                    elif grade == 1:
                         color = special_color
                     else:
-                        # Interpolate between dim and track color based on distance
-                        intensity = min(dist / special_distance, 1.0)
+                        intensity = min(dist / max_dist, 1.0)
                         color = self._interpolate_color(
                             dim_color, track_color, intensity
                         )

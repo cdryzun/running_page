@@ -228,9 +228,16 @@ class CircularDrawer(TracksDrawer):
         rr: ValueRange,
         center: XY,
     ):
-        length = sum([t.length for t in tracks])
-        has_special = len([t for t in tracks if t.special]) > 0
-        color = self.color(self.poster.length_range_by_date, length, has_special)
+        length = sum(t.length for t in tracks)
+        grade = self.poster.day_grade(tracks)
+        if grade == 2:
+            color = self.poster.colors.get("special2") or self.poster.colors.get(
+                "special"
+            )
+        elif grade == 1 or any(track.special for track in tracks):
+            color = self.poster.colors["special"]
+        else:
+            color = self.color(self.poster.length_range_by_date, length, False)
         r1 = rr.lower()
         r2 = (
             rr.lower()
