@@ -93,6 +93,9 @@ jobs:
       - name: Lint (eslint, no --fix)
         run: npx eslint src --ext .ts,.tsx
 
+      - name: Run frontend unit tests
+        run: pnpm run test:unit
+
       - name: Build SPA (root domain, no PATH_PREFIX)
         run: pnpm build
 

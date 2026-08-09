@@ -41,7 +41,10 @@
     "lint": "eslint src --ext .ts,.tsx --fix",
     "check": "prettier --check \"src/main.tsx\" \"src/**/*.{css,module.css,json,ts,tsx}\" \"tests/*.test.mjs\" \"*.{yaml,json,ts}\"",
     "format": "prettier --write \"src/main.tsx\" \"src/**/*.{css,module.css,json,ts,tsx}\" \"tests/*.test.mjs\" \"*.{yaml,json,ts}\"",
-    "test:unit": "node --test tests/*.test.mjs",
+    "test:node": "node --test tests/*.test.mjs",
+    "test:component": "vitest run",
+    "test:component:coverage": "vitest run --coverage",
+    "test:unit": "pnpm run test:node && pnpm run test:component",
     "ci": "pnpm run format && pnpm run lint && pnpm run test:unit && pnpm run build"
   },
   "engineStrict": true,
@@ -57,6 +60,8 @@
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.32.0",
     "@tailwindcss/vite": "^4.1.11",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
     "@types/geojson": "^7946.0.14",
     "@types/mapbox__polyline": "^1.0.2",
     "@types/node": "^24.2.1",
@@ -65,16 +70,19 @@
     "@types/react-dom": "^19.1.7",
     "@typescript-eslint/eslint-plugin": "^8.37.0",
     "@typescript-eslint/parser": "^8.37.0",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^9.31.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.1.0",
     "globals": "^16.3.0",
+    "jsdom": "^30.0.1",
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.13",
     "tailwindcss": "^4.1.10",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vitest": "^4.1.10"
   },
   "pnpm": {
     "overrides": {

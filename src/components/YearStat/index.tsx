@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react';
 import Stat from '@/components/Stat';
 import useActivities from '@/hooks/useActivities';
-import useHover from '@/hooks/useHover';
 import { yearStats, githubYearStats } from '@assets/index';
 import { loadSvgComponent } from '@/utils/svgUtils';
 import {
@@ -31,14 +30,14 @@ const YearStat = ({
   year,
   onClick,
   sportType = 'all',
+  showCharts = false,
 }: {
   year: string;
   onClick: (_year: string) => void;
   sportType?: SportTypeFilter;
+  showCharts?: boolean;
 }) => {
   let { activities: runs, years } = useActivities();
-  // for hover
-  const [hovered, eventHandlers] = useHover();
   // lazy Component
   const YearSVG = lazy(() => loadSvgComponent(yearStats, `./year_${year}.svg`));
   const GithubYearSVG = lazy(() =>
@@ -180,7 +179,7 @@ const YearStat = ({
     hasLowestElevation;
   return (
     <div className="cursor-pointer" onClick={() => onClick(year)}>
-      <section className="grid grid-cols-2 gap-x-4 lg:block" {...eventHandlers}>
+      <section className="grid grid-cols-2 gap-x-4 lg:block">
         <Stat
           value={year === 'Total' && IS_CHINESE ? '全部' : year}
           description={IS_CHINESE ? ' 概览' : ' Journey'}
@@ -290,11 +289,23 @@ const YearStat = ({
           />
         )}
       </section>
-      {year !== 'Total' && hovered && (
-        <Suspense fallback={LOADING_TEXT}>
-          <YearSVG className="year-svg my-4 h-4/6 w-4/6 border-0 p-0" />
-          <GithubYearSVG className="github-year-svg my-4 h-auto w-full border-0 p-0" />
-        </Suspense>
+      {showCharts && year !== 'Total' && (
+        <div
+          className="h-72 overflow-hidden lg:h-[32rem]"
+          role="region"
+          aria-label={IS_CHINESE ? '年度图表' : 'Year charts'}
+        >
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center">
+                {LOADING_TEXT}
+              </div>
+            }
+          >
+            <YearSVG className="year-svg block h-2/3 w-full border-0 p-0" />
+            <GithubYearSVG className="github-year-svg block h-1/3 w-full border-0 p-0" />
+          </Suspense>
+        </div>
       )}
       <hr className="my-4 lg:my-8" />
     </div>
