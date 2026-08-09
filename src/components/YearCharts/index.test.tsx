@@ -44,6 +44,9 @@ describe('YearCharts', () => {
 
     const slot = screen.getByRole('region', { name: '年度图表' });
     expect(slot).toHaveClass(
+      'flex',
+      'flex-col',
+      'gap-0',
       'h-72',
       'lg:h-[32rem]',
       'overflow-hidden',
@@ -57,8 +60,15 @@ describe('YearCharts', () => {
 
     expect(yearChart.parentElement).toBe(slot);
     expect(githubYearChart.parentElement).toBe(slot);
-    expect(yearChart).toHaveClass('block', 'h-2/3', 'w-full');
-    expect(githubYearChart).toHaveClass('block', 'h-1/3', 'w-full');
+    expect(yearChart).toHaveClass('block', 'min-h-0', 'flex-[200]', 'w-full');
+    expect(githubYearChart).toHaveClass(
+      'block',
+      'min-h-0',
+      'flex-[98]',
+      'w-full'
+    );
+    expect(yearChart).not.toHaveClass('h-2/3');
+    expect(githubYearChart).not.toHaveClass('h-1/3');
     expect(yearChart).toHaveAttribute('preserveAspectRatio', 'xMinYMid meet');
     expect(githubYearChart).toHaveAttribute(
       'preserveAspectRatio',

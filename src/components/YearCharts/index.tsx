@@ -30,7 +30,7 @@ const YearCharts: FC<YearChartsProps> = ({ year }) => {
 
   return (
     <div
-      className="mb-4 h-72 overflow-hidden lg:mb-8 lg:h-[32rem]"
+      className="mb-4 flex h-72 flex-col gap-0 overflow-hidden lg:mb-8 lg:h-[32rem]"
       role="region"
       aria-label={IS_CHINESE ? '年度图表' : 'Year charts'}
     >
@@ -42,11 +42,11 @@ const YearCharts: FC<YearChartsProps> = ({ year }) => {
         }
       >
         <YearSVG
-          className="year-svg block h-2/3 w-full border-0 p-0"
+          className="year-svg block min-h-0 w-full flex-[200] border-0 p-0"
           preserveAspectRatio="xMinYMid meet"
         />
         <GithubYearSVG
-          className="github-year-svg block h-1/3 w-full border-0 p-0"
+          className="github-year-svg block min-h-0 w-full flex-[98] border-0 p-0"
           preserveAspectRatio="xMinYMid meet"
         />
       </Suspense>
