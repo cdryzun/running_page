@@ -61,7 +61,7 @@ const statPairs = (container: HTMLElement): string[][] =>
 
 describe('YearStat charts', () => {
   beforeEach(() => {
-    window.localStorage.setItem('language', 'zh-CN');
+    window.localStorage.setItem('language', 'en');
     activityState.activities = [];
     activityState.years = ['2024', '2025'];
   });
@@ -69,7 +69,7 @@ describe('YearStat charts', () => {
   it('does not mix charts into an individual year summary', () => {
     render(<YearStat year="2025" onClick={vi.fn()} sportType="all" />);
 
-    expect(screen.queryByRole('region', { name: '年度图表' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Year charts' })).toBeNull();
   });
 
   it('places selected-year charts before overview copy and yearly summaries', async () => {
@@ -77,7 +77,7 @@ describe('YearStat charts', () => {
       <YearsStat year="2025" onClick={vi.fn()} sportType="all" />
     );
 
-    const slot = await screen.findByRole('region', { name: '年度图表' });
+    const slot = await screen.findByRole('region', { name: 'Year charts' });
     const wrapper = container.firstElementChild;
     expect(wrapper?.firstElementChild).toBe(slot);
     expect(await within(slot).findByTestId('year-chart')).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe('YearStat charts', () => {
   it('does not show annual charts for the Total overview', () => {
     render(<YearsStat year="Total" onClick={vi.fn()} sportType="all" />);
 
-    expect(screen.queryByRole('region', { name: '年度图表' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Year charts' })).toBeNull();
   });
 
   it('calculates complete metrics and filters them by sport without losing labels', () => {
@@ -144,16 +144,16 @@ describe('YearStat charts', () => {
 
     expect(statPairs(container)).toEqual(
       expect.arrayContaining([
-        ['3', '次活动'],
+        ['3', 'Activities'],
         ['15', 'km'],
-        ['170', '海拔爬升 (m)'],
-        ['140', '海拔下降 (m)'],
-        ['500', '最高海拔 (m)'],
-        ['-20', '最低海拔 (m)'],
-        ['120', '平均心率'],
-        ['150', '平均功率 (W)'],
-        ['170', '加权功率 (W)'],
-        ['500', '最大功率 (W)'],
+        ['170', 'Elevation Gain (m)'],
+        ['140', 'Elevation Loss (m)'],
+        ['500', 'Highest Elev (m)'],
+        ['-20', 'Lowest Elev (m)'],
+        ['120', 'Avg Heart Rate'],
+        ['150', 'Avg Power (W)'],
+        ['170', 'Weighted Power (W)'],
+        ['500', 'Max Power (W)'],
       ])
     );
     fireEvent.click(screen.getByText('2025'));
@@ -162,9 +162,9 @@ describe('YearStat charts', () => {
     rerender(<YearStat year="2025" onClick={onClick} sportType="cycling" />);
     expect(statPairs(container)).toEqual(
       expect.arrayContaining([
-        ['2', '次活动'],
-        ['85', '平均踏频 (rpm)'],
-        ['110', '最大踏频 (rpm)'],
+        ['2', 'Activities'],
+        ['85', 'Avg Cadence (rpm)'],
+        ['110', 'Max Cadence (rpm)'],
       ])
     );
   });

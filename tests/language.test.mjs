@@ -9,6 +9,10 @@ const source = await readFile(
   new URL('../src/utils/language.ts', import.meta.url),
   'utf8'
 );
+const indexHtml = await readFile(
+  new URL('../index.html', import.meta.url),
+  'utf8'
+);
 const { outputText } = ts.transpileModule(source, {
   compilerOptions: {
     module: ts.ModuleKind.ESNext,
@@ -19,11 +23,15 @@ const language = await import(
   `data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`
 );
 
-test('resolveLanguage defaults to Chinese and accepts English', () => {
-  assert.equal(language.resolveLanguage(null), 'zh-CN');
-  assert.equal(language.resolveLanguage('unsupported'), 'zh-CN');
+test('resolveLanguage defaults to English and accepts supported languages', () => {
+  assert.equal(language.resolveLanguage(null), 'en');
+  assert.equal(language.resolveLanguage('unsupported'), 'en');
   assert.equal(language.resolveLanguage('zh-CN'), 'zh-CN');
   assert.equal(language.resolveLanguage('en'), 'en');
+});
+
+test('document shell defaults to English', () => {
+  assert.match(indexHtml, /<html lang="en">/);
 });
 
 test('stored language is persisted and storage failures are safe', () => {
@@ -48,7 +56,7 @@ test('stored language is persisted and storage failures are safe', () => {
       throw new Error('storage unavailable');
     };
 
-    assert.equal(language.getStoredLanguage(), 'zh-CN');
+    assert.equal(language.getStoredLanguage(), 'en');
     assert.equal(language.persistLanguage('en'), false);
   } finally {
     if (originalWindow === undefined) {

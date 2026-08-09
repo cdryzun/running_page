@@ -44,15 +44,15 @@ const ROAD_LABEL_DISPLAY = true;
 // updated on 2024/11/17: privacy mode is set to true by default
 //set to `true` if you want to display only the routes without showing the map.
 const PRIVACY_MODE = false;
-// updated on 2024/11/17: lights are turned off by default
-//set to `false` if you want to make light off as default, only effect when `PRIVACY_MODE` = false
-const LIGHTS_ON = false;
+// Show the base map tiles on initial load.
+// Set to `false` to display routes without the base map by default.
+const LIGHTS_ON = true;
 //set to `true` if you want to show the 'Elevation Gain' column
 const SHOW_ELEVATION_GAIN = false;
 // richer title for the activity types (like garmin style)
 const RICH_TITLE = false;
 
-// Chinese is the default; the header language switch persists the preference.
+// English is the default; the header language switch persists the preference.
 const IS_CHINESE = getStoredLanguage() === 'zh-CN';
 const USE_ANIMATION_FOR_GRID = false;
 const CHINESE_INFO_MESSAGE = (yearLength: number, year: string): string => {
