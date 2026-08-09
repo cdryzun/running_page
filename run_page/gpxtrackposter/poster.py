@@ -13,6 +13,66 @@ from .value_range import ValueRange
 from .xy import XY
 from .year_range import YearRange
 
+_CHINESE_TRANSLATIONS = {
+    "MY TRACKS": "我的运动记录",
+    "Running": "运动记录",
+    "Runner": "运动者",
+    "SPECIAL TRACKS": "特殊记录",
+    "STATISTICS": "统计",
+    "Number": "数量",
+    "Weekly": "每周",
+    "Total": "总计",
+    "Avg": "平均",
+    "Min": "最短",
+    "Max": "最长",
+    "Over": "超过",
+}
+_ENGLISH_MONTH_NAMES = (
+    "",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+)
+_ENGLISH_MONTH_ABBREVIATIONS = (
+    "",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+)
+_CHINESE_MONTH_NAMES = (
+    "",
+    "一月",
+    "二月",
+    "三月",
+    "四月",
+    "五月",
+    "六月",
+    "七月",
+    "八月",
+    "九月",
+    "十月",
+    "十一月",
+    "十二月",
+)
+
 
 class Poster:
     """Create a poster from track data.
@@ -63,22 +123,42 @@ class Poster:
         self.github_style = "align-firstday"
 
     def set_language(self, language):
+        normalized_language = (language or "en").replace("-", "_")
+        self.language = normalized_language
         if language:
             try:
-                locale.setlocale(locale.LC_ALL, f"{language}.utf8")
-            except locale.Error as e:
-                print(f'Cannot set locale to "{language}": {e}')
-                language = None
-                pass
+                locale.setlocale(locale.LC_ALL, f"{normalized_language}.utf8")
+            except locale.Error as error:
+                print(f'Cannot set locale to "{normalized_language}": {error}')
 
-        # Fall-back to NullTranslations, if the specified language translation cannot be found.
-        if language:
-            lang = gettext.translation(
-                "gpxposter", localedir="locale", languages=[language], fallback=True
+        translations = gettext.translation(
+            "gpxposter",
+            localedir="locale",
+            languages=[normalized_language],
+            fallback=True,
+        )
+        fallback_translate = translations.gettext
+        if self.is_chinese:
+            self.trans = lambda message: _CHINESE_TRANSLATIONS.get(
+                message, fallback_translate(message)
             )
         else:
-            lang = gettext.NullTranslations()
-        self.trans = lang.gettext
+            self.trans = fallback_translate
+
+    @property
+    def is_chinese(self):
+        return self.language.lower().startswith("zh_") or self.language.lower() == "zh"
+
+    def month_name(self, month, abbreviated=False):
+        if month < 1 or month > 12:
+            raise ValueError(f"Month must be between 1 and 12, got {month}")
+        if self.is_chinese:
+            return f"{month}月" if abbreviated else _CHINESE_MONTH_NAMES[month]
+        names = _ENGLISH_MONTH_ABBREVIATIONS if abbreviated else _ENGLISH_MONTH_NAMES
+        return names[month]
+
+    def year_title(self, year):
+        return f"{year} {self.trans('Running')}"
 
     def set_tracks(self, tracks):
         """Associate the set of tracks with this poster.
@@ -201,7 +281,7 @@ class Poster:
 
             d.add(
                 d.text(
-                    f"Over {special_distance1:.1f} {self.u()}",
+                    f"{self.trans('Over')} {special_distance1:.1f} {self.u()}",
                     insert=(70, self.height - 14.5),
                     fill=text_color,
                     style=small_value_style,
@@ -214,7 +294,7 @@ class Poster:
 
             d.add(
                 d.text(
-                    f"Over {special_distance2:.1f} {self.u()}",
+                    f"{self.trans('Over')} {special_distance2:.1f} {self.u()}",
                     insert=(70, self.height - 10.5),
                     fill=text_color,
                     style=small_value_style,

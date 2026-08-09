@@ -66,61 +66,28 @@ describe('YearStat charts', () => {
     activityState.years = ['2024', '2025'];
   });
 
-  it('keeps both selected-year charts inside one fixed slot', async () => {
-    render(
-      <YearStat year="2025" onClick={vi.fn()} sportType="all" showCharts />
-    );
+  it('does not mix charts into an individual year summary', () => {
+    render(<YearStat year="2025" onClick={vi.fn()} sportType="all" />);
 
-    const slot = screen.getByRole('region', { name: '年度图表' });
-    expect(slot).toHaveClass('h-72', 'lg:h-[32rem]', 'overflow-hidden');
-    const yearChart = await within(slot).findByTestId('year-chart');
-    const githubYearChart =
-      await within(slot).findByTestId('github-year-chart');
-    expect(yearChart.parentElement).toBe(slot);
-    expect(githubYearChart.parentElement).toBe(slot);
-    expect(yearChart).toHaveClass('block', 'h-2/3', 'w-full');
-    expect(githubYearChart).toHaveClass('block', 'h-1/3', 'w-full');
+    expect(screen.queryByRole('region', { name: '年度图表' })).toBeNull();
   });
 
-  it('does not mount or unmount the selected chart slot on pointer movement', async () => {
+  it('places selected-year charts before overview copy and yearly summaries', async () => {
     const { container } = render(
-      <YearStat year="2025" onClick={vi.fn()} sportType="all" showCharts />
+      <YearsStat year="2025" onClick={vi.fn()} sportType="all" />
     );
-    const section = container.querySelector('section');
-    const slot = screen.getByRole('region', { name: '年度图表' });
-    await within(slot).findByTestId('year-chart');
 
-    fireEvent.mouseOver(section as Element);
-    fireEvent.mouseOut(section as Element);
-
-    expect(screen.getByRole('region', { name: '年度图表' })).toBe(slot);
-    expect(within(slot).getByTestId('year-chart')).toBeInTheDocument();
-    expect(within(slot).getByTestId('github-year-chart')).toBeInTheDocument();
+    const slot = await screen.findByRole('region', { name: '年度图表' });
+    const wrapper = container.firstElementChild;
+    expect(wrapper?.firstElementChild).toBe(slot);
+    expect(await within(slot).findByTestId('year-chart')).toBeInTheDocument();
+    expect(screen.getByText('2025')).toBeInTheDocument();
   });
 
-  it('does not reserve chart space for non-selected or total summaries', () => {
-    const { rerender } = render(
-      <YearStat
-        year="2024"
-        onClick={vi.fn()}
-        sportType="all"
-        showCharts={false}
-      />
-    );
+  it('does not show annual charts for the Total overview', () => {
+    render(<YearsStat year="Total" onClick={vi.fn()} sportType="all" />);
+
     expect(screen.queryByRole('region', { name: '年度图表' })).toBeNull();
-
-    rerender(
-      <YearStat year="Total" onClick={vi.fn()} sportType="all" showCharts />
-    );
-    expect(screen.queryByRole('region', { name: '年度图表' })).toBeNull();
-  });
-
-  it('lets YearsStat reserve exactly one chart slot for the selected year', async () => {
-    render(<YearsStat year="2025" onClick={vi.fn()} sportType="all" />);
-
-    expect(
-      await screen.findAllByRole('region', { name: '年度图表' })
-    ).toHaveLength(1);
   });
 
   it('calculates complete metrics and filters them by sport without losing labels', () => {

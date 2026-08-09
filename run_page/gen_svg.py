@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import re
 import sys
 
 from config import SQL_FILE
@@ -47,6 +48,14 @@ def main():
         type=str,
         default="poster.svg",
         help='Name of generated SVG image file (default: "poster.svg").',
+    )
+    args_parser.add_argument(
+        "--output-suffix",
+        dest="output_suffix",
+        metavar="SUFFIX",
+        type=str,
+        default="",
+        help="Suffix for generated per-year SVG files (default: none).",
     )
     args_parser.add_argument(
         "--language",
@@ -212,6 +221,8 @@ def main():
         drawer.create_args(args_parser)
 
     args = args_parser.parse_args()
+    if not re.fullmatch(r"[A-Za-z0-9_-]*", args.output_suffix):
+        raise ParameterError(f"Bad output suffix: {args.output_suffix}")
 
     for _, drawer in drawers.items():
         drawer.fetch_args(args)
@@ -303,7 +314,8 @@ def main():
             p.years.from_year, p.years.to_year = y, y
             # may be refactor
             p.set_tracks(tracks)
-            p.draw(drawers[args.type], os.path.join(output_dir, f"year_{str(y)}.svg"))
+            output_path = os.path.join(output_dir, f"year_{y}{args.output_suffix}.svg")
+            p.draw(drawers[args.type], output_path)
     elif is_year_summary and args.summary_year is None:
         # Generate year summary for all years when --summary-year is not specified
         years = p.years.all()[:]
@@ -315,25 +327,25 @@ def main():
                 os.path.join(output_dir, f"year_summary_{str(y)}.svg"),
             )
     elif is_github and args.year == "all" and args.generate_all_years:
-        # Generate GitHub heat map for all years when --generate-all-years flag is set
         years = p.years.all()[:]
         output_dir = os.path.dirname(args.output) or "assets"
+        all_tracks = tracks
+        original_title = p.title
         for y in years:
-            p.years.from_year, p.years.to_year = y, y
-            # Single year = height for exactly 1 year row
-            p.height = 55 + 1 * 43
-            # Re-set tracks for this year's data
-            p.set_tracks(tracks)
-            # Use year-specific title if available, otherwise use default
-            year_title = args.title if args.title else f"{y} Running"
-            original_title = p.title
-            p.title = year_title
-            p.draw(
-                drawers[args.type],
-                os.path.join(output_dir, f"github_{str(y)}.svg"),
+            year_tracks = [
+                track for track in all_tracks if track.start_time_local.year == y
+            ]
+            if not year_tracks:
+                continue
+            p.years = None
+            p.set_tracks(year_tracks)
+            p.height = 55 + 43
+            p.title = args.title if args.title else p.year_title(y)
+            output_path = os.path.join(
+                output_dir, f"github_{y}{args.output_suffix}.svg"
             )
-            # Restore original title for next iteration
-            p.title = original_title
+            p.draw(drawers[args.type], output_path)
+        p.title = original_title
     else:
         p.draw(drawers[args.type], args.output)
 

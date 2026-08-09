@@ -95,6 +95,7 @@ export default defineConfig({
       reporter: ['text', 'json-summary'],
       include: [
         'src/components/Stat/index.tsx',
+        'src/components/YearCharts/index.tsx',
         'src/components/YearStat/index.tsx',
         'src/components/YearsStat/index.tsx',
       ],
