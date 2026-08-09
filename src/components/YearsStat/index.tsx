@@ -44,6 +44,7 @@ const YearsStat = ({
           year={yearItem}
           onClick={onClick}
           sportType={sportType}
+          showCharts={yearItem === year && yearItem !== 'Total'}
         />
       ))}
     </div>
