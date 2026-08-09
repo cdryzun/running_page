@@ -18,10 +18,7 @@
 
   .runTable th:first-child,
   .runTable td:first-child {
-    width: 15rem;
-    min-width: 15rem;
-    max-width: 15rem;
-    white-space: normal;
+    min-width: 100px;
   }
 
   .runTable th:last-child,
@@ -112,21 +109,14 @@
   opacity: 0.8;
 }
 
-.activityTitle {
-  display: block;
-  line-height: 1.25;
-}
-
 .rowMeta {
-  margin: 0.25rem 0 0;
+  margin-left: 0.35rem;
   font-size: 0.72rem;
   opacity: 0.86;
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
   align-items: center;
-  gap: 0.3rem 0.7rem;
-  line-height: 1.2;
-  white-space: normal;
+  gap: 0.18rem;
+  vertical-align: middle;
   font-variant-numeric: tabular-nums;
   font-family: var(--font-mono);
 }
@@ -134,9 +124,10 @@
 .metaSlot {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
-  line-height: 1.2;
-  white-space: nowrap;
+  justify-content: flex-start;
+  gap: 0.1rem;
+  min-width: 8ch;
+  line-height: 1;
 }
 
 .metaSlotEstimated {
@@ -144,20 +135,14 @@
 }
 
 .metaIcon {
-  width: 1rem;
+  width: 0.85rem;
   text-align: center;
-  flex: 0 0 1rem;
-  line-height: 1;
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI Symbol',
-    sans-serif;
+  flex: 0 0 0.85rem;
 }
 
 .metaValue {
-  display: inline-block;
-  text-align: left;
   font-variant-numeric: tabular-nums;
+  display: inline-block;
+  min-width: 5.8ch;
+  text-align: left;
 }

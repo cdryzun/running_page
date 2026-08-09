@@ -26,21 +26,12 @@ interface IRunRowProperties {
   setRunIndex: (_ndex: number) => void;
 }
 
-type RowMetaKey = 'gain' | 'loss' | 'power' | 'cadence';
-
 interface RowMetaItem {
-  key: RowMetaKey;
+  key: string;
   icon: string;
   value: string;
   estimated?: boolean;
 }
-
-const ROW_META_LABELS: Record<RowMetaKey, string> = {
-  gain: IS_CHINESE ? '爬升' : 'Elevation gain',
-  loss: IS_CHINESE ? '下降' : 'Elevation loss',
-  power: IS_CHINESE ? '功率' : 'Power',
-  cadence: IS_CHINESE ? '踏频' : 'Cadence',
-};
 
 const RunRow = ({
   elementIndex,
@@ -97,7 +88,7 @@ const RunRow = ({
     ? `${(run.average_cadence as number).toFixed(0)}${cadenceUnit}`
     : '--';
   const addMeta = (
-    key: RowMetaKey,
+    key: string,
     icon: string,
     value: string,
     estimated = false
@@ -106,8 +97,8 @@ const RunRow = ({
   if (normalizedType === 'cycling') {
     addMeta('gain', '↑', elevationGainText, gainEstimated);
     addMeta('loss', '↓', elevationLossText, lossEstimated);
-    addMeta('power', '⚡︎', powerText);
-    addMeta('cadence', '↻', cadenceText);
+    addMeta('power', '⚡', powerText);
+    addMeta('cadence', '⟳', cadenceText);
   } else if (normalizedType === 'hiking') {
     addMeta('gain', '↑', elevationGainText, gainEstimated);
     addMeta('loss', '↓', elevationLossText, lossEstimated);
@@ -119,10 +110,10 @@ const RunRow = ({
       addMeta('loss', '↓', elevationLossText);
     }
     if (hasPower) {
-      addMeta('power', '⚡︎', powerText);
+      addMeta('power', '⚡', powerText);
     }
     if (hasCadence) {
-      addMeta('cadence', '↻', cadenceText);
+      addMeta('cadence', '⟳', cadenceText);
     }
   }
   const handleClick = () => {
@@ -142,35 +133,27 @@ const RunRow = ({
       onClick={handleClick}
     >
       <td>
-        <span className={styles.activityTitle}>{titleForRun(run)}</span>
+        {titleForRun(run)}
         {rowMetaItems.length > 0 && (
           <span className={styles.rowMeta}>
-            {rowMetaItems.map((item) => {
-              const label = ROW_META_LABELS[item.key];
-              const accessibleText = item.estimated
-                ? IS_CHINESE
-                  ? `${label}：${item.value}，估算值（原始上升/下降缺失）`
-                  : `${label}: ${item.value}, estimated because source ascent/descent is missing`
-                : IS_CHINESE
-                  ? `${label}：${item.value}`
-                  : `${label}: ${item.value}`;
-
-              return (
-                <span
-                  key={item.key}
-                  className={`${styles.metaSlot} ${
-                    item.estimated ? styles.metaSlotEstimated : ''
-                  }`}
-                  title={accessibleText}
-                  aria-label={accessibleText}
-                >
-                  <span className={styles.metaIcon} aria-hidden="true">
-                    {item.icon}
-                  </span>
-                  <span className={styles.metaValue}>{item.value}</span>
-                </span>
-              );
-            })}
+            {rowMetaItems.map((item, idx) => (
+              <span
+                key={`${item.key}-${idx}`}
+                className={`${styles.metaSlot} ${
+                  item.estimated ? styles.metaSlotEstimated : ''
+                }`}
+                title={
+                  item.estimated
+                    ? IS_CHINESE
+                      ? '估算值（原始上升/下降缺失）'
+                      : 'Estimated (source ascent/descent missing)'
+                    : undefined
+                }
+              >
+                <span className={styles.metaIcon}>{item.icon}</span>
+                <span className={styles.metaValue}>{item.value}</span>
+              </span>
+            ))}
           </span>
         )}
       </td>
