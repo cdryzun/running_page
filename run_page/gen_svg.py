@@ -302,16 +302,6 @@ def main():
         p.height = 55 + p.years.real_year * 43
     p.github_style = args.github_style
 
-    if args.type == "circular":
-        if args.background_color == "#222222":
-            p.colors["background"] = "#1a1a1a"
-        if args.track_color == "#4DD2FF":
-            p.colors["track"] = "red"
-        if args.special_color == "#FFFF00":
-            p.colors["special"] = "yellow"
-        if args.text_color == "#FFFFFF":
-            p.colors["text"] = "#e1ed5e"
-
     # for special circular
     if is_circular:
         years = p.years.all()[:]

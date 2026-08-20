@@ -1,9 +1,12 @@
 import datetime
+import importlib
+import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from run_page.gpxtrackposter.poster import Poster
 from run_page.gpxtrackposter.github_drawer import GithubDrawer
@@ -108,6 +111,72 @@ class SportSpecificDistanceTest(unittest.TestCase):
         self.assertEqual(colors_by_date["2026-01-01"], "yellow")
         self.assertEqual(colors_by_date["2026-01-02"], "#0000ff")
         self.assertEqual(colors_by_date["2026-01-03"], "red")
+
+    def test_circular_chart_uses_the_same_semantic_palette_as_github_chart(self):
+        tracks = (
+            SimpleNamespace(
+                start_time_local=datetime.datetime(2026, 1, 1),
+                length=30_000,
+                type="cycling",
+                special=False,
+            ),
+            SimpleNamespace(
+                start_time_local=datetime.datetime(2026, 1, 2),
+                length=60_000,
+                type="cycling",
+                special=False,
+            ),
+            SimpleNamespace(
+                start_time_local=datetime.datetime(2026, 1, 3),
+                length=110_000,
+                type="cycling",
+                special=False,
+            ),
+        )
+        run_page_path = str(Path(__file__).resolve().parents[1] / "run_page")
+        with patch.object(sys, "path", [run_page_path, *sys.path]):
+            gen_svg = importlib.import_module("gen_svg")
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "poster.svg"
+            arguments = [
+                "gen_svg.py",
+                "--from-db",
+                "--type",
+                "circular",
+                "--output",
+                str(output),
+                "--special-color",
+                "yellow",
+                "--special-color2",
+                "red",
+            ]
+            with (
+                patch.object(
+                    gen_svg.track_loader.TrackLoader,
+                    "load_tracks_from_db",
+                    return_value=tracks,
+                ),
+                patch.object(sys, "argv", arguments),
+            ):
+                gen_svg.main()
+
+            root = ET.parse(output.with_name("year_2026.svg")).getroot()
+
+        namespace = "{http://www.w3.org/2000/svg}"
+        backgrounds = {
+            rectangle.get("fill") for rectangle in root.findall(f"{namespace}rect")
+        }
+        activity_colors = [
+            path.get("fill")
+            for path in root.iter(f"{namespace}path")
+            if path.get("fill") not in (None, "none")
+        ]
+        text_colors = {text.get("fill") for text in root.iter(f"{namespace}text")}
+
+        self.assertEqual(backgrounds, {"#222222"})
+        self.assertEqual(activity_colors, ["#4dd2ff", "yellow", "red"])
+        self.assertEqual(text_colors, {"#FFFFFF"})
 
     def test_explicit_legacy_thresholds_can_still_override_sport_rules(self):
         self.poster.use_sport_specific_distances = False
