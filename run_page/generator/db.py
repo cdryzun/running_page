@@ -357,7 +357,9 @@ def update_or_create_activity(session, run_activity, *, raise_on_error=False):
                 try:
                     location_country = str(
                         g.reverse(
-                            f"{start_point.lat}, {start_point.lon}", language="zh-CN"  # type: ignore
+                            f"{start_point.lat}, {start_point.lon}",
+                            language="zh-CN",  # type: ignore
+                            timeout=15,
                         )
                     )
                 # limit (only for the first time)
@@ -367,6 +369,7 @@ def update_or_create_activity(session, run_activity, *, raise_on_error=False):
                             g.reverse(
                                 f"{start_point.lat}, {start_point.lon}",
                                 language="zh-CN",  # type: ignore
+                                timeout=15,
                             )
                         )
                     except Exception:
