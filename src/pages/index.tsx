@@ -25,6 +25,7 @@ import {
   RunIds,
 } from '@/utils/utils';
 import { useThemeChangeCounter } from '@/hooks/useTheme';
+import { getLocalizedFilterTitle } from '@/utils/locationNames';
 
 const Index = () => {
   const { siteTitle, siteUrl } = useSiteMetadata();
@@ -168,9 +169,7 @@ const Index = () => {
       }
       setCurrentFilter({ item, func });
       setRunIndex(-1);
-      setTitle(
-        IS_CHINESE ? `${item}活动轨迹` : `${item} ${name} Activity Heatmap`
-      );
+      setTitle(getLocalizedFilterTitle(item, name, IS_CHINESE));
       // Reset single run state when changing filters
       setSingleRunId(null);
       if (window.location.hash) {
