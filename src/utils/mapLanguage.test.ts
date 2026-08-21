@@ -20,6 +20,21 @@ const styleLayers = [
     layout: { 'text-field': '{name}' },
   },
   {
+    id: 'compound-road-label',
+    type: 'symbol',
+    layout: {
+      'text-field': [
+        'format',
+        ['get', 'name'],
+        {},
+        ' / ',
+        {},
+        ['get', 'ref'],
+        {},
+      ],
+    },
+  },
+  {
     id: 'house-number',
     type: 'symbol',
     layout: { 'text-field': '{housenumber}' },
@@ -48,18 +63,24 @@ describe('applyMapLabelLanguage', () => {
       ['get', 'name_en'],
       ['get', 'name'],
     ];
-    expect(map.setLayoutProperty).toHaveBeenCalledTimes(2);
+    expect(map.setLayoutProperty).toHaveBeenCalledTimes(3);
     expect(map.setLayoutProperty).toHaveBeenNthCalledWith(
       1,
       'city-label',
       'text-field',
-      englishName
+      ['step', ['zoom'], englishName, 13, englishName]
     );
     expect(map.setLayoutProperty).toHaveBeenNthCalledWith(
       2,
       'road-label',
       'text-field',
       englishName
+    );
+    expect(map.setLayoutProperty).toHaveBeenNthCalledWith(
+      3,
+      'compound-road-label',
+      'text-field',
+      ['format', englishName, {}, ' / ', {}, ['get', 'ref'], {}]
     );
   });
 
@@ -75,18 +96,24 @@ describe('applyMapLabelLanguage', () => {
       ['get', 'name_zh'],
       ['get', 'name'],
     ];
-    expect(map.setLayoutProperty).toHaveBeenCalledTimes(2);
+    expect(map.setLayoutProperty).toHaveBeenCalledTimes(3);
     expect(map.setLayoutProperty).toHaveBeenNthCalledWith(
       1,
       'city-label',
       'text-field',
-      chineseName
+      ['step', ['zoom'], chineseName, 13, chineseName]
     );
     expect(map.setLayoutProperty).toHaveBeenNthCalledWith(
       2,
       'road-label',
       'text-field',
       chineseName
+    );
+    expect(map.setLayoutProperty).toHaveBeenNthCalledWith(
+      3,
+      'compound-road-label',
+      'text-field',
+      ['format', chineseName, {}, ' / ', {}, ['get', 'ref'], {}]
     );
   });
 });
