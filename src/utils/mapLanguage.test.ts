@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { applyMapLabelLanguage } from './mapLanguage';
+import {
+  applyMapLabelLanguage,
+  setLocalizedMapStyle,
+  type MapLabelLanguage,
+} from './mapLanguage';
 
 const styleLayers = [
   {
@@ -116,4 +120,53 @@ describe('applyMapLabelLanguage', () => {
       ['format', chineseName, {}, ' / ', {}, ['get', 'ref'], {}]
     );
   });
+});
+
+describe('setLocalizedMapStyle', () => {
+  it.each([
+    ['en', 'name:en'],
+    ['zh-CN', 'name:zh'],
+  ] as const)(
+    'applies %s labels when CARTO emits styledata without style.load',
+    (language, expectedNameField) => {
+      const listeners = new Map<string, Set<() => void>>();
+      let styleLoaded = false;
+      const emit = (event: string) =>
+        listeners.get(event)?.forEach((listener) => listener());
+      const map = {
+        ...makeMap(),
+        isStyleLoaded: () => styleLoaded,
+        off: (event: string, listener: () => void) =>
+          listeners.get(event)?.delete(listener),
+        on: (event: string, listener: () => void) => {
+          const eventListeners = listeners.get(event) ?? new Set();
+          eventListeners.add(listener);
+          listeners.set(event, eventListeners);
+        },
+        setStyle: vi.fn(() => emit('styledata')),
+      };
+      const onReady = vi.fn();
+
+      setLocalizedMapStyle(
+        map,
+        { version: 8 },
+        language as MapLabelLanguage,
+        onReady
+      );
+      expect(map.setLayoutProperty).not.toHaveBeenCalled();
+
+      styleLoaded = true;
+      emit('idle');
+
+      expect(map.setLayoutProperty).toHaveBeenCalledTimes(3);
+      expect(JSON.stringify(map.setLayoutProperty.mock.calls)).toContain(
+        expectedNameField
+      );
+      expect(onReady).toHaveBeenCalledTimes(1);
+
+      emit('styledata');
+      emit('style.load');
+      expect(onReady).toHaveBeenCalledTimes(1);
+    }
+  );
 });

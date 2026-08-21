@@ -36,7 +36,10 @@ import {
   isTouchDevice,
 } from '@/utils/utils';
 import { RouteAnimator } from '@/utils/routeAnimation';
-import { applyMapLabelLanguage } from '@/utils/mapLanguage';
+import {
+  applyMapLabelLanguage,
+  setLocalizedMapStyle,
+} from '@/utils/mapLanguage';
 import RunMarker from './RunMarker';
 import RunMapButtons from './RunMapButtons';
 import styles from './style.module.css';
@@ -106,42 +109,26 @@ const RunMap = ({
 
   // Update map when theme changes
   useEffect(() => {
-    if (mapRef.current) {
-      const map = mapRef.current.getMap();
+    if (!mapRef.current) return;
 
-      // Save current map state before changing style
-      const currentCenter = map.getCenter();
-      const currentZoom = map.getZoom();
-      const currentBearing = map.getBearing();
-      const currentPitch = map.getPitch();
+    const map = mapRef.current.getMap();
+    const currentCenter = map.getCenter();
+    const currentZoom = map.getZoom();
+    const currentBearing = map.getBearing();
+    const currentPitch = map.getPitch();
 
-      // Apply new style
-      map.setStyle(mapStyle);
-
-      // Create a stable handler for style.load to ensure proper cleanup
-      const handleStyleLoad = () => {
-        // Add a small delay to ensure style is fully loaded
-        setTimeout(() => {
-          try {
-            // Restore map view state
-            map.setCenter(currentCenter);
-            map.setZoom(currentZoom);
-            map.setBearing(currentBearing);
-            map.setPitch(currentPitch);
-            applyMapLabelLanguage(map, MAP_LABEL_LANGUAGE);
-
-            // Reapply layer visibility settings with current lights state
-            switchLayerVisibility(map, lights);
-          } catch (error) {
-            console.warn('Error applying map style changes:', error);
-          }
-        }, 100);
-      };
-
-      // Use once to automatically remove the listener after it fires
-      map.once('style.load', handleStyleLoad);
-    }
-  }, [mapStyle, lights]); // Include lights to ensure layer visibility updates correctly when theme changes
+    return setLocalizedMapStyle(map, mapStyle, MAP_LABEL_LANGUAGE, () => {
+      try {
+        map.setCenter(currentCenter);
+        map.setZoom(currentZoom);
+        map.setBearing(currentBearing);
+        map.setPitch(currentPitch);
+        switchLayerVisibility(map, lights);
+      } catch (error) {
+        console.warn('Error applying map style changes:', error);
+      }
+    });
+  }, [mapStyle, lights]);
 
   useEffect(() => {
     if (mapRef.current) {
@@ -248,14 +235,12 @@ const RunMap = ({
     (ref: MapRef) => {
       if (ref !== null) {
         const map = ref.getMap();
-        // all style resources have been downloaded
-        // and the first visually complete rendering of the base style has occurred.
-        // it's odd. when use style other than mapbox, the style.load event is not triggered.Add commentMore actions
-        // so I use data event instead of style.load event and make sure we handle it only once.
-        map.on('data', (event) => {
-          if (event.dataType !== 'style' || mapRef.current) {
-            return;
-          }
+        // CARTO may omit style.load during initialization, so listen for
+        // style-data and idle, then remove both when the style is ready.
+        const initializeStyle = () => {
+          if (!map.isStyleLoaded()) return;
+          map.off('data', handleStyleData);
+          map.off('idle', initializeStyle);
           applyMapLabelLanguage(map, MAP_LABEL_LANGUAGE);
           if (!ROAD_LABEL_DISPLAY) {
             const layers = map.getStyle().layers;
@@ -272,7 +257,16 @@ const RunMap = ({
           }
           mapRef.current = ref;
           switchLayerVisibility(map, lights);
-        });
+        };
+        const handleStyleData = (event: { dataType: string }) => {
+          if (event.dataType === 'style') initializeStyle();
+        };
+
+        if (map.isStyleLoaded()) initializeStyle();
+        else {
+          map.on('data', handleStyleData);
+          map.on('idle', initializeStyle);
+        }
       }
       if (mapRef.current) {
         const map = mapRef.current.getMap();

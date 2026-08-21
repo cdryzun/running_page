@@ -138,3 +138,39 @@ export const applyMapLabelLanguage = (
     }
   }
 };
+
+type StyleReadyEvent = 'idle' | 'styledata' | 'style.load';
+
+type StyleReadyMap<TStyle> = MapLabelTarget & {
+  isStyleLoaded: () => boolean;
+  off: (event: StyleReadyEvent, listener: () => void) => unknown;
+  on: (event: StyleReadyEvent, listener: () => void) => unknown;
+  setStyle: (style: TStyle) => unknown;
+};
+
+export const setLocalizedMapStyle = <TStyle>(
+  map: StyleReadyMap<TStyle>,
+  style: TStyle,
+  language: MapLabelLanguage,
+  onReady: () => void
+): (() => void) => {
+  let applied = false;
+  const cleanup = () => {
+    map.off('styledata', handleStyleReady);
+    map.off('style.load', handleStyleReady);
+    map.off('idle', handleStyleReady);
+  };
+  const handleStyleReady = () => {
+    if (applied || !map.isStyleLoaded()) return;
+    applied = true;
+    cleanup();
+    applyMapLabelLanguage(map, language);
+    onReady();
+  };
+
+  map.on('styledata', handleStyleReady);
+  map.on('style.load', handleStyleReady);
+  map.on('idle', handleStyleReady);
+  map.setStyle(style);
+  return cleanup;
+};
