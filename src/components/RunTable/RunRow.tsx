@@ -133,7 +133,7 @@ const RunRow = ({
       onClick={handleClick}
     >
       <td>
-        {titleForRun(run)}
+        <span className={styles.activityTitle}>{titleForRun(run)}</span>
         {rowMetaItems.length > 0 && (
           <span className={styles.rowMeta}>
             {rowMetaItems.map((item, idx) => (

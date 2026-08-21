@@ -5,7 +5,7 @@ import RunMap from '@/components/RunMap';
 import RunTable from '@/components/RunTable';
 import SVGStat from '@/components/SVGStat';
 import YearsStat from '@/components/YearsStat';
-import useActivities from '@/hooks/useActivities';
+import useActivities, { getActivityRegions } from '@/hooks/useActivities';
 import useSiteMetadata from '@/hooks/useSiteMetadata';
 import { useInterval } from '@/hooks/useInterval';
 import { IS_CHINESE, type SportTypeFilter } from '@/utils/const';
@@ -25,6 +25,7 @@ import {
   RunIds,
 } from '@/utils/utils';
 import { useThemeChangeCounter } from '@/hooks/useTheme';
+import { getLocalizedFilterTitle } from '@/utils/locationNames';
 
 const Index = () => {
   const { siteTitle, siteUrl } = useSiteMetadata();
@@ -99,6 +100,11 @@ const Index = () => {
     return filtered.filter((run) => filterSportRuns(run, sportType));
   }, [activities, currentFilter.item, currentFilter.func, sportType]);
 
+  const { countries, provinces } = useMemo(
+    () => getActivityRegions(runs),
+    [runs]
+  );
+
   const geoData = useMemo(() => {
     return geoJsonForRuns(runs);
   }, [runs, themeChangeCounter]);
@@ -168,9 +174,7 @@ const Index = () => {
       }
       setCurrentFilter({ item, func });
       setRunIndex(-1);
-      setTitle(
-        IS_CHINESE ? `${item}活动轨迹` : `${item} ${name} Activity Heatmap`
-      );
+      setTitle(getLocalizedFilterTitle(item, name, IS_CHINESE));
       // Reset single run state when changing filters
       setSingleRunId(null);
       if (window.location.hash) {
@@ -414,7 +418,9 @@ const Index = () => {
         <RunMap
           title={title}
           viewState={viewState}
+          countries={countries}
           geoData={animatedGeoData}
+          provinces={provinces}
           setViewState={setViewState}
           changeYear={changeYear}
           thisYear={year}

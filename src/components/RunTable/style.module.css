@@ -109,6 +109,11 @@
   opacity: 0.8;
 }
 
+.activityTitle {
+  display: inline-block;
+  min-width: 8ch;
+}
+
 .rowMeta {
   margin-left: 0.35rem;
   font-size: 0.72rem;

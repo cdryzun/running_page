@@ -29,6 +29,10 @@ import {
   GeoJsonProperties,
 } from 'geojson';
 import { getMapThemeFromCurrentTheme } from '@/hooks/useTheme';
+import {
+  getLocalizedActivityTitle,
+  getLocalizedLocationName,
+} from '@/utils/locationNames';
 
 export type Coordinate = [number, number];
 
@@ -116,11 +120,26 @@ const isIndoorActivity = (run: Activity): boolean => {
 
 export { isIndoorActivity };
 
+const containsCjk = (value: string): boolean => /[\u3400-\u9fff]/.test(value);
+
+const getEnglishSourceType = (run: Activity): string => {
+  const sourceType = run.type ?? '';
+  return containsCjk(sourceType) ? '' : sourceType.trim();
+};
+
 const titleForShow = (run: Activity): string => {
   const date = run.start_date_local.slice(0, 11);
   const distance = (run.distance / M_TO_DIST).toFixed(2);
   const fallbackName = IS_CHINESE ? '运动' : 'Activity';
-  const name = run.name || getActivitySport(run) || fallbackName;
+  const sportName = getActivitySport(run);
+  const localizedSourceName = getLocalizedActivityTitle(run.name, IS_CHINESE);
+  const englishSourceName = containsCjk(localizedSourceName)
+    ? ''
+    : localizedSourceName;
+  const englishSourceType = getEnglishSourceType(run);
+  const name = IS_CHINESE
+    ? run.name || sportName || fallbackName
+    : englishSourceName || sportName || englishSourceType || fallbackName;
   const noMapText = !run.summary_polyline
     ? IS_CHINESE
       ? '（此活动无轨迹数据）'
@@ -411,21 +430,28 @@ const getActivitySport = (act: Activity): string => {
 const titleForRun = (run: Activity): string => {
   if (RICH_TITLE) {
     // 1. try to use user defined name
-    if (run.name != '') {
-      return run.name;
+    if (run.name) {
+      const localizedName = getLocalizedActivityTitle(run.name, IS_CHINESE);
+      if (IS_CHINESE || !containsCjk(localizedName)) return localizedName;
     }
     // 2. try to use location+type if the location is available, eg. 'Shanghai Run'
     const { city } = locationForRun(run);
     const activity_sport = getActivitySport(run);
     if (city && city.length > 0 && activity_sport.length > 0) {
-      return `${city} ${activity_sport}`;
+      return `${getLocalizedLocationName(city, IS_CHINESE)} ${activity_sport}`;
     }
   }
   // For non-running activities, use the sport type label as title
   const normalized = normalizeActivityType(run.type);
   if (normalized !== 'running') {
     const sportLabel = getActivitySport(run);
-    return sportLabel || run.name || ACTIVITY_TYPES.ALL_TITLE;
+    if (sportLabel) return sportLabel;
+
+    const localizedName = getLocalizedActivityTitle(run.name, IS_CHINESE);
+    if (IS_CHINESE || !containsCjk(localizedName)) {
+      return localizedName || ACTIVITY_TYPES.ALL_TITLE;
+    }
+    return getEnglishSourceType(run) || ACTIVITY_TYPES.ALL_TITLE;
   }
 
   // 3. Running: use time+distance based titles

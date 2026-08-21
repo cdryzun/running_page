@@ -1,6 +1,7 @@
 import Stat from '@/components/Stat';
 import useActivities from '@/hooks/useActivities';
 import { IS_CHINESE } from '@/utils/const';
+import { getLocalizedActivityTitle } from '@/utils/locationNames';
 
 const PeriodStat = ({ onClick }: { onClick: (_period: string) => void }) => {
   const { runPeriod } = useActivities();
@@ -13,7 +14,7 @@ const PeriodStat = ({ onClick }: { onClick: (_period: string) => void }) => {
         {periodArr.map(([period, times]) => (
           <Stat
             key={period}
-            value={period}
+            value={getLocalizedActivityTitle(period, IS_CHINESE)}
             description={
               IS_CHINESE ? ` ${times} 次活动` : ` ${times} activities`
             }
