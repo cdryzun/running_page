@@ -36,6 +36,13 @@ describe('titleForShow English activity names', () => {
     expect(title).toMatch(/^Tour de France /);
   });
 
+  it('falls back safely when an imported activity has no name', () => {
+    const activity = makeActivity('cycling', null as unknown as string);
+
+    expect(titleForShow(activity)).toMatch(/^Cycling /);
+    expect(titleForRun(activity)).toBe('Cycling');
+  });
+
   it('localizes supported custom activity titles', () => {
     const title = titleForShow(makeActivity('multi_sport', '深圳市 复合运动'));
 

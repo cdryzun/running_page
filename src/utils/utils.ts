@@ -424,7 +424,7 @@ const getActivitySport = (act: Activity): string => {
 const titleForRun = (run: Activity): string => {
   if (RICH_TITLE) {
     // 1. try to use user defined name
-    if (run.name != '') {
+    if (run.name) {
       const localizedName = getLocalizedActivityTitle(run.name, IS_CHINESE);
       if (IS_CHINESE || !containsCjk(localizedName)) return localizedName;
     }

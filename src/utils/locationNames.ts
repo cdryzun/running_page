@@ -21,17 +21,18 @@ export const getLocalizedLocationName = (
 ): string => (isChinese ? name : ENGLISH_LOCATION_NAMES[name] ?? name);
 
 export const getLocalizedActivityTitle = (
-  title: string,
+  title: string | null | undefined,
   isChinese: boolean
 ): string => {
-  if (isChinese) return title;
+  const sourceTitle = title ?? '';
+  if (isChinese) return sourceTitle;
 
-  const parts = title.trim().split(/\s+/);
-  if (parts.length !== 2) return title;
+  const parts = sourceTitle.trim().split(/\s+/);
+  if (parts.length !== 2) return sourceTitle;
 
   const location = ENGLISH_LOCATION_NAMES[parts[0]];
   const activity = ENGLISH_ACTIVITY_NAMES[parts[1]];
-  return location && activity ? `${location} ${activity}` : title;
+  return location && activity ? `${location} ${activity}` : sourceTitle;
 };
 
 export const getLocalizedFilterTitle = (

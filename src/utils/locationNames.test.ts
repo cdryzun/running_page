@@ -39,6 +39,11 @@ describe('location name localization', () => {
     );
   });
 
+  it('normalizes missing activity titles', () => {
+    expect(getLocalizedActivityTitle(null, false)).toBe('');
+    expect(getLocalizedActivityTitle(undefined, true)).toBe('');
+  });
+
   it('localizes map titles without changing their filter keys', () => {
     expect(getLocalizedFilterTitle('深圳市', 'City', false)).toBe(
       'Shenzhen City Activity Heatmap'
