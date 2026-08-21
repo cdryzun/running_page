@@ -282,7 +282,7 @@ const RunMap = ({
   const isBigMap = (viewState.zoom ?? 0) <= 3;
 
   useEffect(() => {
-    if (isBigMap && IS_CHINESE && !mapGeoData && !isLoadingMapData) {
+    if (isBigMap && !mapGeoData && !isLoadingMapData) {
       setIsLoadingMapData(true);
       geoJsonForMap()
         .then((data) => {
@@ -293,10 +293,10 @@ const RunMap = ({
           setIsLoadingMapData(false);
         });
     }
-  }, [isBigMap, IS_CHINESE, mapGeoData, isLoadingMapData]);
+  }, [isBigMap, mapGeoData, isLoadingMapData]);
 
   let combinedGeoData = geoData;
-  if (isBigMap && IS_CHINESE && mapGeoData) {
+  if (isBigMap && mapGeoData) {
     // Show boundary and line together, combine geoData(only when not combine yet)
     if (geoData.features.length === initGeoDataLength) {
       combinedGeoData = {
