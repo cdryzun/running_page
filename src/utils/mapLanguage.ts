@@ -92,7 +92,9 @@ const localizeTextField = (
 
   const record = value as Record<string, unknown>;
   if (isNameProperty(record.property) && record.type === 'identity') {
-    return nameExpression;
+    return record.default === undefined
+      ? nameExpression
+      : ['coalesce', nameExpression, record.default];
   }
   const stops = record.stops;
   if (Array.isArray(stops) && !('property' in record)) {

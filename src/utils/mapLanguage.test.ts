@@ -145,7 +145,13 @@ describe('applyMapLabelLanguage', () => {
             {
               id: 'legacy-name',
               type: 'symbol',
-              layout: { 'text-field': { property: 'name', type: 'identity' } },
+              layout: {
+                'text-field': {
+                  default: 'Unknown',
+                  property: 'name',
+                  type: 'identity',
+                },
+              },
             },
           ],
         }),
@@ -157,7 +163,7 @@ describe('applyMapLabelLanguage', () => {
       expect(map.setLayoutProperty).toHaveBeenCalledWith(
         'legacy-name',
         'text-field',
-        expected
+        ['coalesce', expected, 'Unknown']
       );
     }
   );
