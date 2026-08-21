@@ -30,6 +30,12 @@ describe('titleForShow English activity names', () => {
     expect(title).not.toMatch(/[\u3400-\u9fff]/);
   });
 
+  it('preserves meaningful English custom activity names', () => {
+    const title = titleForShow(makeActivity('cycling', 'Tour de France'));
+
+    expect(title).toMatch(/^Tour de France /);
+  });
+
   it('localizes supported custom activity titles', () => {
     const title = titleForShow(makeActivity('multi_sport', '深圳市 复合运动'));
 

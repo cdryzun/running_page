@@ -133,7 +133,7 @@ const titleForShow = (run: Activity): string => {
     : localizedSourceName;
   const name = IS_CHINESE
     ? run.name || sportName || fallbackName
-    : sportName || englishSourceName || fallbackName;
+    : englishSourceName || sportName || fallbackName;
   const noMapText = !run.summary_polyline
     ? IS_CHINESE
       ? '（此活动无轨迹数据）'
