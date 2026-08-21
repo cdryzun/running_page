@@ -91,6 +91,9 @@ const localizeTextField = (
   if (typeof value !== 'object' || value === null) return value;
 
   const record = value as Record<string, unknown>;
+  if (isNameProperty(record.property) && record.type === 'identity') {
+    return nameExpression;
+  }
   const stops = record.stops;
   if (Array.isArray(stops) && !('property' in record)) {
     const validStops = stops.filter(

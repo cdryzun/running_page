@@ -120,6 +120,47 @@ describe('applyMapLabelLanguage', () => {
       ['format', chineseName, {}, ' / ', {}, ['get', 'ref'], {}]
     );
   });
+
+  it.each([
+    [
+      'en',
+      ['coalesce', ['get', 'name:en'], ['get', 'name_en'], ['get', 'name']],
+    ],
+    [
+      'zh-CN',
+      [
+        'coalesce',
+        ['get', 'name:zh'],
+        ['get', 'name_zh-Hans'],
+        ['get', 'name_zh'],
+        ['get', 'name'],
+      ],
+    ],
+  ] as const)(
+    'converts legacy %s name identity functions',
+    (language, expected) => {
+      const map = {
+        getStyle: () => ({
+          layers: [
+            {
+              id: 'legacy-name',
+              type: 'symbol',
+              layout: { 'text-field': { property: 'name', type: 'identity' } },
+            },
+          ],
+        }),
+        setLayoutProperty: vi.fn(),
+      };
+
+      applyMapLabelLanguage(map, language as MapLabelLanguage);
+
+      expect(map.setLayoutProperty).toHaveBeenCalledWith(
+        'legacy-name',
+        'text-field',
+        expected
+      );
+    }
+  );
 });
 
 describe('setLocalizedMapStyle', () => {
