@@ -78,6 +78,7 @@ const RunMap = ({
   const [mapGeoData, setMapGeoData] =
     useState<FeatureCollection<RPGeometry> | null>(null);
   const [isLoadingMapData, setIsLoadingMapData] = useState(false);
+  const mapDataLoadAttemptedRef = useRef(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
   // Use the map theme hook to get the current map theme
@@ -285,17 +286,24 @@ const RunMap = ({
   const isBigMap = (viewState.zoom ?? 0) <= 3;
 
   useEffect(() => {
-    if (isBigMap && !mapGeoData && !isLoadingMapData) {
-      setIsLoadingMapData(true);
-      geoJsonForMap()
-        .then((data) => {
-          setMapGeoData(data);
-          setIsLoadingMapData(false);
-        })
-        .catch(() => {
-          setIsLoadingMapData(false);
-        });
+    if (!isBigMap) {
+      mapDataLoadAttemptedRef.current = false;
+      return;
     }
+    if (mapGeoData || isLoadingMapData || mapDataLoadAttemptedRef.current) {
+      return;
+    }
+
+    mapDataLoadAttemptedRef.current = true;
+    setIsLoadingMapData(true);
+    geoJsonForMap()
+      .then((data) => {
+        setMapGeoData(data);
+        setIsLoadingMapData(false);
+      })
+      .catch(() => {
+        setIsLoadingMapData(false);
+      });
   }, [isBigMap, mapGeoData, isLoadingMapData]);
 
   let combinedGeoData = geoData;

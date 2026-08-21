@@ -150,3 +150,20 @@ describe('RunMap province highlighting', () => {
     );
   });
 });
+
+it('does not repeatedly retry a failed boundary import', async () => {
+  geoJsonForMap
+    .mockRejectedValueOnce(new Error('network unavailable'))
+    .mockResolvedValue(boundaryData);
+
+  renderMap(3);
+
+  await waitFor(() => expect(geoJsonForMap).toHaveBeenCalled());
+  await new Promise((resolve) => window.setTimeout(resolve, 50));
+
+  expect(geoJsonForMap).toHaveBeenCalledTimes(1);
+  expect(screen.getByTestId('map-source')).toHaveAttribute(
+    'data-feature-count',
+    '1'
+  );
+});
