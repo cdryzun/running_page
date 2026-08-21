@@ -122,6 +122,11 @@ export { isIndoorActivity };
 
 const containsCjk = (value: string): boolean => /[\u3400-\u9fff]/.test(value);
 
+const getEnglishSourceType = (run: Activity): string => {
+  const sourceType = run.type ?? '';
+  return containsCjk(sourceType) ? '' : sourceType.trim();
+};
+
 const titleForShow = (run: Activity): string => {
   const date = run.start_date_local.slice(0, 11);
   const distance = (run.distance / M_TO_DIST).toFixed(2);
@@ -131,9 +136,10 @@ const titleForShow = (run: Activity): string => {
   const englishSourceName = containsCjk(localizedSourceName)
     ? ''
     : localizedSourceName;
+  const englishSourceType = getEnglishSourceType(run);
   const name = IS_CHINESE
     ? run.name || sportName || fallbackName
-    : englishSourceName || sportName || fallbackName;
+    : englishSourceName || sportName || englishSourceType || fallbackName;
   const noMapText = !run.summary_polyline
     ? IS_CHINESE
       ? '（此活动无轨迹数据）'
@@ -445,7 +451,7 @@ const titleForRun = (run: Activity): string => {
     if (IS_CHINESE || !containsCjk(localizedName)) {
       return localizedName || ACTIVITY_TYPES.ALL_TITLE;
     }
-    return ACTIVITY_TYPES.ALL_TITLE;
+    return getEnglishSourceType(run) || ACTIVITY_TYPES.ALL_TITLE;
   }
 
   // 3. Running: use time+distance based titles

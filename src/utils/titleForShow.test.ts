@@ -50,6 +50,13 @@ describe('titleForShow English activity names', () => {
     expect(title).not.toMatch(/[\u3400-\u9fff]/);
   });
 
+  it('uses an unsupported English activity type instead of collapsing to All', () => {
+    const activity = makeActivity('Yoga', '晨间瑜伽');
+
+    expect(titleForShow(activity)).toMatch(/^Yoga /);
+    expect(titleForRun(activity)).toBe('Yoga');
+  });
+
   it('localizes custom names used by activity lists', () => {
     expect(titleForRun(makeActivity('multi_sport', '深圳市 复合运动'))).toBe(
       'Shenzhen Multi-sport'
