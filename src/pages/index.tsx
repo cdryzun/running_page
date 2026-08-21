@@ -5,7 +5,7 @@ import RunMap from '@/components/RunMap';
 import RunTable from '@/components/RunTable';
 import SVGStat from '@/components/SVGStat';
 import YearsStat from '@/components/YearsStat';
-import useActivities from '@/hooks/useActivities';
+import useActivities, { getActivityRegions } from '@/hooks/useActivities';
 import useSiteMetadata from '@/hooks/useSiteMetadata';
 import { useInterval } from '@/hooks/useInterval';
 import { IS_CHINESE, type SportTypeFilter } from '@/utils/const';
@@ -99,6 +99,11 @@ const Index = () => {
     if (sportType === 'all') return filtered;
     return filtered.filter((run) => filterSportRuns(run, sportType));
   }, [activities, currentFilter.item, currentFilter.func, sportType]);
+
+  const { countries, provinces } = useMemo(
+    () => getActivityRegions(runs),
+    [runs]
+  );
 
   const geoData = useMemo(() => {
     return geoJsonForRuns(runs);
@@ -413,7 +418,9 @@ const Index = () => {
         <RunMap
           title={title}
           viewState={viewState}
+          countries={countries}
           geoData={animatedGeoData}
+          provinces={provinces}
           setViewState={setViewState}
           changeYear={changeYear}
           thisYear={year}

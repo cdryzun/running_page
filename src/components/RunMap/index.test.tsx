@@ -32,15 +32,13 @@ vi.mock('react-map-gl', async () => {
         {children}
       </div>
     ),
-    Layer: ({ id }: { id: string }) => <div data-testid={`layer-${id}`} />,
+    Layer: ({ id, filter }: { id: string; filter?: unknown[] }) => (
+      <div data-filter={JSON.stringify(filter)} data-testid={`layer-${id}`} />
+    ),
     FullscreenControl: () => null,
     NavigationControl: () => null,
   };
 });
-
-vi.mock('@/hooks/useActivities', () => ({
-  default: () => ({ countries: ['中国'], provinces: ['广东省'] }),
-}));
 
 vi.mock('@/hooks/useTheme', () => ({
   useMapTheme: () => 'dark-matter',
@@ -95,11 +93,16 @@ const boundaryData: FeatureCollection<RPGeometry> = {
   ],
 };
 
-const renderMap = (zoom: number) =>
+const renderMap = (
+  zoom: number,
+  regions = { countries: ['中国'], provinces: ['广东省'] }
+) =>
   render(
     <RunMap
       changeYear={vi.fn()}
+      countries={regions.countries}
       geoData={routeData}
+      provinces={regions.provinces}
       setViewState={vi.fn()}
       thisYear="2026"
       title="2026 Year Activity Heatmap"
@@ -127,6 +130,10 @@ describe('RunMap province highlighting', () => {
     );
     expect(screen.getByTestId('layer-province')).toBeInTheDocument();
     expect(geoJsonForMap).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('layer-province')).toHaveAttribute(
+      'data-filter',
+      JSON.stringify(['in', 'name', '广东省'])
+    );
   });
 
   it('keeps route data unchanged without loading boundaries when zoomed in', async () => {

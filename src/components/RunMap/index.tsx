@@ -13,7 +13,6 @@ import Map, {
   MapRef,
 } from 'react-map-gl';
 import { MapInstance } from 'react-map-gl/src/types/lib';
-import useActivities from '@/hooks/useActivities';
 import {
   IS_CHINESE,
   ROAD_LABEL_DISPLAY,
@@ -52,7 +51,9 @@ interface IRunMapProps {
   viewState: IViewState;
   setViewState: (_viewState: IViewState) => void;
   changeYear: (_year: string) => void;
+  countries: string[];
   geoData: FeatureCollection<RPGeometry>;
+  provinces: string[];
   thisYear: string;
   animationTrigger?: number; // Optional trigger to force animation replay
 }
@@ -64,11 +65,12 @@ const RunMap = ({
   viewState,
   setViewState,
   changeYear,
+  countries,
   geoData,
+  provinces,
   thisYear,
   animationTrigger,
 }: IRunMapProps) => {
-  const { countries, provinces } = useActivities();
   const mapRef = useRef<MapRef>(null);
   const [lights, setLights] = useState(PRIVACY_MODE ? false : LIGHTS_ON);
   // layers that should remain visible when lights are off

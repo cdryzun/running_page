@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -11,6 +11,15 @@ const activityState = vi.hoisted(() => ({
   thisYear: '2026',
 }));
 
+const getActivityRegions = vi.hoisted(() =>
+  vi.fn((activities: Array<{ start_date_local: string }>) => ({
+    countries: activities.map(
+      (run) => `country-${run.start_date_local.slice(0, 4)}`
+    ),
+    provinces: activities.map((run) => run.start_date_local.slice(0, 4)),
+  }))
+);
+
 vi.mock('@/components/Layout', () => ({
   default: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
@@ -21,12 +30,18 @@ vi.mock('@/components/RunMap', () => ({
   default: ({
     thisYear,
     geoData,
+    countries = [],
+    provinces = [],
   }: {
     thisYear: string;
     geoData: { features: unknown[] };
+    countries?: string[];
+    provinces?: string[];
   }) => (
     <div
+      data-countries={countries.join(',')}
       data-feature-count={geoData.features.length}
+      data-provinces={provinces.join(',')}
       data-testid="run-map"
       data-year={thisYear}
     />
@@ -41,12 +56,23 @@ vi.mock('@/components/SVGStat', () => ({
   default: () => <div data-testid="total-svg-stat" />,
 }));
 vi.mock('@/components/YearsStat', () => ({
-  default: ({ year }: { year: string }) => (
-    <div data-testid="year-stats" data-year={year} />
+  default: ({
+    year,
+    onClick,
+  }: {
+    year: string;
+    onClick: (year: string) => void;
+  }) => (
+    <div data-testid="year-stats" data-year={year}>
+      <button type="button" onClick={() => onClick('2025')}>
+        Select 2025
+      </button>
+    </div>
   ),
 }));
 vi.mock('@/hooks/useActivities', () => ({
   default: () => activityState,
+  getActivityRegions,
 }));
 vi.mock('@/hooks/useSiteMetadata', () => ({
   default: () => ({ siteTitle: 'Running Page', siteUrl: '/' }),
@@ -98,6 +124,7 @@ describe('home page startup', () => {
     ];
     activityState.years = ['2026', '2025'];
     activityState.thisYear = '2026';
+    getActivityRegions.mockClear();
   });
 
   afterEach(() => {
@@ -114,6 +141,37 @@ describe('home page startup', () => {
     expect(screen.getByTestId('run-map')).toHaveAttribute(
       'data-feature-count',
       '1'
+    );
+  });
+
+  it('derives highlighted regions from the selected year only', () => {
+    render(<Index />);
+
+    expect(getActivityRegions).toHaveBeenCalledWith([
+      expect.objectContaining({ start_date_local: '2026-01-01T08:00:00' }),
+    ]);
+    expect(screen.getByTestId('run-map')).toHaveAttribute(
+      'data-provinces',
+      '2026'
+    );
+    expect(screen.getByTestId('run-map')).toHaveAttribute(
+      'data-countries',
+      'country-2026'
+    );
+  });
+
+  it('updates highlighted regions when the selected year changes', () => {
+    render(<Index />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select 2025' }));
+
+    expect(screen.getByTestId('run-map')).toHaveAttribute(
+      'data-provinces',
+      '2025'
+    );
+    expect(screen.getByTestId('run-map')).toHaveAttribute(
+      'data-countries',
+      'country-2025'
     );
   });
 
