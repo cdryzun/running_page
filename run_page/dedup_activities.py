@@ -270,3 +270,5 @@ if __name__ == "__main__":
     print(f"模式:   {'删除' if do_delete else '预览(dry-run)'}")
     print("-" * 40)
     dedup(db_path, json_path=json_path, dry_run=not do_delete)
+
+# sync trigger 2026-10-16
