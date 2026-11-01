@@ -56,7 +56,9 @@ concurrency:
 jobs:
   sync:
     name: Sync
-    runs-on: ubuntu-latest
+    if: github.repository == 'cdryzun/running_page' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target'
+    runs-on: [self-hosted, Linux, X64, usvps-running-page]
+    timeout-minutes: 45
     outputs:
       SAVE_DATA_IN_GITHUB_CACHE: ${{ steps.set_output.outputs.SAVE_DATA_IN_GITHUB_CACHE }}
       DATA_CACHE_PREFIX: ${{ steps.set_output.outputs.DATA_CACHE_PREFIX }}
