@@ -127,9 +127,7 @@ def _find_cycling_duplicates(cycling_rows):
     作为候选副本。仅匹配这两类记录, 保留 road 记录, 避免合并两次真实 cycling 活动。
     """
     priority_rows = [row for row in cycling_rows if row["subtype"] == "road"]
-    candidate_rows = [
-        row for row in cycling_rows if row["subtype"] in (None, "")
-    ]
+    candidate_rows = [row for row in cycling_rows if row["subtype"] in (None, "")]
     to_delete, _ = _match_one_to_one(
         priority_rows,
         candidate_rows,
