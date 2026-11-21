@@ -39,6 +39,17 @@ test('launch finds Chrome on the host without a hard-coded Linux path', () => {
   assert.match(driver, /Google Chrome\.app/);
 });
 
+test('launch binds the debug port to the Chrome process it started', () => {
+  assert.match(driver, /debug port is already occupied/);
+  assert.match(driver, /once\('error'/);
+  assert.match(driver, /chromePid/);
+  assert.match(driver, /VERIFY_CHROME_PATH/);
+});
+
+test('goto waits for the destination document before checking its root', () => {
+  assert.match(driver, /location\.href === \$\{JSON\.stringify\(url\)\}/);
+});
+
 test('launch failure keeps pre-existing evidence', () => {
   assert.doesNotMatch(driver, /rmSync\(scratchRoot/);
 });

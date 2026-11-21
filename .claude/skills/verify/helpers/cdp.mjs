@@ -78,13 +78,15 @@ async function waitForEndpoint() {
   for (let i = 0; i < 50; i += 1) {
     try {
       const targets = await CDP.List({ port });
-      if (targets.some((t) => t.type === 'page')) return targets;
+      if (targets.some((target) => target.type === 'page')) return targets;
     } catch {
       /* browser is still starting */
     }
     await delay(200);
   }
-  throw new Error('Chrome DevTools endpoint did not become ready');
+  throw new Error(
+    `Chrome DevTools endpoint at port ${port} is already occupied or did not become ready`
+  );
 }
 
 async function withPage(fn) {
@@ -114,44 +116,64 @@ async function evaluate(Runtime, expression) {
 async function launch() {
   if (existsSync(stateFile))
     throw new Error('verification browser already launched; run cleanup first');
+  try {
+    const occupied = await CDP.List({ port });
+    if (occupied.length) {
+      throw new Error(`debug port is already occupied: ${port}`);
+    }
+  } catch (error) {
+    if (!/debug port is already occupied/.test(error.message)) {
+      /* endpoint is free */
+    } else {
+      throw error;
+    }
+  }
   mkdirSync(scratchRoot, { recursive: true });
   mkdirSync(evidenceDir, { recursive: true });
   mkdirSync(profileDir, { recursive: true });
-  const chrome = spawn(
-    chromePath(),
-    [
-      '--headless=new',
-      `--remote-debugging-port=${port}`,
-      `--user-data-dir=${profileDir}`,
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--disable-background-networking',
-      '--disable-sync',
-      '--disable-extensions',
-      '--disable-dev-shm-usage',
-      '--window-size=1440,1000',
-      'about:blank',
-    ],
-    { detached: true, stdio: 'ignore' }
-  );
-  chrome.unref();
-  writeState({
-    chromePid: chrome.pid,
-    port,
-    startedAt: new Date().toISOString(),
-  });
+  let chromePid;
   try {
+    await new Promise((resolve, reject) => {
+      const chrome = spawn(
+        chromePath(),
+        [
+          '--headless=new',
+          `--remote-debugging-port=${port}`,
+          `--user-data-dir=${profileDir}`,
+          '--no-first-run',
+          '--no-default-browser-check',
+          '--disable-background-networking',
+          '--disable-sync',
+          '--disable-extensions',
+          '--disable-dev-shm-usage',
+          '--window-size=1440,1000',
+          'about:blank',
+        ],
+        { detached: true, stdio: 'ignore' }
+      );
+      chromePid = chrome.pid;
+      chrome.unref();
+      chrome.once('error', reject);
+      delay(250).then(resolve);
+    });
+    writeState({
+      chromePid,
+      port,
+      startedAt: new Date().toISOString(),
+    });
     const targets = await waitForEndpoint();
     const page = targets.find((t) => t.type === 'page');
     writeState({ ...readState(), targetId: page.id, url: page.url });
     output.ok = true;
-    output.pid = chrome.pid;
+    output.pid = chromePid;
     output.port = port;
   } catch (error) {
-    try {
-      process.kill(chrome.pid, 'SIGTERM');
-    } catch {
-      /* already gone */
+    if (chromePid) {
+      try {
+        process.kill(chromePid, 'SIGTERM');
+      } catch {
+        /* already gone */
+      }
     }
     rmSync(stateFile, { force: true });
     rmSync(profileDir, { recursive: true, force: true });
@@ -231,7 +253,7 @@ async function goto() {
     await Page.navigate({ url });
     const rendered = await evaluate(
       Runtime,
-      `new Promise(resolve => { const started = Date.now(); const check = () => { const root = document.querySelector('#root'); if (document.readyState === 'complete' && root?.childElementCount) resolve(true); else if (Date.now() - started > 20000) resolve(false); else setTimeout(check, 100); }; check(); })`
+      `new Promise(resolve => { const started = Date.now(); const check = () => { const root = document.querySelector('#root'); if (location.href === ${JSON.stringify(url)} && document.readyState === 'complete' && root?.childElementCount) resolve(true); else if (Date.now() - started > 20000) resolve(false); else setTimeout(check, 100); }; check(); })`
     );
     const info = await evaluate(
       Runtime,
