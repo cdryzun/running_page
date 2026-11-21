@@ -26,6 +26,7 @@ from dataset_lock import DatasetWriteLock
 
 # 匹配阈值
 TIME_TOLERANCE_SECONDS = 120
+CYCLING_SAME_SOURCE_TIME_TOLERANCE_SECONDS = 300
 DISTANCE_TOLERANCE_RATIO = 0.05
 
 # 跨源优先级: 索引越小优先级越高, 重复时保留优先级高的一方
@@ -52,7 +53,7 @@ def _valid_distance(value):
     return d
 
 
-def _is_same_activity(a, b):
+def _is_same_activity(a, b, *, time_tolerance_seconds=TIME_TOLERANCE_SECONDS):
     """双维度判断两条记录是否为同一活动: 时差与距离相对差均在阈值内。
 
     任一记录时间或距离无效则返回 False (宁可漏匹配也不误删)。
@@ -61,7 +62,7 @@ def _is_same_activity(a, b):
     tb = _parse_time(b["start_date_local"])
     if ta is None or tb is None:
         return False
-    if abs((ta - tb).total_seconds()) > TIME_TOLERANCE_SECONDS:
+    if abs((ta - tb).total_seconds()) > time_tolerance_seconds:
         return False
     da = _valid_distance(a["distance"])
     db = _valid_distance(b["distance"])
@@ -71,7 +72,12 @@ def _is_same_activity(a, b):
     return rel_diff <= DISTANCE_TOLERANCE_RATIO
 
 
-def _match_one_to_one(priority_rows, candidate_rows):
+def _match_one_to_one(
+    priority_rows,
+    candidate_rows,
+    *,
+    time_tolerance_seconds=TIME_TOLERANCE_SECONDS,
+):
     """一对一匹配: priority 中每条在 candidate 中找最佳匹配 (时间差最小)。
 
     返回 (待删 candidate run_id 列表, 匹配对列表)。
@@ -86,7 +92,11 @@ def _match_one_to_one(priority_rows, candidate_rows):
         for c in candidate_rows:
             if c["run_id"] in used_candidates:
                 continue
-            if _is_same_activity(p, c):
+            if _is_same_activity(
+                p,
+                c,
+                time_tolerance_seconds=time_tolerance_seconds,
+            ):
                 ta = _parse_time(p["start_date_local"])
                 tb = _parse_time(c["start_date_local"])
                 delta = abs((ta - tb).total_seconds())
@@ -106,6 +116,25 @@ def _find_cross_source_duplicates(cycling_rows, ride_rows):
     保留 cycling, 返回待删除的 Ride run_id 列表。
     """
     to_delete, _ = _match_one_to_one(cycling_rows, ride_rows)
+    return to_delete
+
+
+def _find_cycling_duplicates(cycling_rows):
+    """找出同为 cycling 的 iGPSPORT/Garmin 重复对。
+
+    部分 Garmin FIT 活动也会被归一化为 cycling, 因此不能只按 type 区分来源。
+    当前数据用 subtype=road 作为 iGPSPORT 优先记录的稳定标记, 空 subtype
+    作为候选副本。仅匹配这两类记录, 保留 road 记录, 避免合并两次真实 cycling 活动。
+    """
+    priority_rows = [row for row in cycling_rows if row["subtype"] == "road"]
+    candidate_rows = [
+        row for row in cycling_rows if row["subtype"] in (None, "")
+    ]
+    to_delete, _ = _match_one_to_one(
+        priority_rows,
+        candidate_rows,
+        time_tolerance_seconds=CYCLING_SAME_SOURCE_TIME_TOLERANCE_SECONDS,
+    )
     return to_delete
 
 
@@ -159,10 +188,10 @@ def _dedup_locked(db_path, json_path=None, dry_run=False):
 
     before_total = cur.execute("SELECT COUNT(*) FROM activities").fetchone()[0]
     cycling_rows = cur.execute(
-        "SELECT run_id, type, start_date_local, distance FROM activities WHERE type='cycling'"
+        "SELECT run_id, type, subtype, start_date_local, distance FROM activities WHERE type='cycling'"
     ).fetchall()
     ride_rows = cur.execute(
-        "SELECT run_id, type, start_date_local, distance FROM activities WHERE type='Ride'"
+        "SELECT run_id, type, subtype, start_date_local, distance FROM activities WHERE type='Ride'"
     ).fetchall()
 
     print(f"去重前总记录: {before_total}")
@@ -173,12 +202,16 @@ def _dedup_locked(db_path, json_path=None, dry_run=False):
     cross_del = _find_cross_source_duplicates(cycling_rows, ride_rows)
     print(f"跨源重复 (保留 cycling, 删 Ride): {len(cross_del)} 条")
 
-    # 2. Garmin 内部去重 (排除已被跨源命中的)
+    # 2. 同为 cycling 的重复: 保留带 road subtype 的 iGPSPORT 记录
+    cycling_del = _find_cycling_duplicates(cycling_rows)
+    print(f"cycling 内部跨设备重复 (保留 road, 删空 subtype): {len(cycling_del)} 条")
+
+    # 3. Garmin 内部去重 (排除已被跨源命中的)
     ride_remaining = [r for r in ride_rows if r["run_id"] not in cross_del]
     internal_del = _find_internal_duplicates(ride_remaining)
     print(f"Garmin 内部重复: {len(internal_del)} 条")
 
-    all_delete = cross_del + internal_del
+    all_delete = cross_del + cycling_del + internal_del
     print(f"待删除合计: {len(all_delete)} 条")
 
     json_count = None
