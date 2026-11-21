@@ -43,6 +43,9 @@ test('launch binds the debug port to the Chrome process it started', () => {
   assert.match(driver, /debug port is already occupied/);
   assert.match(driver, /once\('error'/);
   assert.match(driver, /chromePid/);
+  assert.match(driver, /randomUUID/);
+  assert.match(driver, /launchToken/);
+  assert.match(driver, /verify-token\.txt/);
   assert.match(driver, /VERIFY_CHROME_PATH/);
 });
 

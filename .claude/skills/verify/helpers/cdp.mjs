@@ -13,6 +13,7 @@ import {
 } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -74,11 +75,17 @@ async function isVerificationChrome(state) {
   }
 }
 
-async function waitForEndpoint() {
+async function waitForEndpoint(expectedToken) {
   for (let i = 0; i < 50; i += 1) {
     try {
       const targets = await CDP.List({ port });
-      if (targets.some((target) => target.type === 'page')) return targets;
+      const page = targets.find(
+        (target) =>
+          target.type === 'page' &&
+          target.url ===
+            `file://${join(profileDir, 'verify-token.txt')}?${expectedToken}`
+      );
+      if (page) return targets;
     } catch {
       /* browser is still starting */
     }
@@ -131,6 +138,9 @@ async function launch() {
   mkdirSync(scratchRoot, { recursive: true });
   mkdirSync(evidenceDir, { recursive: true });
   mkdirSync(profileDir, { recursive: true });
+  const launchToken = randomUUID();
+  const tokenFile = join(profileDir, 'verify-token.txt');
+  writeFileSync(tokenFile, launchToken);
   let chromePid;
   try {
     await new Promise((resolve, reject) => {
@@ -147,7 +157,7 @@ async function launch() {
           '--disable-extensions',
           '--disable-dev-shm-usage',
           '--window-size=1440,1000',
-          'about:blank',
+          `file://${tokenFile}?${launchToken}`,
         ],
         { detached: true, stdio: 'ignore' }
       );
@@ -161,9 +171,21 @@ async function launch() {
       port,
       startedAt: new Date().toISOString(),
     });
-    const targets = await waitForEndpoint();
-    const page = targets.find((t) => t.type === 'page');
-    writeState({ ...readState(), targetId: page.id, url: page.url });
+    const targets = await waitForEndpoint(launchToken);
+    const page = targets.find(
+      (target) =>
+        target.type === 'page' &&
+        target.url === `file://${tokenFile}?${launchToken}`
+    );
+    writeState({
+      ...readState(),
+      targetId: page.id,
+      url: page.url,
+      launchToken,
+    });
+    await withPage(async ({ Page }) => {
+      await Page.navigate({ url: 'about:blank' });
+    });
     output.ok = true;
     output.pid = chromePid;
     output.port = port;
