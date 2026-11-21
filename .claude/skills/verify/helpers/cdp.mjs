@@ -294,15 +294,15 @@ async function driveHashActivity() {
     await Page.navigate({ url: `${previewUrl}/#run_${activityId}` });
     const rendered = await evaluate(
       Runtime,
-      `new Promise(resolve => { const started = Date.now(); const check = () => { const text = document.body?.innerText || ''; if (location.hash === '#run_${activityId}' && text.includes('Cycling') && text.includes('Activity')) resolve(true); else if (Date.now() - started > 20000) resolve(false); else setTimeout(check, 100); }; check(); })`
+      `new Promise(resolve => { const started = Date.now(); const check = () => { const rows = [...document.querySelectorAll('tr')]; const selectedRow = rows.find(row => row.className.includes('_selected_')); if (location.hash === '#run_${activityId}' && selectedRow && selectedRow.innerText.includes('Cycling')) resolve(true); else if (Date.now() - started > 20000) resolve(false); else setTimeout(check, 100); }; check(); })`
     );
     const info = await evaluate(
       Runtime,
-      `({url: location.href, hash: location.hash, text: document.body.innerText || ""})`
+      `(() => { const rows = [...document.querySelectorAll('tr')]; const selectedRow = rows.find(row => row.className.includes('_selected_')); return { url: location.href, hash: location.hash, text: document.body.innerText || "", selectedText: selectedRow?.innerText || "" }; })()`
     );
-    if (!rendered || info.hash !== `#run_${activityId}`)
+    if (!rendered || info.hash !== `#run_${activityId}` || !info.selectedText)
       throw new Error(
-        `single activity view did not render: ${JSON.stringify({ url: info.url, hash: info.hash })}`
+        `single activity row is not selected: ${JSON.stringify({ url: info.url, hash: info.hash, selectedText: info.selectedText })}`
       );
     const snapshotPath = join(evidenceDir, 'activity-detail.txt');
     const screenshotPath = join(evidenceDir, 'activity-detail.png');
@@ -321,13 +321,21 @@ async function driveHashActivity() {
     const lossMatch = info.text.match(/Elevation Loss \(m\)\n(\d+(?:,\d+)*)/);
     output.gainLine = gainMatch ? `Elevation Gain (m) ${gainMatch[1]}` : null;
     output.lossLine = lossMatch ? `Elevation Loss (m) ${lossMatch[1]}` : null;
-    const activityMatch = info.text.match(/Cycling\n↑\n(\d+)m\n↓\n(\d+)m/);
-    output.activityGain = activityMatch ? Number(activityMatch[1]) : null;
-    output.activityLoss = activityMatch ? Number(activityMatch[2]) : null;
+    const activityMatch = info.selectedText.match(
+      /Cycling\n↑\n(\d+)m\n↓\n(\d+)m/
+    );
+    const selectedActivityGain = activityMatch
+      ? Number(activityMatch[1])
+      : null;
+    const selectedActivityLoss = activityMatch
+      ? Number(activityMatch[2])
+      : null;
+    output.activityGain = selectedActivityGain;
+    output.activityLoss = selectedActivityLoss;
     if (!gainMatch) throw new Error(`wrong gain display: ${output.gainLine}`);
-    if (output.activityGain !== 5 || output.activityLoss !== 9)
+    if (selectedActivityGain !== 5 || selectedActivityLoss !== 9)
       throw new Error(
-        `wrong single activity elevation: gain=${output.activityGain} loss=${output.activityLoss}`
+        `wrong selected activity elevation: gain=${selectedActivityGain} loss=${selectedActivityLoss}`
       );
   });
 }

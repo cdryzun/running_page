@@ -49,6 +49,14 @@ test('launch binds the debug port to the Chrome process it started', () => {
   assert.match(driver, /VERIFY_CHROME_PATH/);
 });
 
+test('single-activity proof reads metrics from the selected row', () => {
+  assert.match(driver, /_selected_/);
+  assert.match(driver, /selectedRow/);
+  assert.match(driver, /selectedActivityGain/);
+  assert.match(driver, /selectedActivityLoss/);
+  assert.match(driver, /single activity row is not selected/);
+});
+
 test('goto waits for the destination document before checking its root', () => {
   assert.match(driver, /location\.href === \$\{JSON\.stringify\(url\)\}/);
 });
