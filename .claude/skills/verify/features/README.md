@@ -31,6 +31,6 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 ## Features
 
 - [Single activity view](./single-activity.md) covers the hash route, distance and elevation summary for a known indoor ride.
-- [Activity filters](./activity-filters.md) covers sport type and summary interval controls on the main page.
-- [Language switching](./language-switching.md) covers the header and in-list language controls.
+- [Activity filters](./activity-filters.md) covers sport type and summary interval controls on the `/summary` page.
+- [Language switching](./language-switching.md) covers the header control on `/` and the in-list control on `/summary`.
 - [Summary page](./summary-page.md) covers the `/summary` route and yearly statistics.

@@ -5,7 +5,7 @@ description: Drive the yihong.run static web app in a real browser to verify rou
 
 # Verify yihong.run
 
-Use this skill when a change must be proven through the real rendered app, not only through unit tests. The primary surface is the Vite-built React site at `/` (map and activity list) and `/summary` (yearly statistics). A single activity can be opened with the URL hash `#run_<id>`.
+Use this skill when a change must be proven through the real rendered app, not only through unit tests. The primary surface is the Vite-built React site at `/` (map, single-run table, and year statistics) and `/summary` (activity summary list and filters). A single activity can be opened with the URL hash `#run_<id>`.
 
 All commands below assume the repository root as the working directory. The driver keeps its own Chrome process in `/tmp/running-page-verify`. Never attach to or kill an unrelated browser.
 
@@ -15,11 +15,10 @@ Dependencies and the static bundle must be prepared first:
 
 ```sh
 pnpm install --frozen-lockfile
-npm install --no-save --no-package-lock chrome-remote-interface@0.34.0
 pnpm run build
 ```
 
-`chrome-remote-interface` is a verification-only helper deliberately kept out of `package.json`; the helper script imports it directly.
+`chrome-remote-interface` is pinned as a verification-only devDependency in `package.json` and `pnpm-lock.yaml`; the helper resolves it after the single frozen-lockfile install. The driver never installs dependencies at runtime and never modifies package manifests.
 
 Serve the built site on a dedicated port in the background and remember the PID:
 
@@ -45,7 +44,7 @@ Run this before driving any feature and whenever a page looks wrong:
 node .claude/skills/verify/helpers/cdp.mjs doctor
 ```
 
-It requires the verification tab to exist, Chrome DevTools to answer on the recorded port, and a trivial JS evaluation to return `2`. If it fails, stop and fix or clean up the instance; do not drive another browser.
+It requires the verification tab to exist, the recorded debug port to answer Chrome DevTools, a trivial JS evaluation to return `2`, and the configured preview endpoint (`VERIFY_PREVIEW_URL`, default `http://127.0.0.1:4173`) to serve the entry named by `dist/.vite/manifest.json` with `id="root"`. It then navigates there and requires the rendered React root to belong to the preview origin. A dev server, stale build, or unrelated app on the same origin fails this check. If doctor fails, stop and fix or clean up the instance; do not drive another browser.
 
 Confirm the app server separately:
 
@@ -92,7 +91,7 @@ Stop the browser created by this run and remove its isolated profile:
 node .claude/skills/verify/helpers/cdp.mjs cleanup
 ```
 
-Stop only the `vite preview` process started above. Do not kill by process name. Keep `/tmp/running-page-verify/evidence` intact; remove the whole scratch directory only when the evidence has been copied elsewhere.
+The command escalates from `SIGTERM` to `SIGKILL` and fails if the recorded Chrome PID is still alive; it removes the state file and profile only after confirming exit. It never deletes the scratch root. Stop only the `vite preview` process started above. Do not kill by process name. Keep `/tmp/running-page-verify/evidence` intact; remove the whole scratch directory only when the evidence has been copied elsewhere.
 
 ## Features
 

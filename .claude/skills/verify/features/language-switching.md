@@ -11,7 +11,7 @@ The language toggle changes the site between English and Simplified Chinese and 
 ## How to get to it (user POV)
 
 - Open `http://127.0.0.1:4173/` and click the `中` button labelled `Switch to Chinese` in the header.
-- On the Chinese page, click the `EN` button labelled `切换到英文` beside the activity filters.
+- On the Chinese page, open `http://127.0.0.1:4173/summary` and click the `EN` button labelled `切换到英文` in the summary filter bar.
 - Reload the page and read the labels again.
 
 ## Driving it with CDP helper
@@ -19,9 +19,10 @@ The language toggle changes the site between English and Simplified Chinese and 
 Preconditions: server healthy, browser doctor passed, browser profile starts with no persisted `language` key.
 
 - Navigate to the main page: `node .claude/skills/verify/helpers/cdp.mjs goto http://127.0.0.1:4173/`.
-- Use a CDP script to click the button with accessible name `Switch to Chinese`, wait for reload, then capture visible text and the values of `语言`/`Language` controls.
-- Click the button with accessible name `切换到英文`, wait for reload, then capture visible text.
-- Reload `http://127.0.0.1:4173/` and verify the English labels remain.
+- Use a CDP script to click the button with accessible name `Switch to Chinese`, wait for reload, then capture visible text and confirm the `切换到英文` button is present.
+- Navigate to the summary page: `node .claude/skills/verify/helpers/cdp.mjs goto http://127.0.0.1:4173/summary`.
+- Click the button with accessible name `切换到英文`, wait for reload, then capture visible text and the `Sport type` / `Summary interval` labels.
+- Reload `http://127.0.0.1:4173/summary` and verify the English labels remain.
 
 ## Gotchas
 

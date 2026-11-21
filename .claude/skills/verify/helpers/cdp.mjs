@@ -4,24 +4,40 @@
  * Keeps state in one scratch dir so launch/doctor/drive/cleanup can be separate calls.
  */
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const CDP = require('chrome-remote-interface');
+let CDP;
+try {
+  CDP = require('chrome-remote-interface');
+} catch {
+  throw new Error(
+    'verification dependency missing: run pnpm install --frozen-lockfile'
+  );
+}
 
 const command = process.argv[2];
 const scratchRoot = process.env.VERIFY_SCRATCH || '/tmp/running-page-verify';
+const root = process.env.VERIFY_PROJECT_ROOT || process.cwd();
 const stateFile = join(scratchRoot, 'browser-state.json');
 const profileDir = join(scratchRoot, 'chrome-profile');
 const port = Number(process.env.VERIFY_CHROME_PORT || 9229);
 const evidenceDir = join(scratchRoot, 'evidence');
+const previewUrl = process.env.VERIFY_PREVIEW_URL || 'http://127.0.0.1:4173';
 const output = {};
 
 function readState() {
-  if (!existsSync(stateFile)) throw new Error('verification browser is not running; call launch first');
+  if (!existsSync(stateFile))
+    throw new Error('verification browser is not running; call launch first');
   return JSON.parse(readFileSync(stateFile, 'utf8'));
 }
 
@@ -30,12 +46,42 @@ function writeState(state) {
   writeFileSync(stateFile, JSON.stringify(state, null, 2));
 }
 
+function chromePath() {
+  if (process.env.VERIFY_CHROME_PATH) return process.env.VERIFY_CHROME_PATH;
+  if (process.platform === 'darwin') {
+    return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  }
+  return '/usr/bin/google-chrome';
+}
+
+function processAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function isVerificationChrome(state) {
+  if (!state.targetId) return false;
+  if (!processAlive(state.chromePid)) return true;
+  try {
+    const targets = await CDP.List({ port: state.port });
+    return targets.some((target) => target.id === state.targetId);
+  } catch {
+    return false;
+  }
+}
+
 async function waitForEndpoint() {
   for (let i = 0; i < 50; i += 1) {
     try {
       const targets = await CDP.List({ port });
       if (targets.some((t) => t.type === 'page')) return targets;
-    } catch { /* browser is still starting */ }
+    } catch {
+      /* browser is still starting */
+    }
     await delay(200);
   }
   throw new Error('Chrome DevTools endpoint did not become ready');
@@ -56,30 +102,44 @@ async function withPage(fn) {
 }
 
 async function evaluate(Runtime, expression) {
-  const result = await Runtime.evaluate({ expression, awaitPromise: true, returnByValue: true });
+  const result = await Runtime.evaluate({
+    expression,
+    awaitPromise: true,
+    returnByValue: true,
+  });
   if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
   return result.result.value;
 }
 
 async function launch() {
-  if (existsSync(stateFile)) throw new Error('verification browser already launched; run cleanup first');
+  if (existsSync(stateFile))
+    throw new Error('verification browser already launched; run cleanup first');
   mkdirSync(scratchRoot, { recursive: true });
   mkdirSync(evidenceDir, { recursive: true });
   mkdirSync(profileDir, { recursive: true });
-  const chrome = spawn('/usr/bin/google-chrome', [
-    '--headless=new',
-    `--remote-debugging-port=${port}`,
-    `--user-data-dir=${profileDir}`,
-    '--no-first-run',
-    '--no-default-browser-check',
-    '--disable-background-networking',
-    '--disable-sync',
-    '--disable-extensions',
-    '--disable-dev-shm-usage',
-    '--window-size=1440,1000',
-    'about:blank',
-  ], { detached: true, stdio: 'ignore' });
-  writeState({ chromePid: chrome.pid, port, startedAt: new Date().toISOString() });
+  const chrome = spawn(
+    chromePath(),
+    [
+      '--headless=new',
+      `--remote-debugging-port=${port}`,
+      `--user-data-dir=${profileDir}`,
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--disable-background-networking',
+      '--disable-sync',
+      '--disable-extensions',
+      '--disable-dev-shm-usage',
+      '--window-size=1440,1000',
+      'about:blank',
+    ],
+    { detached: true, stdio: 'ignore' }
+  );
+  chrome.unref();
+  writeState({
+    chromePid: chrome.pid,
+    port,
+    startedAt: new Date().toISOString(),
+  });
   try {
     const targets = await waitForEndpoint();
     const page = targets.find((t) => t.type === 'page');
@@ -88,27 +148,79 @@ async function launch() {
     output.pid = chrome.pid;
     output.port = port;
   } catch (error) {
-    process.kill(chrome.pid, 'SIGTERM');
-    rmSync(scratchRoot, { recursive: true, force: true });
+    try {
+      process.kill(chrome.pid, 'SIGTERM');
+    } catch {
+      /* already gone */
+    }
+    rmSync(stateFile, { force: true });
+    rmSync(profileDir, { recursive: true, force: true });
     throw error;
   }
 }
 
 async function doctor() {
   const state = readState();
+  if (state.port !== port)
+    throw new Error(`debug port mismatch: state=${state.port} current=${port}`);
   const targets = await CDP.List({ port });
   const target = targets.find((t) => t.id === state.targetId);
   if (!target) throw new Error('verification tab is missing');
   await withPage(async ({ Page, Runtime }) => {
     const version = await CDP.Version({ port });
-    await Page.navigate({ url: 'about:blank' });
     const marker = await evaluate(Runtime, '1 + 1');
     if (marker !== 2) throw new Error('browser runtime check failed');
+    if (!existsSync(join(root, 'dist', 'index.html'))) {
+      throw new Error('built app is missing; run pnpm run build');
+    }
+    const previewHtml = readFileSync(join(root, 'dist', 'index.html'), 'utf8');
+    const manifestPath = join(root, 'dist', '.vite', 'manifest.json');
+    if (!existsSync(manifestPath)) {
+      throw new Error('build manifest is missing; run pnpm run build');
+    }
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    const entry = manifest['index.html'];
+    if (
+      !entry ||
+      !previewHtml.includes('id="root"') ||
+      !previewHtml.includes(entry.file)
+    ) {
+      throw new Error(
+        'dist/index.html does not match the current build manifest; run pnpm run build'
+      );
+    }
+    const preview = await fetch(previewUrl, { cache: 'no-store' });
+    if (!preview.ok)
+      throw new Error(
+        `preview app health check failed: HTTP ${preview.status}`
+      );
+    const servedHtml = await preview.text();
+    if (!servedHtml.includes(entry.file)) {
+      throw new Error(
+        `preview endpoint does not serve the current build entry ${entry.file}; run pnpm run build and vite preview`
+      );
+    }
+    await Page.navigate({ url: previewUrl });
+    const app = await evaluate(
+      Runtime,
+      `new Promise(resolve => {
+      const started = Date.now();
+      const check = () => {
+        const root = document.querySelector('#root');
+        if (location.origin === ${JSON.stringify(new URL(previewUrl).origin)} && root && root.childElementCount) resolve(true);
+        else if (Date.now() - started > 20000) resolve(false);
+        else setTimeout(check, 100);
+      };
+      check();
+    })`
+    );
+    if (!app) throw new Error('built app did not render at the preview URL');
     output.ok = true;
     output.browser = version.Browser;
     output.protocol = version['Protocol-Version'];
     output.targetId = state.targetId;
     output.port = state.port;
+    output.previewUrl = previewUrl;
   });
 }
 
@@ -117,9 +229,16 @@ async function goto() {
   if (!url) throw new Error('goto requires a URL');
   await withPage(async ({ Page, Runtime }) => {
     await Page.navigate({ url });
-    const rendered = await evaluate(Runtime, `new Promise(resolve => { const started = Date.now(); const check = () => { const root = document.querySelector('#root'); if (document.readyState === 'complete' && root?.childElementCount) resolve(true); else if (Date.now() - started > 20000) resolve(false); else setTimeout(check, 100); }; check(); })`);
-    const info = await evaluate(Runtime, `({url: location.href, title: document.title, rootChildren: document.querySelector('#root')?.childElementCount || 0})`);
-    if (!rendered || !info.rootChildren) throw new Error(`app root did not render: ${JSON.stringify(info)}`);
+    const rendered = await evaluate(
+      Runtime,
+      `new Promise(resolve => { const started = Date.now(); const check = () => { const root = document.querySelector('#root'); if (document.readyState === 'complete' && root?.childElementCount) resolve(true); else if (Date.now() - started > 20000) resolve(false); else setTimeout(check, 100); }; check(); })`
+    );
+    const info = await evaluate(
+      Runtime,
+      `({url: location.href, title: document.title, rootChildren: document.querySelector('#root')?.childElementCount || 0})`
+    );
+    if (!rendered || !info.rootChildren)
+      throw new Error(`app root did not render: ${JSON.stringify(info)}`);
     output.ok = true;
     Object.assign(output, info);
   });
@@ -128,28 +247,44 @@ async function goto() {
 async function driveHashActivity() {
   const activityId = process.argv[3] || '1795089548000';
   await withPage(async ({ Page, Runtime }) => {
-    await Page.navigate({ url: `http://127.0.0.1:4173/#run_${activityId}` });
-    await evaluate(Runtime, `new Promise(resolve => { const started = Date.now(); const check = () => { const text = document.body?.innerText || ''; if (location.hash === '#run_${activityId}' && (text.includes('Individual') || text.includes('单次'))) resolve(true); else if (Date.now() - started > 20000) resolve(false); else setTimeout(check, 100); }; check(); })`);
-    const state = { ready: true, text: await evaluate(Runtime, 'document.body.innerText || ""') };
+    await Page.navigate({ url: `${previewUrl}/#run_${activityId}` });
+    const rendered = await evaluate(
+      Runtime,
+      `new Promise(resolve => { const started = Date.now(); const check = () => { const text = document.body?.innerText || ''; if (location.hash === '#run_${activityId}' && text.includes('Cycling') && text.includes('Activity')) resolve(true); else if (Date.now() - started > 20000) resolve(false); else setTimeout(check, 100); }; check(); })`
+    );
+    const info = await evaluate(
+      Runtime,
+      `({url: location.href, hash: location.hash, text: document.body.innerText || ""})`
+    );
+    if (!rendered || info.hash !== `#run_${activityId}`)
+      throw new Error(
+        `single activity view did not render: ${JSON.stringify({ url: info.url, hash: info.hash })}`
+      );
     const snapshotPath = join(evidenceDir, 'activity-detail.txt');
     const screenshotPath = join(evidenceDir, 'activity-detail.png');
-    writeFileSync(snapshotPath, state.text);
-    const shot = await Page.captureScreenshot({ format: 'png', captureBeyondViewport: false });
+    writeFileSync(snapshotPath, info.text);
+    const shot = await Page.captureScreenshot({
+      format: 'png',
+      captureBeyondViewport: false,
+    });
     writeFileSync(screenshotPath, Buffer.from(shot.data, 'base64'));
     output.ok = true;
+    output.url = info.url;
     output.activityId = activityId;
     output.snapshot = snapshotPath;
     output.screenshot = screenshotPath;
-    const lines = state.text.split('\n').map((s) => s.trim()).filter(Boolean);
-    const gainMatch = state.text.match(/Elevation Gain \(m\)\n(\d+(?:,\d+)*)/);
+    const gainMatch = info.text.match(/Elevation Gain \(m\)\n(\d+(?:,\d+)*)/);
+    const lossMatch = info.text.match(/Elevation Loss \(m\)\n(\d+(?:,\d+)*)/);
     output.gainLine = gainMatch ? `Elevation Gain (m) ${gainMatch[1]}` : null;
-    const lossMatch = state.text.match(/Elevation Loss \(m\)\n(\d+(?:,\d+)*)/);
     output.lossLine = lossMatch ? `Elevation Loss (m) ${lossMatch[1]}` : null;
-    const activityMatch = state.text.match(/Cycling\n↑\n(\d+)m\n↓\n(\d+)m/);
+    const activityMatch = info.text.match(/Cycling\n↑\n(\d+)m\n↓\n(\d+)m/);
     output.activityGain = activityMatch ? Number(activityMatch[1]) : null;
     output.activityLoss = activityMatch ? Number(activityMatch[2]) : null;
     if (!gainMatch) throw new Error(`wrong gain display: ${output.gainLine}`);
-    if (output.activityGain !== 5 || output.activityLoss !== 9) throw new Error(`wrong single activity elevation: gain=${output.activityGain} loss=${output.activityLoss}`);
+    if (output.activityGain !== 5 || output.activityLoss !== 9)
+      throw new Error(
+        `wrong single activity elevation: gain=${output.activityGain} loss=${output.activityLoss}`
+      );
   });
 }
 
@@ -160,20 +295,48 @@ async function cleanup() {
     return;
   }
   const state = readState();
-  try { process.kill(state.chromePid, 'SIGTERM'); } catch { /* already gone */ }
-  for (let i = 0; i < 20; i += 1) {
-    try { process.kill(state.chromePid, 0); await delay(100); } catch { break; }
+  if (!(await isVerificationChrome(state))) {
+    throw new Error(
+      `refusing cleanup: recorded Chrome process ${state.chromePid} no longer matches verification target ${state.targetId}`
+    );
+  }
+  for (const signal of ['SIGTERM', 'SIGKILL']) {
+    if (!processAlive(state.chromePid)) break;
+    try {
+      process.kill(state.chromePid, signal);
+    } catch {
+      /* already gone */
+    }
+    for (let i = 0; i < 20 && processAlive(state.chromePid); i += 1)
+      await delay(100);
+  }
+  if (processAlive(state.chromePid)) {
+    throw new Error(
+      `verification Chrome process ${state.chromePid} did not exit`
+    );
   }
   for (let i = 0; i < 10; i += 1) {
-    try { rmSync(profileDir, { recursive: true, force: true }); break; } catch { await delay(100); }
+    try {
+      rmSync(profileDir, { recursive: true, force: true });
+      break;
+    } catch {
+      await delay(100);
+    }
   }
   rmSync(stateFile, { force: true });
   output.ok = true;
   output.removed = true;
   output.pid = state.chromePid;
+  output.exited = true;
 }
 
-const commands = { launch, doctor, goto, 'drive-hash-activity': driveHashActivity, cleanup };
+const commands = {
+  launch,
+  doctor,
+  goto,
+  'drive-hash-activity': driveHashActivity,
+  cleanup,
+};
 if (!commands[command]) throw new Error(`unknown command: ${command}`);
 await commands[command]();
 console.log(JSON.stringify(output, null, 2));
